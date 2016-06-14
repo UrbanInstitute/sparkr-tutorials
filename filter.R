@@ -1,12 +1,10 @@
-## Tutorial for Filtering (aka Subsetting) an RDD
+## Tutorial for Filtering (a.k.a. Subsetting) an RDD
 
 
-## Read in example data
-data <- read.df(sqlContext, "s3://ui-hfpc/Performance_2015Q1.txt", header='false', delimiter="|", source="csv", inferSchema='true')
-##
+## Read in example HFPC data (quarterly performance data from 2000) from AWS S3:
+data <- read.df(sqlContext, "s3://ui-hfpc/hfpc_ex.csv", header='false', delimiter="|", source="csv", inferSchema='true')
 
-
-## Filter with 'is equal to'
+## Filter with 'is equal to' => returns observations 
 data_lim <- filter(data, data$col1 == "Yes")
 
 
