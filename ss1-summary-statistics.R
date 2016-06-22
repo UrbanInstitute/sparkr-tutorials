@@ -17,3 +17,6 @@ sqlContext <- sparkRSQL.init(sc)
 
 ## Read in example HFPC data (quarterly performance data from XXXX) from AWS S3:
 data <- read.df(sqlContext, "s3://ui-hfpc/hfpc_ex_par", header='false', inferSchema='true')
+
+## Count the number of observations by 'servicer_name' (string variable)
+collect(arrange(count(groupBy(data, "servicer_name")), "servicer_name"))
