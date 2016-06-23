@@ -123,10 +123,30 @@ $(document).ready(function () {
 </div>
 
 
-<div id="r-markdown" class="section level2">
-<h2>R Markdown</h2>
-<p>This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <a href="http://rmarkdown.rstudio.com" class="uri">http://rmarkdown.rstudio.com</a>.</p>
-<p>When you click the <strong>Knit</strong> button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:</p>
+<p><strong>Objective</strong>: Become comfortable working with the SparkR DataFrame (DF) API; particularly, understand how to:</p>
+<ul>
+<li>Read a .csv file into SparkR as a DF</li>
+<li>Append a DF with additional rows</li>
+<li>Measure dimensions of a DF, print column names of a DF</li>
+<li>Subset a DF by columns</li>
+<li>Rename columns of a DF</li>
+<li>Print a specified number of rows from a DF</li>
+<li>Print basic summary statistics for the numerical columns of a DF</li>
+<li>Print the data types of each column of a DF</li>
+<li>Print the SparkR schema, specify schema in <code>read.df</code> file</li>
+<li>Manually specify a schema</li>
+<li>Change the data type of a column in a DF</li>
+<li>Export a DF to AWS S3 as a folder of partitioned parquet files</li>
+</ul>
+<p><strong>SparkR/R Operations Discussed</strong>: <code>read.df</code>, <code>nrow</code>, <code>ncol</code>, <code>dim</code>, <code>for</code>, <code>past0</code>, <code>rbind</code>, <code>select</code>, <code>withColumnRenamed</code>, <code>columns</code>, <code>head</code>, <code>take</code>, <code>str</code>, <code>describe</code>, <code>dtypes</code>, <code>schema</code>, <code>printSchema</code>, <code>cast</code>, <code>write.df</code></p>
+<p><em>Initiate SparkR Context</em>:</p>
+<p>Initiate your SparkR context for this module. Note that we direct ‘sparkR.init’ to include the Spark package <code>&quot;com.databricks:spark-csv_2.11:1.4.0&quot;</code> when initiating our SparkR context - we will rely on this package to load .csv files into SparkR:</p>
+<p><code>sc &lt;- sparkR.init(sparkEnvir=list(spark.executor.memory=&quot;2g&quot;, spark.driver.memory=&quot;1g&quot;, spark.driver.maxResultSize=&quot;1g&quot;), sparkPackages=&quot;com.databricks:spark-csv_2.11:1.4.0&quot;)</code></p>
+<p>Make sure that you have initiated the SparkR context and the SparkR SQL context, loaded the <code>SparkR</code> library, using the SparkR code given in the README file for this repository (found in the “Getting Started” section).</p>
+<div id="load-a-csv-file-into-sparkr" class="section level3">
+<h3>Load a csv file into SparkR:</h3>
+<p>Use the operation <code>read.df</code> to load in quarterly Fannie Mae single-family loan performance data from the AWS S3 folder <code>&quot;s3://ui-hfpc/&quot;</code> as a Spark DataFrame (DF). Note that, when initiating our SparkContext, we specified that SparkR should include the <code>spark-csv</code> package in our SparkContext by including <code>sparkPackages=&quot;com.databricks:spark-csv_2.11:1.4.0&quot;</code> in our <code>sparkR.init</code> operation. Below, we load a single quarter (2000, Q1)</p>
+<p><em>2.11:1.4.0 in our sparkR.init operation. Below, we load a single quarter (2000, Q1) into SparkR, and save it as the DF perf</em>:</p>
 <pre class="r"><code>summary(cars)</code></pre>
 <pre><code>##      speed           dist       
 ##  Min.   : 4.0   Min.   :  2.00  
