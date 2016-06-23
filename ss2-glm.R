@@ -18,8 +18,6 @@ sc <- sparkR.init(sparkEnvir=list(spark.executor.memory="2g",
 
 ## Initiate SparkRSQL:
 
-## New useless comment!
-
 sqlContext <- sparkRSQL.init(sc)
 
 ## Read in loan performance example data as DataFrame (DF) 'dat':
