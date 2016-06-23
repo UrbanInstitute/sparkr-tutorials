@@ -35,11 +35,23 @@ knitr::opts_chunk$set(echo = TRUE)
 
 *Initiate SparkR Context*:
 
-Initiate your SparkR context for this module. Note that we direct 'sparkR.init' to include the Spark package `"com.databricks:spark-csv_2.11:1.4.0"` when initiating our SparkR context - we will rely on this package to load .csv files into SparkR:
+```{r}
+library(SparkR) # Load the SparkR library
+```
 
-`sc <- sparkR.init(sparkEnvir=list(spark.executor.memory="2g", spark.driver.memory="1g", spark.driver.maxResultSize="1g"), sparkPackages="com.databricks:spark-csv_2.11:1.4.0")`
+After loading the SparkR library, initiate your SparkR context for this module. Note that we direct 'sparkR.init' to include the Spark package `"com.databricks:spark-csv_2.11:1.4.0"` when initiating our SparkR context. Including this specification is essential since we will rely on this package to load .csv files into SparkR throughout this module:
 
-Make sure that you have initiated the SparkR context and the SparkR SQL context, loaded the `SparkR` library, using the SparkR code given in the README file for this repository (found in the "Getting Started" section).
+```{r}
+sc <- sparkR.init(sparkEnvir=list(spark.executor.memory="2g", spark.driver.memory="1g", spark.driver.maxResultSize="1g"), sparkPackages="com.databricks:spark-csv_2.11:1.4.0")
+```
+
+Next, initiate your SparkR SQL context:
+
+```{r}
+sqlContext <- sparkRSQL.init(sc)
+```
+
+You can confirm that you successfully initiated these contexts by looking at the global environment of RStudio. Can you see `sc` and `sqlContext` listed as values? If the answer is yes, then you are ready to learn how to work with tabular data in SparkR!
 
 
 ### Load a csv file into SparkR:
