@@ -1,6 +1,6 @@
-###########################################################################
-## Social Science Methodologies: Generalized Linear Models (GLM) Module ##
-###########################################################################
+############################################################################
+## Social Science Methodologies: Generalized Linear Models (GLM) Module 2 ##
+############################################################################
 ## Objective: 
 ## Operations discussed: glm
 
