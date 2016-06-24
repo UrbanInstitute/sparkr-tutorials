@@ -36,19 +36,16 @@ summary(m1)
 ## Compute OLR model statistics:
 
 output1 <- summary(m1)
-yavg <- mean(dat$y)
+yavg1 <- mean(dat$y)
 yhat1 <- m1$fitted.values
-
-SSR1 <- deviance(m1)
-
-
 coeffs1 <- m1$coefficients
 r1 <- m1$resid
-s1 <- output1$sigma
+SSR1 <- deviance(m1)
 Rsq1 <- output1$r.squared
 aRsq1 <- output1$adj.r.squared
-covmatr1 <- s^2*output1$cov
-aic1 <- AIC(m1)
+s1 <- output1$sigma
+covmatr1 <- s1^2*output1$cov
+
 
 ## Note: use `lm` function from `stats` R package to estimate ordinary linear regression model for local data.frame to easily compute Rsq and aRsq
 ## The `glm` operation of neither `stats` nor `SparkR` yield Rsq/aRsq, which makes sense since Rsq/aRsq are widely-accepted measures of goodness-of-fit (GOF) for ordinary
@@ -71,17 +68,19 @@ summary(m2)
 ## Comput OLR model statistics:
 
 output2 <- summary(m2)
-
 # Calculate average y value:
-(yavg_df <- collect(agg(df, yavg_df = mean(df$y)))$yavg_df)
-# Predict fitted values using the DF OLS model
-yhat2 <- predict(m2, df)
-# Transform the SparkR fitted values matrix (yhat2) so that it is easier to read and includes squared residuals and squared totals
-yhat2 <- transform(yhat2, sq_res2=(yhat2$y - yhat2$prediction)^2, sq_tot2=(yhat2$y - yavg_df)^2)
-head(select(yhat2, "y", "prediction", "sq_res2", "sq_tot2"))
+yavg2 <- collect(agg(df, yavg_df = mean(df$y)))$yavg_df
+# Predict fitted values using the DF OLS model -> yields new DF
+yhat2_df <- predict(m2, df)
+head(yhat2_df) # so you can see what the prediction DF looks like
+# Transform the SparkR fitted values DF (yhat2_df) so that it is easier to read and includes squared residuals and squared totals & extract yhat vector (as new DF)
+yhat2_df <- transform(yhat2_df, sq_res2 = (yhat2_df$y - yhat2_df$prediction)^2, sq_tot2 = (yhat2_df$y - yavg2)^2)
+yhat2_df <- transform(yhat2_df, yhat = yhat2_df$prediction)
+head(select(yhat2_df, "y", "yhat", "sq_res2", "sq_tot2"))
+head(yhat2 <- select(yhat2_df, "yhat"))
 # Compute sum of squared residuals and totals, then use these values to calculate R-squared:
-SSR2 <- collect(agg(yhat2, SSR2=sum(yhat2$sq_res2)))
-SST2 <- collect(agg(yhat2, SST2=sum(yhat2$sq_res2)))
+SSR2 <- collect(agg(yhat2_df, SSR2=sum(yhat2_df$sq_res2)))  ##### Note: produces data.frame - get values out of d.f's in order to calculate aRsq and Rsq
+SST2 <- collect(agg(yhat2_df, SST2=sum(yhat2_df$sq_res2)))
 Rsq2 <- 1-(SSR2/SST2)
 p <- 3
 N <- nrow(df)
@@ -91,16 +90,3 @@ aRsq2 <- 1-(((1-Rsq2)*(N-1))/(N-p-1))
 
 
 
-features
-             coefficients <- callJMethod(jobj, "rCoefficients")
--            coefficients <- as.matrix(unlist(coefficients))
--            colnames(coefficients) <- c("Estimate")
-+            deviance.resid <- callJMethod(jobj, "rDevianceResiduals")
-+            dispersion <- callJMethod(jobj, "rDispersion")
-+            null.deviance <- callJMethod(jobj, "rNullDeviance")
-+            deviance <- callJMethod(jobj, "rDeviance")
-+            df.null <- callJMethod(jobj, "rResidualDegreeOfFreedomNull")
-+            df.residual <- callJMethod(jobj, "rResidualDegreeOfFreedom")
-+            aic <- callJMethod(jobj, "rAic")
-+            iter <- callJMethod(jobj, "rNumIterations")
-+            family
