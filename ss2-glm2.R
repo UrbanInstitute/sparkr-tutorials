@@ -52,37 +52,42 @@ printSchema(dat)
 ## > printSchema(dat)
 ## root
 ##  |-- loan_id: long (nullable = true)
-##  |-- period: string (nullable = true)			# Should be recast as a 'date'
+##  |-- period: string (nullable = true)		# Should be recast as a 'date'
 ##  |-- servicer_name: string (nullable = true)
 ##  |-- new_int_rt: double (nullable = true)
 ##  |-- act_endg_upb: double (nullable = true)
 ##  |-- loan_age: integer (nullable = true)
 ##  |-- mths_remng: integer (nullable = true)
 ##  |-- aj_mths_remng: integer (nullable = true)
-##  |-- dt_matr: string (nullable = true)			# Should be recast as a 'date'
-##  |-- cd_msa: integer (nullable = true)			# Should be recast as a 'string'
+##  |-- dt_matr: string (nullable = true)		# Should be recast as a 'date'
+##  |-- cd_msa: integer (nullable = true)		# Should be recast as a 'string'
 ##  |-- delq_sts: string (nullable = true)
 ##  |-- flag_mod: string (nullable = true)
 ##  |-- cd_zero_bal: integer (nullable = true)		# Should be recast as a 'string'
 ##  |-- dt_zero_bal: string (nullable = true)		# Should be recast as a 'date'
 
-# Before we can recast, need to reformat date to something cast can read as a 'date' type
+# Cast each of the columns noted above into the correct dtype before proceeding with specifying glms
 
-strsplit(as.character(dat$period),'/')
+period_dt <- cast(cast(unix_timestamp(dat$period, 'dd/MM/yyyy'), 'timestamp'), 'date')
+dat <- withColumn(dat, 'period_dt', period_dt) # Note that we collapse this into a single step for subsequent casts to date dtype
+dat$period <- NULL # Drop string form of period; below, we continue to drop string forms of date dtype columns
 
-# Cast dtypes
+dat <- withColumn(dat, 'matr_dt', cast(cast(unix_timestamp(dat$dt_matr, 'MM/yyyy'), 'timestamp'), 'date'))
+dat$dt_matr <- NULL
 
-dat$period <- cast(dat$period, 'date')	
-dat$dt_matr <- cast(dat$dt_matr, 'date')	
-dat$cd_msa <- cast(dat$cd_msa, 'string')	
-dat$cd_zero_bal <- cast(dat$cd_zero_bal, 'string')	
-dat$dt_zero_bal <- cast(dat$dt_zero_bal, 'date')	
+dat$cd_msa <- cast(dat$cd_msa, 'string') # We do not need to drop `cd_msa` since we can directly recast this column as a string
+
+dat$cd_zero_bal <- cast(dat$cd_zero_bal, 'string')
+
+dat <- withColumn(dat, 'zero_bal_dt', cast(cast(unix_timestamp(dat$dt_zero_bal, 'MM/yyyy'), 'timestamp'), 'date'))
+dat$dt_zero_bal <- NULL
+
+head(dat)
+printSchema(dat) # We now have each DF column in the appropriate dtype
 
 ###################################
 ## (1) Fit a Gaussian GLM model: ##
 ###################################
-
-## Potentially useful in glm: servicer_name, new_int_rt, act_endg_upb, mths_remng, aj_mths_remng, cd_msa, delq_sts, flag_mod
 
 # Fit a gaussian GLM model over the 
 m1 <- glm(act_endg_upb ~ servicer_name + new_int_rt + mths_remng + aj_mths_remng + cd_msa + delq_sts + flag_mod, data = dat, family = "gaussian")
