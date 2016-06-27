@@ -66,6 +66,8 @@ printSchema(dat)
 ##  |-- cd_zero_bal: integer (nullable = true)		# Should be recast as a 'string'
 ##  |-- dt_zero_bal: string (nullable = true)		# Should be recast as a 'date'
 
+## Preprocessing data:
+
 # Cast each of the columns noted above into the correct dtype before proceeding with specifying glms
 
 period_dt <- cast(cast(unix_timestamp(dat$period, 'dd/MM/yyyy'), 'timestamp'), 'date')
@@ -82,35 +84,78 @@ dat$cd_zero_bal <- cast(dat$cd_zero_bal, 'string')
 dat <- withColumn(dat, 'zero_bal_dt', cast(cast(unix_timestamp(dat$dt_zero_bal, 'MM/yyyy'), 'timestamp'), 'date'))
 dat$dt_zero_bal <- NULL
 
+dat$matr_yr <- year(dat$matr_dt) # Extract year of maturity date of loan as an integer in dat DF
+dat$zero_bal_yr <- year(dat$zero_bal_dt) # Extract year loan set to 0 as an integer in dat DF
+
+
+
 head(dat)
 printSchema(dat) # We now have each DF column in the appropriate dtype
+
+# Drop rows with NAs:
+
+nrow(dat)
+dat_ <- dropna(dat)
+nrow(dat_)
+dat <- dat_
+rm(dat_)
+cache(dat)
 
 ###################################
 ## (1) Fit a Gaussian GLM model: ##
 ###################################
 
-# Fit a gaussian GLM model over the 
-m1 <- glm(act_endg_upb ~ servicer_name + new_int_rt + mths_remng + aj_mths_remng + cd_msa + delq_sts + flag_mod, data = dat, family = "gaussian")
+# Fit ordinary linear regression 
+m1 <- SparkR::glm(act_endg_upb ~ new_int_rt + loan_age + mths_remng + matr_yr + zero_bal_yr, data = dat, family = "gaussian")
 
-summary(m1)
-# print summary here          
+     
 
-# Make predictions based on the model:
-pred1 <- predict(m1, newData = dat)
-head(select(predictions, "act_endg_upb", "pred1"))
-# print predictions and actual act_endg_upb values here
+output <- summary(m1)
+coeffs <- output$coefficients[,1]
 
-###################################
-## (1) Fit a Binomial GLM model: ##
-###################################
+# Calculate average y value:
+act_endg_upb_avg <- collect(agg(dat, act_endg_upb_avg = mean(dat$act_endg_upb)))$act_endg_upb_avg
+# Predict fitted values using the DF OLS model -> yields new DF
+act_endg_upb_hat <- predict(m1, dat)
+cache(act_endg_upb_hat)
+head(act_endg_upb_hat) # so you can see what the prediction DF looks like
+# Transform the SparkR fitted values DF (yhat2_df) so that it is easier to read and includes squared residuals and squared totals & extract yhat vector (as new DF)
+act_endg_upb_hat <- transform(act_endg_upb_hat, sq_res = (act_endg_upb_hat$act_endg_upb - act_endg_upb_hat$prediction)^2, sq_tot = (act_endg_upb_hat$act_endg_upb - act_endg_upb_avg)^2)
+act_endg_upb_hat <- transform(act_endg_upb_hat, act_endg_upb_hat = act_endg_upb_hat$prediction)
+head(select(act_endg_upb_hat, "act_endg_upb", "act_endg_upb_hat", "sq_res", "sq_tot"))
+head(act_endg_upb_hat <- select(act_endg_upb_hat, "act_endg_upb_hat"))
 
-# Create indicator variable from DF
+# Compute sum of squared residuals and totals, then use these values to calculate R-squared:
+SSR2 <- collect(agg(yhat2_df, SSR2=sum(yhat2_df$sq_res2)))  ##### Note: produces data.frame - get values out of d.f's in order to calculate aRsq and Rsq
+SST2 <- collect(agg(yhat2_df, SST2=sum(yhat2_df$sq_res2)))
+Rsq2 <- 1-(SSR2/SST2)
+p <- 3
+N <- nrow(df)
+aRsq2 <- 1-(((1-Rsq2)*(N-1))/(N-p-1))
 
 
-# Fit a binomial GLM model over the dataset.
-m2 <- glm(y ~ x, data = dat, family = "binomial")
+n <- 10
+b0 <- rep(0,n)
+b1 <- rep(0,n)
+b2 <- rep(0,n)
+b3 <- rep(0,n)
+b4 <- rep(0,n)
+b5 <- rep(0,n)
+for(i in 1:n){
+  model <- SparkR::glm(act_endg_upb ~ new_int_rt + loan_age + mths_remng + matr_yr + zero_bal_yr, data = dat, family = "gaussian")
+  b0[i] <- unname(summary(model)$coefficients[,1]["(Intercept)"])
+  b1[i] <- unname(summary(model)$coefficients[,1]["new_int_rt"])
+  b2[i] <- unname(summary(model)$coefficients[,1]["loan_age"])
+  b3[i] <- unname(summary(model)$coefficients[,1]["mths_remng"])
+  b4[i] <- unname(summary(model)$coefficients[,1]["matr_yr"])
+  b5[i] <- unname(summary(model)$coefficients[,1]["zero_bal_yr"])
+}
 
-summary(m2)
 
-pred2 <- predict(m2, newData = dat)
-head(select(predictions, "XXXX", "pred2"))
+# Prepare parameter estimate lists above as data.frames to pass into ggplot:
+b_ests_ <- data.frame(cbind(b0 = unlist(b0), b1 = unlist(b1), b2 = unlist(b2), b3 = unlist(b3), Iteration = seq(1, n, by = 1)))
+b_ests <- melt(b_ests_, id.vars ="Iteration", measure.vars = c("b0", "b1", "b2", "b3"))
+names(b_ests) <- cbind("Iteration", "Variable", "Value")
+
+
+p <- ggplot(data = b_ests, aes(x = Iteration, y = Value, col = Variable), size = 5) + geom_point() + geom_hline(yintercept = unname(coeffs1["(Intercept)"]), linetype = 2) + geom_hline(yintercept = unname(coeffs1["x1"]), linetype = 2) + geom_hline(yintercept = unname(coeffs1["x2"]), linetype = 2) + geom_hline(yintercept = unname(coeffs1["x3"]), linetype = 2) + labs(title = "L.R. Parameters Estimated via L-BFGS")

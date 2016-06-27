@@ -5,6 +5,8 @@
 ## Operations discussed: glm
 
 library(SparkR)
+library(ggplot2)
+library(reshape2)
 
 ## Initiate SparkContext:
 
@@ -62,12 +64,14 @@ df <- as.DataFrame(sqlContext, dat)
 
 ## Perform OLS estimation on DF with the same specifcations for our data.frame OLS estimation:
 
-m2 <- SparkR::glm(y ~ x1 + x2 + x3, data = df)
+m2 <- SparkR::glm(y ~ x1 + x2 + x3, data = df, solver = "l-bfgs")
 summary(m2)
 
 ## Comput OLR model statistics:
 
 output2 <- summary(m2)
+coeffs2 <- output2$coefficients[,1]
+
 # Calculate average y value:
 yavg2 <- collect(agg(df, yavg_df = mean(df$y)))$yavg_df
 # Predict fitted values using the DF OLS model -> yields new DF
@@ -86,7 +90,25 @@ p <- 3
 N <- nrow(df)
 aRsq2 <- 1-(((1-Rsq2)*(N-1))/(N-p-1))
 
+## Iteratively fit linear regression models using SparkR `glm`, using l-bfgs for optimization, and plot resulting coefficient estimations with `lm` estimate values
+
+n <- 10
+b0 <- rep(0,n)
+b1 <- rep(0,n)
+b2 <- rep(0,n)
+b3 <- rep(0,n)
+for(i in 1:n){
+  model <- SparkR::glm(y ~ x1 + x2 + x3, data = df)
+  b0[i] <- unname(summary(model)$coefficients[,1]["(Intercept)"])
+  b1[i] <- unname(summary(model)$coefficients[,1]["x1"])
+  b2[i] <- unname(summary(model)$coefficients[,1]["x2"])
+  b3[i] <- unname(summary(model)$coefficients[,1]["x3"])
+}
+
+# Prepare parameter estimate lists above as data.frames to pass into ggplot:
+b_ests_ <- data.frame(cbind(b0 = unlist(b0), b1 = unlist(b1), b2 = unlist(b2), b3 = unlist(b3), Iteration = seq(1, n, by = 1)))
+b_ests <- melt(b_ests_, id.vars ="Iteration", measure.vars = c("b0", "b1", "b2", "b3"))
+names(b_ests) <- cbind("Iteration", "Variable", "Value")
 
 
-
-
+p <- ggplot(data = b_ests, aes(x = Iteration, y = Value, col = Variable), size = 5) + geom_point() + geom_hline(yintercept = unname(coeffs1["(Intercept)"]), linetype = 2) + geom_hline(yintercept = unname(coeffs1["x1"]), linetype = 2) + geom_hline(yintercept = unname(coeffs1["x2"]), linetype = 2) + geom_hline(yintercept = unname(coeffs1["x3"]), linetype = 2) + labs(title = "L.R. Parameters Estimated via L-BFGS")
