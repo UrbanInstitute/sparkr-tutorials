@@ -25,9 +25,10 @@ sqlContext <- sparkRSQL.init(sc)
 ## (1) Load a csv file into SparkR: ##
 ######################################
 
-## Use the operation 'read.df' to load in quarterly Fannie Mae single-family loan performance data from the AWS S3 folder "s3://ui-hfpc/" as a Spark DataFrame (DF). Note that,
-## when initiating our SparkContext, we specified that SparkR should include the 'spark-csv' package in our SparkContext by including
-## 'sparkPackages="com.databricks:spark-csv_2.11:1.4.0"' in our 'sparkR.init' operation. Below, we load a single quarter (2000, Q1) into SparkR, and save it as the DF 'perf_':
+## Use the operation `read.df` to load in quarterly Fannie Mae single-family loan performance data from the AWS S3 folder `"s3://ui-hfpc/"` as a Spark DataFrame (DF). Note
+## that, when initiating our SparkR context, we specified that the `spark-csv` package should be included by by specifying
+## `sparkPackages="com.databricks:spark-csv_2.11:1.4.0"` in our `sparkR.init` operation. Below, we load a single quarter (2000, Q1) into SparkR, and save it as the DF
+## `perf_`:
 
 perf_ <- read.df(sqlContext, "s3://ui-hfpc/Performance_2000Q1.txt", header='false', delimiter="|", source="csv", inferSchema='true', nullValue="")
 cache(perf_)
@@ -53,9 +54,9 @@ cache(perf_)
 ## [1] 28
 
 
-########################################
-## (2) Update a DF with new datasets: ##
-########################################
+############################################
+## (2) Update a DF with new rows of data: ##
+############################################
 
 ## In order to take advantage of the newfound computing power that SparkR provides, and since we'll want to analyze loan performance data beyond 2000 Q1, we append the 'perf_'
 ## DF below with the data from subsequent quarters of the same single-family loan performance dataset. Here, we're only appending one subsequent quarter (2000 Q2) to the DF
@@ -90,11 +91,12 @@ unpersist(perf_)
 ## 'for': http://www.r-bloggers.com/how-to-write-the-first-for-loop-in-r/
 ## 'past0': http://www.r-bloggers.com/paste-paste0-and-sprintf/
 ## 'rbind': https://stat.ethz.ch/R-manual/R-devel/library/base/html/cbind.html
+## `read.df`: https://docs.cloud.databricks.com/docs/latest/databricks_guide/10%20SparkR/1%20Functions/read.df.html
 
 
-#####################################
-## (3) Subset a DF by column name: ##
-#####################################
+########################################
+## (3) Subset a DF by column name(s): ##
+########################################
 
 ## The 'select' operation selects columns specified as strings in the operation line and then returns a new DF including only those specified columns. Here, we create a new
 ## DF called 'perf_lim' that includes only the first 14 columns in the 'perf' DF, i.e. the DF 'perf_lim' is a subset of 'perf':
@@ -114,9 +116,9 @@ unpersist(perf)
 ## [1] 14
 
 
-###############################
-## (4) Rename columns in DF: ##
-###############################
+#################################
+## (4) Rename column(s) in DF: ##
+#################################
 
 ## Using a for-loop (this time looping through the 14 columns of the 'perf_lim' DF) and the SparkR operation 'withColumnRenamed', we rename the columns of 'perf_lim'. The
 ## operation 'withColumnRenamed' renames an existing column, or columns, in a DF and returns a new DF. By specifying the "new" DF name as 'perf_lim', we are simply renaming
@@ -155,7 +157,7 @@ head(perf_lim, 5)
 ## If we wanted to work these first five (5) rows of 'perf_lim' as a local R data.frame, we could use the 'take' operation as follows:
 
 perflim_sub <- take(perf_lim, 5)	# Creates a local data.frame, 'perflim_sub'
-perflim_sub							# Displays 'perflim_sub' (equivalent to 'head(perf_lim, 5)')
+perflim_sub							# Displays 'perflim_sub' (this is to 'head(perf_lim, 5)', but we're now displaying a local, i.e. non-distributed data.frame)
 str(perflim_sub)					# The R 'str' operation provides a compact visualization of the local data.frame
 ## > str(perflim_sub)
 ## 'data.frame':	5 obs. of  14 variables:
@@ -180,9 +182,9 @@ collect(describe(perf_lim))			# Note: ignore the 'collect' operation for now - w
 
 
 
-##############################
-## (6) Data-types & Schema: ##
-##############################
+############################################
+## (6) Understanding data-types & schema: ##
+############################################
 
 ## We can see in the output for the command head(perf_lim, 5) that we have what appears to be several different data types (dtypes) in our DF, but we obviously cannot infer
 ## what dtype is currently specified for each column in our DF by simply looking at that output. Luckily, there are three (3) different ways to view dtype in SparkR - the
