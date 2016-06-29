@@ -92,12 +92,19 @@ df4 <- withColumnRenamed(dat, "servicer_name", "servicer")
 ## [Insert: section on UDFs (available in SparkR 2.0)]
 
 
+## Differentiating between operation types & why :
 
+## Throughout this tutorial, as well as in the SparkR Basics I tutorial, you may have noticed that some operations result in a new DF (e.g. `agg`) and some return an output
+## (e.g. `head`). SparkR operations can be classified as
+## * transformations - those operations that return a new SparkR DataFrame; or,
+## * actions - those operations that return an output (these outputs range from a single, aggregated statistic to the entire DF being printed)
 
-## Lazy computing - local v. distributed in SparkR
-
-
-
+## A fundamental characteristic of Apache Spark that allows us SparkR-users to perform efficient analysis on massive data is that transformations are lazily
+## evaluated, meaning that SparkR delays evaluating these operations until we direct it to return some ouput (as communicated by an action operation). We can intuitively
+## think of transformations as instructions that SparkR reads only once its directed to return a result - SparkR will not act on these instructions until we direct it to do
+## so. This lazy evaluation strategy (1) reduces the number of processes SparkR is required to complete and (2) allows SparkR to interpret the entire set of instructions
+## (transformations) before acting, and make decisions that are obscured from SparkR-users in order to further optimize the evaluation of the expressions that we communicate
+## to SparkR.
 
 ## Cache v. Persist & unpersist
 
