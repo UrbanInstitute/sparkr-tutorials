@@ -144,6 +144,22 @@ cache(df_)
 head(df_, 5)
 head(df_, 10)
 ## While the number of steps required remains six (6), the time required to `cache` a DataFrame is significantly less than that required to read in data as a DataFrame.
-## If we continuited to perform actions on `df_`, clearly directing SparkR to load and then cache the DataFrame would reduce our overal evaluation time.
+## If we continuited to perform actions on `df_`, clearly directing SparkR to load and then cache the DataFrame would reduce our overal evaluation time. We can direct
+## SparkR to stop persisting a DataFrame with the `unpersist` operation:
+unpersist(df_)
 
 ## Let's compare computation time for several sequences of operations with, and without, caching:
+
+.df <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header='false', inferSchema='true')
+(t1 <- system.time(ncol(.df)))
+(t2 <- system.time(nrow(.df)))
+(t3 <- system.time(dim(.df)))
+rm(.df)
+
+.df <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header='false', inferSchema='true')
+cache(.df)
+(t1_ <- system.time(ncol(.df)))
+(t2_ <- system.time(nrow(.df)))
+(t3_ <- system.time(dim(.df)))
+unpersist(.df)
+rm(.df)
