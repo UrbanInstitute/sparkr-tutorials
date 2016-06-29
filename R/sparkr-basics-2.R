@@ -3,6 +3,11 @@
 ###############################################
 ## Objective: provide examples of essential SparkR operations, discuss how lazy computing works & differences between cache/persist, provide examples of persist/cache (with
 ## timing tracked to show differences in compute time for cache placement)
+
+## The SparkR DataFrame (DF) API supports a number of operations to do structured data processing. These operations range from the simple tasks that we used in the SparkR
+## Basics I tutorial (e.g. counting the number of rows in a DF using `nrow`) to more complex tasks like aggregating statistics
+## by DF column. This tutorial discusses the key DF operations for processing tabular data in the SparkR environment, the different types of DF operations and how to perform these operations efficiently.
+
 ## Operations discussed: groupBy, aggregate, collect, persist, cache, unpersist
 
 library(SparkR)
@@ -25,13 +30,6 @@ sqlContext <- sparkRSQL.init(sc)
 
 df <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header='false', inferSchema='true')
 cache(df)
-
-## The SparkR DataFrame (DF) API supports a number of operations to do structured data processing. These operations range from the simple tasks that we used in the SparkR
-## Basics I tutorial (e.g. subsetting a DF by column(s) using `select` and counting the number of rows in a DF using `nrow`) to more complex tasks like aggregating statistics
-## by DF column, which we will discuss below.
-
-## Warning: Most of the operations discussed below create new DFs, so be sure to specify a new name if saving the result of the transformation so as to not override original
-## DF
 
 
 ## Grouping & Aggregating: want to aggregate statistics across all elements in a DataFrame that share a common identifier - agg & summarize compute aggregations of DF entries
@@ -105,6 +103,7 @@ df4 <- withColumnRenamed(df, "servicer_name", "servicer")
 ## This lazy evaluation strategy (1) reduces the number of processes SparkR is required to complete and (2) allows SparkR to interpret the entire set of instructions
 ## (transformations) before acting, and make processing decisions that are obscured from SparkR-users in order to further optimize the evaluation of the expressions that we communicate
 ## to SparkR.
+
 
 ## DataFrame Persistence (& what is a DataFrame actually?)
 
