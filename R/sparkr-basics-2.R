@@ -23,8 +23,8 @@ sqlContext <- sparkRSQL.init(sc)
 
 ## Read in loan performance example data:
 
-dat <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header='false', inferSchema='true')
-cache(dat)
+df <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header='false', inferSchema='true')
+cache(df)
 
 ## The SparkR DataFrame (DF) API supports a number of operations to do structured data processing. These operations range from the simple tasks that we used in the SparkR
 ## Basics I tutorial (e.g. subsetting a DF by column(s) using `select` and counting the number of rows in a DF using `nrow`) to more complex tasks like aggregating statistics
@@ -38,7 +38,7 @@ cache(dat)
 ## based on a specified list of columns (Note: for consistency, we'll use only `agg` for the remainder of the tutorial)
 
 # Average loan age across the entire DF:
-df1 <- agg(dat, loan_age_avg = avg(dat$loan_age))
+df1 <- agg(df, loan_age_avg = avg(df$loan_age))
 head(df1)
 
 # There are number of aggregation functions that can be computed when included in `agg` - these are the statistics that can be aggregated in SparkR (though the list below is
@@ -58,7 +58,7 @@ head(df1)
 
 # For each distinct `"servicer_name"` entry, the following `agg` operation returns the average loan_age and the number of observations in the DF for a distinct
 # `"servicer_name"` entry:
-df2 <- agg(groupBy(dat, dat$servicer_name), loan_age_avg = avg(dat$loan_age), count = n(dat$loan_age))
+df2 <- agg(groupBy(df, df$servicer_name), loan_age_avg = avg(df$loan_age), count = n(df$loan_age))
 cache(df2)
 head(df2)
 # Note that we can specify the `agg` operation to return several statistics
@@ -81,12 +81,12 @@ unpersist(df2)
 ## Create new DF with new col
 
 ## The values of `loan_age` are the number of calendar months since the first full month the mortgage loan accrues interest. If we want to work with this measurement in
-## terms of calendar years, we can create a new DF using the `withColumn` operation - this DF contains every column originally included in `dat`, as well as with an
+## terms of calendar years, we can create a new DF using the `withColumn` operation - this DF contains every column originally included in `df`, as well as with an
 ## additional column `loan_age_yrs` that has the described year values as entries
-head(df3 <- withColumn(dat, "loan_age_yrs", dat$loan_age * (1/12)))
+head(df3 <- withColumn(df, "loan_age_yrs", df$loan_age * (1/12)))
 
-## We can rename a column using the `withColumnRenamed` operation - returns a DF that is equivalent to `dat`, but we have replaced `loan_age` with `loan_age_yrs`
-df4 <- withColumnRenamed(dat, "servicer_name", "servicer")
+## We can rename a column using the `withColumnRenamed` operation - returns a DF that is equivalent to `df`, but we have replaced `loan_age` with `loan_age_yrs`
+df4 <- withColumnRenamed(df, "servicer_name", "servicer")
 
 
 ## [Insert: section on UDFs (available in SparkR 2.0)]
@@ -101,12 +101,49 @@ df4 <- withColumnRenamed(dat, "servicer_name", "servicer")
 
 ## A fundamental characteristic of Apache Spark that allows us SparkR-users to perform efficient analysis on massive data is that transformations are lazily
 ## evaluated, meaning that SparkR delays evaluating these operations until we direct it to return some ouput (as communicated by an action operation). We can intuitively
-## think of transformations as instructions that SparkR reads only once its directed to return a result - SparkR will not act on these instructions until we direct it to do
-## so. This lazy evaluation strategy (1) reduces the number of processes SparkR is required to complete and (2) allows SparkR to interpret the entire set of instructions
-## (transformations) before acting, and make decisions that are obscured from SparkR-users in order to further optimize the evaluation of the expressions that we communicate
+## think of transformations as instructions that SparkR acts on only once its directed to return a result.
+## This lazy evaluation strategy (1) reduces the number of processes SparkR is required to complete and (2) allows SparkR to interpret the entire set of instructions
+## (transformations) before acting, and make processing decisions that are obscured from SparkR-users in order to further optimize the evaluation of the expressions that we communicate
 ## to SparkR.
 
-## Cache v. Persist & unpersist
+## DataFrame Persistence (& what is a DataFrame actually?)
 
+## Note that, in this tutorial, we have been saving the output of transformation operations (e.g. `withColumn`) in the format `dfi`. SparkR saves the output of a transformation
+## as a SparkR DataFrame, which is distinct from an R data.frame. We store the instructions communicated by a transformation as a SparkR DataFrame. An R data.frame,
+## conversely, is an actual data structure defined by a list of vectors.
 
-## Examples of cache/persist
+## We saved the output of the first transformation included in this tutorial, `read.df`, as `df`. This operation does not load data into SparkR - the DataFrame `df` details
+## instructions that the data should be read in and how SparkR should interpret the data as it is read in. Every time we directed SparkR to evaluate the expressions
+head(df, 5)
+head(df, 10)
+## SparkR would need to:
+## (1) Read in the data as a DataFrame
+## (2) Look for the first five (5) rows of the DataFrame
+## (3) Return the first five (5) rows of the DataFrame
+## (4) Read in the data as a DataFrame
+## (5) Look for the first ten (10) rows of the DataFrame
+## (6) Return the first ten (10) rows of the DataFrame
+## Note that nothing is stored since the DataFrame is not data! This would be incredibly inefficient if not for the `cache` operation, which directs each node in our
+## cluster to store in memory any partitions of a DataFrame that it computes (in the course of evaluating an action) and then to reuse them in subsequent actions evaluated
+## on that DataFrame (or DataFrames derived from it). By caching a given DataFrame, we can ensure that future actions on that DataFrame (or those derived from it) are
+## evaluated much more efficiently. Both `cache` and `persist` can be used to cache a DataFrame. The `cache` operation stores a DataFrame in memory, while `persist` allows
+## SparkR-users to persist a DataFrame using different storage levels (i.e. store to disk, memory or both). The default storage level for `persist` is memory only and, at
+## this storage level, `persist` and `cache` are equivalent operations. More often than not, we can simply use `cache` - if our DataFrames can fit in memory only, then
+## we should exclusively store DataFrames in memory only since this is the most CPU-efficient storage option.
+
+## Now that we have some understanding of how DataFrame persistence works in SparkR, let's see this powerful operation in action. In the following expressions, we are
+## giving SparkR directions to:
+## (1) Read in the data as a DataFrame
+## (2) Cache the DataFrame
+## (3) Look for the first five (5) rows of the DataFrame
+## (4) Return the first five (5) rows of the DataFrame
+## (5) Look for the first ten (10) rows of the DataFrame
+## (6) Return the first ten (10) rows of the DataFrame
+df_ <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header='false', inferSchema='true')
+cache(df_)
+head(df_, 5)
+head(df_, 10)
+## While the number of steps required remains six (6), the time required to `cache` a DataFrame is significantly less than that required to read in data as a DataFrame.
+## If we continuited to perform actions on `df_`, clearly directing SparkR to load and then cache the DataFrame would reduce our overal evaluation time.
+
+## Let's compare computation time for several sequences of operations with, and without, caching:
