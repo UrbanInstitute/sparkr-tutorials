@@ -60,7 +60,6 @@ We can save the dimensions of the 'perf' DF through the following operations. No
 ```
 
 ***
-
 ### Update a DataFrame with new rows of data:
 
 In order to take advantage of the newfound computing power that SparkR provides, and since we'll want to analyze loan performance data beyond 2000 Q1, we append the `perf` DF below with the data from subsequent quarters of the same single-family loan performance dataset. Here, we're only appending one subsequent quarter (2000 Q2) to the DF so that our analysis in these tutorials runs quickly, but the following code can be easily adapted by specifying the `a` and `b` values to reflect the quarters that we want to append to our DF. Note that the for-loop below again includes the `read.df` operation, here specified just as we did when initial loading the .csv file as a DF:
@@ -90,7 +89,7 @@ The result of the for-loop is an appended `perf` DF that consists of the same co
 ```
 
 ***
-
+<a id="rename_columns"></a>
 ### Rename DataFrame column(s):
 
 The `select` operation selects columns specified as strings in the operation line and then returns a new DF including only those specified columns. Here, we create a new DF called `perf_lim` that includes only the first 14 columns in the `perf` DF, i.e. the DF `perf_lim` is a subset of `perf`:
