@@ -154,11 +154,9 @@ head(perf_lim, 5)
 ## 4 100007365142 04/01/2000                        8           NA        3        357           356 01/2030      0        0        N          NA            
 ## 5 100007365142 05/01/2000                        8           NA        4        356           355 01/2030      0        0        N          NA            
 
-## If we wanted to work these first five (5) rows of 'perf_lim' as a local R data.frame, we could use the 'take' operation as follows:
 
-perflim_sub <- take(perf_lim, 5)	# Creates a local data.frame, 'perflim_sub'
-perflim_sub							# Displays 'perflim_sub' (this is to 'head(perf_lim, 5)', but we're now displaying a local, i.e. non-distributed data.frame)
-str(perflim_sub)					# The R 'str' operation provides a compact visualization of the local data.frame
+# The R 'str' operation provides a compact visualization
+str(perf_lim)					
 ## > str(perflim_sub)
 ## 'data.frame':	5 obs. of  14 variables:
 ##  $ loan_id      : num  1e+11 1e+11 1e+11 1e+11 1e+11
@@ -176,9 +174,7 @@ str(perflim_sub)					# The R 'str' operation provides a compact visualization of
 ##  $ cd_zero_bal  : logi  NA NA NA NA NA
 ##  $ dt_zero_bal  : chr  "" "" "" "" ...
 
-## We can compute basic summary statistics for each numerical column in 'perf_lim' with the 'describe' operation. 
 
-collect(describe(perf_lim))			# Note: ignore the 'collect' operation for now - we will discuss this in a subsequent module
 
 
 
