@@ -14,11 +14,11 @@ June 23, 2016
 * Print column names of a DF
 * Print a specified number of rows from a DF
 * Print the SparkR schema
-* Specify schema in `read.df` file
+* Specify schema in `read.df` operation
 * Manually specify a schema
 * Change the data type of a column in a DF
 * Export a DF to AWS S3 as a folder of partitioned parquet files
-* Read partitioned file from S3 to SparkR
+* Read a partitioned file from S3 into SparkR
 
 **SparkR Operations Discussed**: `read.df`, `nrow`, `ncol`, `dim`, `withColumnRenamed`, `columns`, `head`, `str`, `dtypes`, `schema`, `printSchema`, `cast`, `write.df`
 
@@ -31,8 +31,6 @@ June 23, 2016
 You can confirm that you successfully initiated these contexts by looking at the global environment of RStudio. Can you see `sc` and `sqlContext` listed as values? If the answer is yes, then you are ready to learn how to work with tabular data in SparkR!
 
 ***
-[hlink](#load_csv)
-[hlink](#read_df)
 
 
 ### Load a csv file into SparkR:
@@ -51,8 +49,6 @@ In the `read.df` operation, we included typical specifications included when rea
 
 _Note_: documentation for the quarterly loan performance data can be found at http://www.fanniemae.com/portal/funding-the-market/data/loan-performance-data.html.
 
-[hlink](#nrow) [hlink](#ncol) [hlink](#dim)
-
 
 We can save the dimensions of the 'perf' DF through the following operations. Note that wrapping the computation with () forces SparkR/R to print the computed value:
 
@@ -65,7 +61,6 @@ We can save the dimensions of the 'perf' DF through the following operations. No
 ```
 
 ***
-[hlink](#append_data)
 
 
 ### Update a DataFrame with new rows of data:
@@ -97,7 +92,6 @@ The result of the for-loop is an appended `perf` DF that consists of the same co
 ```
 
 ***
-[hlink](#rename_columns) 
 
 
 ### Rename DataFrame column(s):
@@ -113,8 +107,6 @@ perf_lim <- select(perf, c("C0","C1","C2","C3","C4","C5","C6","C7","C8","C9","C1
 
 We will discuss subsetting DataFrames in further detail in the "Subsetting" tutorial. For now, we will use this subsetted DF to learn how to change column names of DataFrames.
 
-[hlink](#withColumnRenamed) 
-
 
 Using a for-loop and the SparkR operation `withColumnRenamed`, we rename the columns of `perf_lim`. The operation `withColumnRenamed` renames an existing column, or columns, in a DF and returns a new DF. By specifying the "new" DF name as `perf_lim`, we are simply renaming the columns of `perf_lim`, but we could create an entirely separate DF with new column names by specifying a different DF name for `withColumnRenamed`:
 
@@ -126,7 +118,6 @@ for(i in 1:14){
   perf_lim <- withColumnRenamed(perf_lim, old_colnames[i], new_colnames[i] )
 }
 ```
-[hlink](#columns) 
 
 
 We can check the column names of `perf_lim` with the `columns` operation:
@@ -139,7 +130,6 @@ columns(perf_lim)
 ##  [9] "dt_matr"       "cd_msa"        "delq_sts"      "flag_mod"     
 ## [13] "cd_zero_bal"   "dt_zero_bal"
 ```
-[hlink](#head) 
 
 
 Additionally, we can use the `head` operation to display the first n-many rows of `perf_lim` (here, we'll take the first five (5) rows of the DF):
@@ -166,7 +156,6 @@ head(perf_lim, 5)
 ## 4            
 ## 5
 ```
-[hlink](#str)
 
 
 We can also use the `str` operation to return a compact visualization of the first several rows of a DF:
@@ -192,14 +181,11 @@ str(perf_lim)
 
 
 ***
-[hlink](#schema_print) [hlink](#dtype_print) 
 
 
 ### Understanding data-types & schema:
 
 We can see in the output for the command head(perf_lim, 5) that we have what appears to be several different data types (dtypes) in our DF, but we obviously cannot infer what dtype is currently specified for each column in our DF by simply looking at that output. Luckily, there are three (3) different ways to view dtype in SparkR - the operations `dtypes`, `schema` and `printSchema`. As stated above, SparkRSQL relies on a "schema" to determine what data type to assign to each column in the DF (which is easy to remember since the English schema comes from the Greek word for shape or plan!). We can print a visual representation of the schema for a DF with the operations `schema` and `printSchema`:
-
-[hlink](#dtypes) [hlink](#schema) [hlink](#printSchema)
 
 
 ```r
@@ -278,8 +264,6 @@ printSchema(perf_lim) # Prints the schema of the DF in a concise tree format
 ##  |-- cd_zero_bal: integer (nullable = true)
 ##  |-- dt_zero_bal: string (nullable = true)
 ```
-[hlink](#schema_specify) [hlink](#schema_custom) 
-
 
 #### Specifying schema in `read.df` operation & defining a custom schema:
 
@@ -310,8 +294,6 @@ customSchema <- structType(
  structField("dt_zero_bal", "string")
 )
 ```
-[hlink](#recast_dtype) [hlink](#cast)
-
 
 Finally, dtypes can be changed after the DF has been created, using the `cast` operation. However, it is clearly more efficient to properly specify dtypes when creating the DF. A quick example of using the `cast` operation is given below:
 
@@ -354,7 +336,6 @@ printSchema(perf_lim)
 ```
 
 ***
-[hlink](#export_dataframe) [hlink](#write_df)  
 
 
 ### Export DF as data file to S3:
@@ -370,8 +351,6 @@ When working with the DF `perf_lim` in the analysis above, we were really access
 
 
 SparkR saves the DF in this partitioned structure to accomodate massive data. Consider the conditions required for us to be able to save a DataFrame as a single .csv file: the given DF would need to be able to fit onto a single node of our cluster, i.e. it would need to be able to fit onto a single computer. Any data that would necessitate using SparkR in analysis will likely not fit onto a single computer.
-
-[hlink](#import_partitioned_data)
 
 
 The partitioned nature of `"hfpc_ex"` does not affect our ability to load it back into SparkR and perform further analysis. Below, we use the `read.df` to read in the partitioned parquet file from S3 as the DF `dat`:
@@ -396,5 +375,4 @@ if (dim1[1]!=dim2[1] | dim1[2]!=dim2[2]) {
 ```
 
 __End of tutorial__ - Next up is SparkR Basics II
-
 
