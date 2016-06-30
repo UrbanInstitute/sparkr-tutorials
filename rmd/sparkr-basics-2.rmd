@@ -53,6 +53,7 @@ _Note_: documentation for the quarterly loan performance data can be found at ht
 
 ***
 
+
 ### Aggregating:
 
 Computing aggregations across a dataset is a basic goal when working with tabular data and, because our data is distributed across nodes, we must explicitly direct SparkR to perform an aggregation if we want to compute and return a summary statistic. Both the `agg` and `summarize` operations achieve this by computing aggregations of DF entries based on a specified list of columns. For example, we can return the mean loan age for all rows in the DF `df` with:
@@ -76,6 +77,7 @@ We can compute a number of aggregations by specifying them in `agg` or `summariz
 
 ***
 
+
 ### Grouping:
 
 If we want to compute aggregations across the elements of a dataset that share a common identifier, we can achieve this embedding the `groupBy` operation in `agg` or `summarize`. For example, the following `agg` operation returns the mean loan age and the number of observations for each distinct `"servicer_name"` in the DataFrame `df`:
@@ -87,6 +89,9 @@ head(df2 <- agg(groupBy(df, df$servicer_name), loan_age_avg = avg(df$loan_age), 
 ```{r, include=FALSE}
 cache(df2)
 ```
+
+***
+
 
 ### Arranging (Ordering) rows in a DataFrame:
 
@@ -108,6 +113,9 @@ head(arrange(df2, "count", decreasing = c(FALSE)))
 unpersist(df2)
 ```
 
+***
+
+
 ### Append a column to a DataFrame:
 
 There are various reasons why we might want to introduce a new column to a DataFrame. A simple example is creating a new variable using our data. In the SparkR environment, this could be acheived by appending an existing DF using the `withColumn` operation.
@@ -128,7 +136,13 @@ head(df4 <- withColumnRenamed(df, "servicer_name", "servicer"))
 
 When using either `withColumn` or `withColumnRenamed`, we could simply replace our initial DF. For example, we could rename `"servicer_name"` by simply changing the name of the DF that we save to, i.e. `df <- withColumnRenamed(df, "servicer_name", "servicer")`. Note: do this _only_ if you do not need to retain your initial DF.
 
+***
+
+
 ### User-defined Functions (UDFs): [Note insert upon SparkR 2.0.0 release]
+
+***
+
 
 ### Types of SparkR operations:
 
@@ -141,6 +155,9 @@ A fundamental characteristic of Apache Spark that allows us SparkR-users to perf
 
 
 This lazy evaluation strategy (1) reduces the number of processes SparkR is required to complete and (2) allows SparkR to interpret an entire set of instructions before acting, and then make processing decisions that are obscured from SparkR-users in order to further optimize the evaluation of the expressions.
+
+***
+
 
 ### DataFrame Persistence:
 
@@ -219,8 +236,10 @@ rm(.df)
 
 The first thing you may notice is that the evaluation time for `ncol(.df)` is approximately the same with and without persistence. Remember from our the discussion above that SparkR caches a DF at the first action operation using the DF. So, the evaluation time for `ncol(.df)` with persistence is not noticeably smaller in value since it is the first action that uses `.df`. However, we can see that the evaluation time for each subsequent expression is significantly less when we cache `.df`, relative to when we do not. Our example dataset is actually quite small relative to the massive datasets that SparkR allows us to work with. Consider how essential persistence would be if we were peforming analysis on 15 years worth of quarterly loan performance data. Intelligently caching and unpersisting DFs would clearly make our analysis more efficient in that case.
 
+***
 
-#### Converting a SparkR DataFrame to a local R data.frame:
+
+### Converting a SparkR DataFrame to a local R data.frame:
 
 If we wanted to work the first five (5) rows of 'df' as a local R data.frame, we could use the `take` operation as follows:
 
