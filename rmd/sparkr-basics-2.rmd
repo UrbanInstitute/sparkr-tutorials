@@ -54,7 +54,7 @@ Computing aagregations across a dataset is a basic goal when working with tabula
 
 ```{r, collapse=TRUE}
 df1 <- agg(df, loan_age_avg = avg(df$loan_age))
-showDF(df1)
+showDF(df1) # Prints the first numRows rows of a DF; the default is numRows = 20
 ```
 
 We can compute a number of aggregations by embedding them in `agg` or `summarize`. The following list illustrates the types of summary statistics that can be computed and is not exhaustive:
@@ -85,14 +85,14 @@ The operations `arrange` and `orderBy` allow us to sort a DF by a specified list
 
 ```{r, collapse=TRUE}
 head(arrange(df2, df2$loan_age_avg))
-head(arrange(df2, asc(df2$loan_age_avg), asc(df2$count)))
+head(arrange(df2, desc(df2$loan_age_avg), asc(df2$count)))
 ```
 
 We can also specify ordering as logical statements. The following expressions are equivalent to those in the preceding example:
 
 ```{r, collapse=TRUE}
 head(arrange(df2, "loan_age_avg", decreasing = FALSE))
-head(arrange(df2, "loan_age_avg", "count", decreasing = c(FALSE, FALSE)))
+head(arrange(df2, "loan_age_avg", "count", decreasing = c(TRUE, FALSE)))
 ```
 
 ```{r, include=FALSE}
@@ -111,7 +111,7 @@ head(df3 <- withColumn(df, "loan_age_yrs", df$loan_age * (1/12)))
 
 Note that `df3` contains every column originally included in `df`, as well as the column `"loan_age_yrs"`.
 
-We can also rename a DF column using the `withColumnRenamed` operation. The following expression returns a DF that is equivalent to `df`, excluding that we have renamed `"servicer_name"` to `"servicer"`.
+We can also rename a DF column using the `withColumnRenamed` operation as we discussed in the SparkR Basics I tutorial. The following expression returns a DF that is equivalent to `df`, excluding that we have renamed `"servicer_name"` to `"servicer"`.
 
 ```{r, collapse=TRUE}
 head(df4 <- withColumnRenamed(df, "servicer_name", "servicer"))
@@ -181,22 +181,59 @@ While the number of steps required remains six (6), the time required to `cache`
 unpersist(df_)
 ```
 
-We can compare computation time for several sequences of operations with, and without, caching:
+Be sure to `unpersist` a DF if you are not continuing to reference it - minimizing the number of DFs stored in memory at a given time will help SparkR to perform more efficiently.
+
+
+Let's compare the time required to evaluate the following expressions with and without persistence:
 
 ```{r, collapse=TRUE}
+# Uncached
 .df <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header='false', inferSchema='true')
-(t1 <- system.time(ncol(.df)))
-(t2 <- system.time(nrow(.df)))
-(t3 <- system.time(dim(.df)))
+system.time(ncol(.df))
+system.time(nrow(.df))
+system.time(dim(.df))
+system.time(head(agg(groupBy(.df, .df$servicer_name), loan_age_avg = avg(.df$loan_age))))
 rm(.df)
 
+# Cached
 .df <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header='false', inferSchema='true')
 cache(.df)
-(t1_ <- system.time(ncol(.df)))
-(t2_ <- system.time(nrow(.df)))
-(t3_ <- system.time(dim(.df)))
+system.time(ncol(.df))
+system.time(nrow(.df))
+system.time(dim(.df))
+system.time(head(agg(groupBy(.df, .df$servicer_name), loan_age_avg = avg(.df$loan_age))))
 unpersist(.df)
 rm(.df)
 ```
+
+The first thing you may notice is that the evaluation time for `ncol(.df)` is approximately the same with and without persistence. Remember from our the discussion above that SparkR caches a DF at the first action operation using the DF. So, the evaluation time for `ncol(.df)` with persistence is not noticeably smaller in value since it is the first action that uses `.df`. However, we can see that the evaluation time for each subsequent expression is significantly less when we cache `.df`, relative to when we do not. Our example dataset is actually quite small relative to the massive datasets that SparkR allows us to work with. Consider how essential persistence would be if we were peforming analysis on 15 years worth of quarterly loan performance data. Intelligently caching and unpersisting DFs would clearly make our analysis more efficient in that case.
+
+
+#### Converting SparkR DataFrame to local R data.frame:
+
+If we wanted to work the first five (5) rows of 'df' as a local R data.frame, we could use the 'take' operation as follows:
+
+```{r, collapse=TRUE}
+df_loc <- take(df, 5)	# Creates a local data.frame `df_loc`
+df_loc							# Displays `df_loc`
+```
+
+Because `df_loc` is a normal R data.frame, we can work with it just as we would normally in RStudio, using R. The operation `collect` also creates an R data.frame. However, it coerces __all__ elements of a DF into a data.frame and, therefore, this should only be done if you can reasonably assume that the data called by the DF can fit onto a single node.
+
+
+One way that we can safely use `collect` is to extract an aggregation as a value type in SparkR. Earlier in this tutorial, we computed the mean loan age across every entry of `df` with the transformation `df1 <- agg(df, loan_age_avg = avg(df$loan_age))`. This, however, returns a DF instead of a value (because it is a transformation!). Fortunately, we can use `collect` to extract the mean as a value data type as follows:
+
+```{r, collapse=TRUE}
+loan_age_avg_ <- collect(df1) # Explicitly written expression
+(loan_age_avg <- loan_age_avg_[[1]])
+typeof(loan_age_avg)
+rm(loan_age_avg)
+
+(loan_age_avg <- collect(df1)[[1]]) # Embedded expression
+typeof(loan_age_avg)
+```
+
+Notice that we can direct SparkR to do this through either of the set of expressions above, with the process being written explicitly or implicitly. If we had not already defind `df1`, we could have directed SparkR to compute this value in a single line with the expression `loan_age_avg <- collect(agg(df, loan_age_avg = avg(df$loan_age)))[[1]]`.
+
 
 __End of tutorial__ - Next up is [Insert next tutorial]
