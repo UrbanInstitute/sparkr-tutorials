@@ -17,20 +17,20 @@ sc <- sparkR.init(sparkEnvir=list(spark.executor.memory="2g",
 ## Initiate SparkRSQL:
 sqlContext <- sparkRSQL.init(sc)
 
-## Read in example HFPC data (quarterly performance data from XXXX) from AWS S3 as a DataFrame (DF):
-data <- read.df(sqlContext, "s3://ui-hfpc/hfpc_ex_par", header='false', inferSchema='true')
-cache(data)
+## Read in example HFPC data from AWS S3 as a DataFrame (DF):
+df <- read.df(sqlContext, "s3://ui-hfpc/hfpc_ex_par", header='false', inferSchema='true')
+cache(df)
 
-################################################
-## (1) Subset DataFrame by row and/or column: ##
-################################################
+##################################
+## (1) Subset DataFrame by row: ##
+##################################
 
 ## Save the dimensions our (n x m)-sized DF and the DF column names:
-n <- nrow(data)
-m <- ncol(data)
-col <- columns(data)
-## Print the schema of the DF, which describes the data types of each column in the data:
-printSchema(data)
+(n <- nrow(df))
+(m <- ncol(df))
+(col <- columns(df))
+## Print the schema of the DF, so that we can see what type of subsetting we can do on each column:
+printSchema(df)
 
 ## ======================================================================================================================== ##
 ## (i) Subset DF by row, i.e. filter the rows of a DF according to a given condition, using the Spark operation 'filter()': ##
@@ -39,36 +39,19 @@ printSchema(data)
 
 ## Subset the DF into a new DF, 'f1', that includes only those loans for which JPMorgan Chase is the servicer, as denoted by the entry for 'servicer_name' (string); note that
 ## we execute 'filter()' with an 'is equal to' logical condition (==) and an 'or' logical operation (|):
-f1 <- filter(data, data$servicer_name == "JP MORGAN CHASE BANK, NA" | data$servicer_name == "JPMORGAN CHASE BANK, NA" | data$servicer_name == "JPMORGAN CHASE BANK, NATIONAL ASSOCIATION")
-cache(f1) # Note: Ignore the 'cache()' and 'unpersist()' functions for now--these will be discussed in detail in subsequent modules
-n1 <- nrow(f1)
+f1 <- filter(df, df$servicer_name == "JP MORGAN CHASE BANK, NA" | df$servicer_name == "JPMORGAN CHASE BANK, NA" | df$servicer_name == "JPMORGAN CHASE BANK, NATIONAL ASSOCIATION")
+(n1 <- nrow(f1))
 
 ## Note that 'select()' or 'filter()' can be written with SQL statement strings; for example, here is the previous example in SQL statement format:
-f2 <- filter(data, "servicer_name = 'JP MORGAN CHASE BANK, NA' or servicer_name = 'JPMORGAN CHASE BANK, NA' or servicer_name = 'JPMORGAN CHASE BANK, NATIONAL ASSOCIATION'")
-cache(f2)
-n2 <- nrow(f2)
+f2 <- filter(df, "servicer_name = 'JP MORGAN CHASE BANK, NA' or servicer_name = 'JPMORGAN CHASE BANK, NA' or servicer_name = 'JPMORGAN CHASE BANK, NATIONAL ASSOCIATION'")
+(n2 <- nrow(f2))
 
-## Run a quick check that the two 'filter()' operations are equivalent by checking that the number of rows for each subsetted DF are equal:
-if (n1!=n2) {
-  "Error: No. of rows not equal"
-} else {
-  "No. of rows are equal!"
-}
 
-## Check that f1 (and f2) are subsets of 'data':
-if (n>n1) {
-  "DF 'f1' is a subset of DF 'data'"
-} else {
-  "Error: 'data' did not filter correctly"
-}
-
-unpersist(f1)
-unpersist(f2)
-
+## Change != examples
 
 ## Subset the DF as 'f3', which includes only those loans for which the servicer name is known; execute 'filter()' with an 'is not equal to' logical condition (!=) and an
 ## 'or' logical operation (|), then confirm that 'f3' is a subset of 'data':
-f3 <- filter(data, data$servicer_name != "OTHER" | data$servicer_name != "NA")
+f3 <- filter(df, df$servicer_name != "OTHER" | df$servicer_name != "")
 cache(f3)
 n3 <- nrow(f3)
 if (n>n3) {
