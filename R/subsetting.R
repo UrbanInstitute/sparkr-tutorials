@@ -59,13 +59,17 @@ f4 <- filter(df, df$loan_age > 60)
 f5 <- filter(df, df$loan_age >= 120)
 (n5 <- nrow(f5))
 
+## An alias for `filter` is `where`, which presents diction that is often much more intuitive, particularly when `where` is embedded in a complex statement. For example, the following expression can be read as "aggregate and return the mean loan age and count values for observations in `df` where loan age is less than 60 months"
+
+f6 <- agg(groupBy(where(df, df$loan_age < 60), where(df, df$loan_age < 60)$servicer_name), loan_age_avg = avg(where(df, df$loan_age < 60)$loan_age), count = n(where(df, df$loan_age < 60)$loan_age))
+head(f6)
+
 #############################################################################################################################
 ## (2) Subset DF by column, i.e. select the columns of a DF according to a given condition, using the operation `select`: ###
 #############################################################################################################################
 
+## 
 
-
-## http://stackoverflow.com/questions/31598611/how-to-handle-null-entries-in-sparkr
 
 ## Not run: 
 ##D   # Columns can be selected using `[[` and `[`
