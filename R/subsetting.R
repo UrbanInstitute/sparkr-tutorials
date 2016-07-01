@@ -21,21 +21,19 @@ sqlContext <- sparkRSQL.init(sc)
 df <- read.df(sqlContext, "s3://ui-hfpc/hfpc_ex_par", header='false', inferSchema='true')
 cache(df)
 
-##################################
-## (1) Subset DataFrame by row: ##
-##################################
 
-## Save the dimensions our (n x m)-sized DF and the DF column names:
+## Save the dimensions our (n x m)-sized DF and the DF column names so that we can compare the dimension sizes of `df` and the subsets that we define throughout this
+## tutorial:
 (n <- nrow(df))
 (m <- ncol(df))
 (col <- columns(df))
-## Print the schema of the DF, so that we can see what type of subsetting we can do on each column:
+
+#############################################################################################################################
+## (1) Subset DataFrame by row, i.e. filter the rows of a DF according to a given condition, using the operation `filter`: ##
+#############################################################################################################################
+
+## Print the schema of `df` since the dtype of each column will determine how we will specify subsetting conditions.
 printSchema(df)
-
-## ======================================================================================================================== ##
-## (i) Subset DF by row, i.e. filter the rows of a DF according to a given condition, using the Spark operation 'filter()': ##
-## ======================================================================================================================== ##
-
 
 ## Subset the DF into a new DF, 'f1', that includes only those loans for which JPMorgan Chase is the servicer, as denoted by the entry for 'servicer_name' (string); note that
 ## we execute 'filter()' with an 'is equal to' logical condition (==) and an 'or' logical operation (|):
@@ -46,82 +44,25 @@ f1 <- filter(df, df$servicer_name == "JP MORGAN CHASE BANK, NA" | df$servicer_na
 f2 <- filter(df, "servicer_name = 'JP MORGAN CHASE BANK, NA' or servicer_name = 'JPMORGAN CHASE BANK, NA' or servicer_name = 'JPMORGAN CHASE BANK, NATIONAL ASSOCIATION'")
 (n2 <- nrow(f2))
 
-
-## Change != examples
-
-## Subset the DF as 'f3', which includes only those loans for which the servicer name is known; execute 'filter()' with an 'is not equal to' logical condition (!=) and an
-## 'or' logical operation (|), then confirm that 'f3' is a subset of 'data':
-f3 <- filter(df, df$servicer_name != "OTHER" | df$servicer_name != "")
-cache(f3)
-n3 <- nrow(f3)
-if (n>n3) {
-  "DF 'f3' is a subset of DF 'data'"
-} else {
-  "Error: 'data' did not filter correctly"
-}
-unpersist(f3)
-
+## Subset the DF as 'f3', which includes only those loans for which the servicer name is known, i.e. servicer name is not equal to an empty entry or listed as "other".
+## Execute 'filter()' with an 'is not equal to' logical condition (!=) and an 'and' logical operation (&):
+f3 <- filter(df, df$servicer_name != "OTHER" & df$servicer_name != "")
+(n3 <- nrow(f3))
 
 ## Subset DF as 'f4', which includes only loans for which the 'loan_age', i.e. the number of calendar months since the first full month the mortgage loan accrues interest, is
-## greater than 5 years (60 calendar months); execute 'filter()' with an 'is greater than' logical condition (>), then confirm that 'f4' is a subset of 'data'::
-f4 <- filter(data, data$loan_age > 60)
-cache(f4)
-n4 <- nrow(f4)
-if (n>n4) {
-  "DF 'f4' is a subset of DF 'data'"
-} else {
-  "Error: 'data' did not filter correctly"
-}
-unpersist(f4)
-
+## greater than 5 years (60 calendar months); execute 'filter()' with an 'is greater than' logical condition (>):
+f4 <- filter(df, df$loan_age > 60)
+(n4 <- nrow(f4))
 
 ## Subset DF as 'f5', which includes only loans for which the 'loan_age' is greater than, or equal to, 10 years (120 calendar months); execute 'filter()' with an 'is greater
-## than or equal to' logical condition (>=), then confirm that 'f5' is a subset of 'data'::
-f5 <- filter(data, data$loan_age >= 120)
-cache(f5)
-n5 <- nrow(f5)
-if (n>n5) {
-  "DF 'f5' is a subset of DF 'data'"
-} else {
-  "Error: 'data' did not filter correctly"
-}
-unpersist(f5)
+## than or equal to' logical condition (>=):
+f5 <- filter(df, df$loan_age >= 120)
+(n5 <- nrow(f5))
 
+#############################################################################################################################
+## (2) Subset DF by column, i.e. select the columns of a DF according to a given condition, using the operation `select`: ###
+#############################################################################################################################
 
-## Subset DF as 'f6', which includes only loans 
-Filter by both of two column conditions:
-f6 <- filter(data, data$aj_mths_remng != "NA" & data$loan_age >= 60)
-cache(f6)
-n6 <- nrow(f6)
-if (n>n6) {
-  "DF 'f6' is a subset of DF 'data'"
-} else {
-  "Error: 'data' did not filter correctly"
-}
-unpersist(f6)
-
-
-## Filter by one of two column conditions:
-f7 <- filter(data, data$new_int_rt == "NA" | data$loan_age >= 7)
-n7 <- nrow(f7)
-
-
-## =============================================================================================================================== ##
-## (ii) Subset DF by column, i.e. select the columns of a DF according to a given condition, using the Spark operation 'select()': ##
-## =============================================================================================================================== ##
-
-
-## Note that 'select()' or 'filter()' can be written with SQL statement strings; for example:
-f8 <- filter(data, "loan_age = 7")
-
-
-## Sort DF on a specified column(s), using the 'arrange()' function (results are returned in ascending order by default):
-
-## Arrange data by ascending 'loan_age' (and print head rows of data)
-head(arrange(data, data$loan_age) ## Or, can be written in SQL statement string format as head(arrange(data, "loan_age"))
-
-## Arrange data by descending 'loan_age'
-arrange(data, desc(data$loan_age))
 
 
 ## http://stackoverflow.com/questions/31598611/how-to-handle-null-entries-in-sparkr
