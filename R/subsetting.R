@@ -106,7 +106,7 @@ head(s1)
 ## (3) Subset a DF by taking a random sample: ###
 #################################################
 
-## Perhaps the most useful subsetting operation is `sample`, which returns a (by row) randomly sampled subset of a DF. With `subset`, we can specify whether we want to sample with our without replace, the approximate size of the sample that we want the new DF to call and whether or not we want to define a random seed. If our initial DF is so massive that performing analysis on the entire dataset requires a more expensive cluster, we can: sample the massive dataset, interactively develop our analysis in SparkR and then evaluate that script on our initial DF, which calls the entire massive dataset, only as is required. This strategy will help us to minimize wasting resources.
+## Perhaps the most useful subsetting operation is `sample`, which returns a randomly sampled subset of a DF. With `subset`, we can specify whether we want to sample with or without replace, the approximate size of the sample that we want the new DF to call and whether or not we want to define a random seed. If our initial DF is so massive that performing analysis on the entire dataset requires a more expensive cluster, we can: sample the massive dataset, interactively develop our analysis in SparkR using our sample and then evaluate the resulting program using our initial DF, which calls the entire massive dataset, only as is required. This strategy will help us to minimize wasting resources.
 
 ## Below, we take a random sample of `df` without replacement that is, in size, approximately equal to 1% of `df`. Notice that we must define a random seed in order to be able to reproduce our random sample.
 
@@ -134,5 +134,5 @@ dat <- collect(df_samp4)
 #write.csv(dat, file = "hfpc_samp.csv") ### NOTE: Currently, cannot export .csv file to S3. Need to fix.
 #write.table(dat, file = "hfpc_samp.csv",row.names=FALSE, na="",col.names=FALSE, sep=",")
 
-## Warning: we cannot repartition the data.frame to a single node unless it is sufficiently small in size!
+## Warning: we cannot collect a DF as a data.frame unless it is sufficiently small in size since it must fit onto a single node!
 
