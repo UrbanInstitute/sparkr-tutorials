@@ -15,8 +15,31 @@ sc <- sparkR.init(sparkEnvir=list(spark.executor.memory="2g",
 ## Initiate SparkRSQL:
 sqlContext <- sparkRSQL.init(sc)
 
+## We can compute basic summary statistics for each numerical column in 'perf_lim' with the 'describe' operation. 
+
 ## Read in example HFPC data (quarterly performance data from XXXX) from AWS S3:
 data <- read.df(sqlContext, "s3://ui-hfpc/hfpc_ex_par", header='false', inferSchema='true')
 
-## Count the number of observations by 'servicer_name' (string variable)
+
+
+# Numerical
+
+# returns several aggregations (count, mean, max, mean) 
+collect(describe(perf_lim))
+
+# Calculate the sample covariance of two numerical columns of a DataFrame (Pearson) - what about Spearman?
+cov(df, col1, col2)
+corr(df, col1, col2, method = "pearson")
+
+
+
+
+# String/categorical
+
+# count occurances of each ozone value
 collect(arrange(count(groupBy(data, "servicer_name")), "servicer_name"))
+agg(groupBy(data, data$servicer_name), count = n(df$loan_age))
+
+# contingency table
+crosstab(df, col1, col2)
+
