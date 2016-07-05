@@ -1,6 +1,6 @@
-##############################################################
-## DataFrame Operations (Structured Data Processing) Module ##
-##############################################################
+#################################
+## DataFrame Subsetting Module ##
+#################################
 ## Objective: 
 ## Operations discussed: filter, select, arrange
 
