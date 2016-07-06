@@ -20,6 +20,7 @@ sqlContext <- sparkRSQL.init(sc)
 
 df <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header="false", inferSchema="true", nullValue="")
 cache(df)
+n <- nrow(df)
 
 ## We can replace this empty string with any string that we know indicates a null entry in the dataset, i.e. with `nullValue="<string>"`.
 
@@ -39,8 +40,22 @@ MRnulls.ByServ <- agg(groupBy(df_MRnull, df_MRnull$servicer_name), Nulls = n(df_
 MRnulls.ByServ.tab <- collect(MRnulls.ByServ)
 MRnulls.ByServ.tab
 
-
 # dropna
+# Across entire DF: Can decide whether we drop a row if it contains "any" nulls or if we drop a row if "all" of its values are null with the `how =` specification in `dropna`. We can see below that there are no rows in `df` for which all of its values are null.
+df_any <- dropna(df, how = "any")
+(n_any <- nrow(df_any))
+df_all <- dropna(df, how = "all")
+(n_all <- nrow(df_all))
+# Within `dropna`, we can also determine a minimum number of non-null entries required for a row to remain in the DF by specifying a `minNonNulls` value. If included in `dropna`, SparkR is directed to drop rows that have less than `minNonNulls = <value>` non-null entries. Note that including `minNonNulls` overwrites the `how` specification. Below, we [STOP]
+df_5 <- dropna(df, minNonNulls = 5)
+(n_5 <- nrow(df_5))
+df_12 <- dropna(df, minNonNulls = 12)
+(n_12 <- nrow(df_12))
+n - n_12
+# Drop rows with nulls within a DF column:
+count(where(df, isNull(df$mths_remng)))
+df_ <- filter(df, isNotNull(df$mths_remng))
+count(where(df_, isNull(df_$mths_remng)))
 
 # na.omit
 
