@@ -20,7 +20,7 @@ sqlContext <- sparkRSQL.init(sc)
 
 ## Read in loan performance example data:
 
-df <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header='false', inferSchema='true', nullValue='')
+df <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header='false', inferSchema='true')
 cache(df)
 
 
@@ -70,15 +70,16 @@ corr(df, "loan_age", "mths_remng", method = "pearson")
 
 ## String/categorical: We can compute descriptive statistics for categorical data using the `groupBy` operation that we used in the Basics II tutorial to compute aggregations of numerical data over groups, as well as several operations built into SparkR.
 
-# Recast cd_zero_bal as a categorical variable: Define what cd_zero_bal is here
-df$cd_zero_bal <- cast(df$cd_zero_bal, 'string')
+# Recast cd_zero_bal as a categorical variable & replace `NA` values with `"NA"` string entries so that they can be included in the tables below: Define what cd_zero_bal is here
+df$cd_zero_bal <- ifelse(isNull(df$cd_zero_bal), "NA", df$cd_zero_bal)
 
 # Frequency table: Return a frequency table, listing the number of observations for each distinct value of `"cd_zero_bal"`:
 zb_f <- count(groupBy(df, "cd_zero_bal"))
 showDF(zb_f)
 # We could also embed a grouping into an `agg` operation as we saw in the Basics II tutorial, i.e. `agg(groupBy(df, df$cd_zero_bal), count = n(df$cd_zero_bal))`.
 # Relative frequency table:
-zb_rf <- agg(groupBy(df, df$cd_zero_bal), count = n(df$cd_zero_bal), perc = 100 * (n(df$cd_zero_bal)/nrow(df))) ## 100 * won't work - need to trouble shoot with toy data
+n <- nrow(df)
+zb_rf <- agg(groupBy(df, df$cd_zero_bal), Count = n(df$cd_zero_bal), Percentage = n(df$cd_zero_bal) * (100/n))
 showDF(zb_rf)
 # Contingency table:
 crosstab(df, "servicer_name", "cd_zero_bal")
