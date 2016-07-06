@@ -20,7 +20,7 @@ sqlContext <- sparkRSQL.init(sc)
 
 ## Read in loan performance example data:
 
-df <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header='false', inferSchema='true')
+df <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header='false', inferSchema='true', nullValue='')
 cache(df)
 
 
