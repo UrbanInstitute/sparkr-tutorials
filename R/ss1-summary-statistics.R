@@ -71,7 +71,8 @@ corr(df, "loan_age", "mths_remng", method = "pearson")
 ## String/categorical: We can compute descriptive statistics for categorical data using the `groupBy` operation that we used in the Basics II tutorial to compute aggregations of numerical data over groups, as well as several operations built into SparkR.
 
 # Recast cd_zero_bal as a categorical variable & replace `NA` values with `"NA"` string entries so that they can be included in the tables below: Define what cd_zero_bal is here
-df$cd_zero_bal <- ifelse(isNull(df$cd_zero_bal), "NA", df$cd_zero_bal)
+df$cd_zero_bal <- ifelse(isNull(df$cd_zero_bal), "Unknown", df$cd_zero_bal)
+df$servicer_name <- ifelse(df$servicer_name == "", "Unknown", df$servicer_name)
 
 # Frequency table: Return a frequency table, listing the number of observations for each distinct value of `"cd_zero_bal"`:
 zb_f <- count(groupBy(df, "cd_zero_bal"))
@@ -81,6 +82,6 @@ showDF(zb_f)
 n <- nrow(df)
 zb_rf <- agg(groupBy(df, df$cd_zero_bal), Count = n(df$cd_zero_bal), Percentage = n(df$cd_zero_bal) * (100/n))
 showDF(zb_rf)
-# Contingency table:
+# Finally, we can make a contingency table with the operation `crosstab`, which returns a data.frame that represents the contingency table between two categorical variables. Here, we create a contingency table for `"servicer_name"` and `"cd_zero_bal"`:
 crosstab(df, "servicer_name", "cd_zero_bal")
 
