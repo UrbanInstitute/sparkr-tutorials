@@ -224,7 +224,7 @@ conting_sn.zb <- crosstab(df, "servicer_name", "cd_zero_bal")
 conting_sn.zb
 ```
 
-Here, is the contingency table, the output of `crosstab`, as a table:
+Here, is the contingency table, the output of `crosstab`, in formatted table:
 
 ```{r kable, include=FALSE}
 conting_sn.zb <- crosstab(df, "servicer_name", "cd_zero_bal")
