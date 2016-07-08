@@ -219,9 +219,17 @@ showDF(zb_rf)
 
 Finally, we can create a contingency table with the operation `crosstab`, which returns a data.frame that consists of a contingency table between two categorical columns of a DF. Here, we create and print a contingency table for `"servicer_name"` and `"cd_zero_bal"`:
 
-```{r}
+```{r, eval=FALSE}
 conting_sn.zb <- crosstab(df, "servicer_name", "cd_zero_bal")
 conting_sn.zb
+```
+
+Here, is the contingency table, the output of `crosstab`, as a table:
+
+```{r kable, include=FALSE}
+conting_sn.zb <- crosstab(df, "servicer_name", "cd_zero_bal")
+library(knitr)
+kable(conting_sn.zb)
 ```
 
 __End of tutorial__ - Next up is [Insert next tutorial]
