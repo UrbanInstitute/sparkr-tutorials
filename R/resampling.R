@@ -14,18 +14,13 @@ sc <- sparkR.init(sparkEnvir=list(spark.executor.memory="2g",
 
 sqlContext <- sparkRSQL.init(sc)
 
-### Specify null values when loading data:
-
-## Note that we now include the `nullValue` option in the `read.df` transformation below. By setting `nullValue` equal to an empty string in `read.df`, we direct `read.df` and the `sqlContext` to interpret empty entries in the dataset as being equal to a null value in the DataFrame. Therefore, any DF entries matching this string, below set to equal an empty entry, will be set as nulls in `df`.
+### Load data:
 
 df <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header="false", inferSchema="true", nullValue="")
 cache(df)
 
-# See structure; want to resample by year of "period"
-head(df)
-
-# See what dtype "period" is - it's currently in string
-printSchema(df)
+# See structure; want to resample by year of "period" and "servicer_name" - but is string
+str(df)
 
 # Create "period", "matr_dt" and "dt_zero_bal" date dtype variable and create separate date level columns
 period_dt <- cast(cast(unix_timestamp(df$period, 'MM/dd/yyyy'), 'timestamp'), 'date')
@@ -43,14 +38,14 @@ df <- withColumn(df, 'zero_bal_yr', year(zero_bal_dt))
 
 str(df)
 
+## Resample DataFrame by unit of time:
+
 # Create new DF with only columns of numerical and date dtype
 cols <- c("period_yr", "period_m", "matr_yr", "zero_bal_yr", "new_int_rt", "act_endg_upb", "loan_age", "mths_remng", "aj_mths_remng")
 dat <- select(df, cols)
 unpersist(df)
 cache(dat)
 head(dat)
-
-## Resample DataFrame by unit of time:
 
 ## Note that, in our loan-level data, each row represents a unique loan (each made distinct by the `"loan_id"` column in `df`) and its corresponding characteristics such as `"loan_age"` and `"mths_remng"`. Note that `dat` is simply a subsetted DF of `df` and, therefore, also refers to loan-level data. We can resample the data over the distinct values of any of the columns in `dat`, but an intuitive approach is to resample the loan-level data as aggregates of the DF columns for a unit of time. Below, we aggregate the columns of `dat` (taking the mean of the column entries) by `"period_yr"`, and then by `"period_yr"` and `"period_m"`:
 dat1 <- agg(groupBy(dat, dat$period_yr), m.period_m = mean(dat$period_m), m.matr_yr = mean(dat$matr_yr), m.zero_bal_yr = mean(dat$zero_bal_yr), m.new_int_rt = mean(dat$new_int_rt), m.act_endg_upb = mean(dat$act_endg_upb), m.loan_age = mean(dat$loan_age), m.mths_remng = mean(dat$mths_remng), m.aj_mths_remng = mean(dat$aj_mths_remng))
