@@ -64,24 +64,24 @@ The operation `describe` (or its alias `summary`) creates a new DF that consists
 sumstats_mthsremng <- describe(df, "mths_remng")  # Specified list of columns here consists only of "mths_remng"
 
 showDF(sumstats_mthsremng)  # Print the aggregation DF
-## +-------+------------------+
-## |summary|        mths_remng|
-## +-------+------------------+
-## |  count|          13208202|
-## |   mean| 330.9827155126792|
-## | stddev|35.497058452032455|
-## |    min|               -19|
-## |    max|               482|
-## +-------+------------------+
+## +-------+-----------------+
+## |summary|       mths_remng|
+## +-------+-----------------+
+## |  count|         13208202|
+## |   mean|330.9827155126792|
+## | stddev|35.49705845203245|
+## |    min|              -19|
+## |    max|              482|
+## +-------+-----------------+
 
 sumstats_mthsremng.l <- collect(sumstats_mthsremng) # Collect aggregation DF as a local data.frame
 sumstats_mthsremng.l
-##   summary         mths_remng
-## 1   count           13208202
-## 2    mean  330.9827155126792
-## 3  stddev 35.497058452032455
-## 4     min                -19
-## 5     max                482
+##   summary        mths_remng
+## 1   count          13208202
+## 2    mean 330.9827155126792
+## 3  stddev 35.49705845203245
+## 4     min               -19
+## 5     max               482
 ```
 
 Note that measuring all five (5) of these aggregations at once is computationally expensive, particularly if we are interested in only a subset of these measurements. Below, we outline ways to measure these aggregations individually, as well as several other key summary statistics for numerical data.
@@ -180,11 +180,11 @@ We can measure the magnitude and direction of skew in the distribution of a nume
 ```r
 mr_sk <- agg(df, skewness = skewness(df$mths_remng))
 showDF(mr_sk)
-## +-------------------+
-## |           skewness|
-## +-------------------+
-## |-2.1817587718789557|
-## +-------------------+
+## +------------------+
+## |          skewness|
+## +------------------+
+## |-2.181758771878954|
+## +------------------+
 ```
 
 
@@ -196,11 +196,11 @@ Similarly, we can meaure the magnitude of, and how sharp is, the central peak of
 ```r
 mr_kr <- agg(df, kurtosis = kurtosis(df$mths_remng))
 showDF(mr_kr)
-## +------------------+
-## |          kurtosis|
-## +------------------+
-## |5.2248521022372465|
-## +------------------+
+## +-----------------+
+## |         kurtosis|
+## +-----------------+
+## |5.224852102237245|
+## +-----------------+
 ```
 
 ***
@@ -294,38 +294,38 @@ conting_sn.zb
 Here, is the contingency table, the output of `crosstab`, in a formatted table:
 
 
-servicer_name_cd_zero_bal                      Unknown        1     3      6      9
--------------------------------------------  ---------  -------  ----  -----  -----
-FLAGSTAR BANK, FSB                                 106        4     0      0      0
-GMAC MORTGAGE, LLC                               15467     1107     0      0      0
-FLAGSTAR CAPITAL MARKETS CORPORATION                55        0     0      0      0
-OTHER                                            62772     3518     6      4     10
-EVERBANK                                           179        1     0      0      0
-JPMORGAN CHASE BANK, NA                          51278     4090     1      3      0
-AMTRUST BANK                                       420       18     0      0      0
-SUNTRUST MORTGAGE INC.                            1602      159     0      0      0
-MATRIX FINANCIAL SERVICES CORPORATION               22        0     0      0      0
-WELLS FARGO BANK, N.A.                            1286       37     0      0      0
-JPMORGAN CHASE BANK, NATIONAL ASSOCIATION        43417     3484     0     16      0
-GREEN TREE SERVICING, LLC                         1404        5     0      0      0
-DITECH FINANCIAL LLC                              1099        7     0      0      0
-IRWIN MORTGAGE, CORPORATION                         10        3     0      0      0
-CITIMORTGAGE, INC.                               24333     1844     0      5      0
-QUICKEN LOANS INC.                                   4        0     0      0      0
-PHH MORTGAGE CORPORATION                          8333      635     0      0      0
-JP MORGAN CHASE BANK, NA                           439        5     0      0      0
-OCWEN LOAN SERVICING, LLC                            2        0     0      0      0
-FANNIE MAE/SETERUS, INC. AS SUBSERVICER            504        0     0      0      0
-BANK OF AMERICA, N.A.                            32394     2309     0      1      0
-METLIFE BANK, NA                                   240        4     0      0      0
-USAA FEDERAL SAVINGS BANK                         2972      301     0      0      0
-NATIONSTAR MORTGAGE, LLC                           261        0     0      0      0
-FIRST TENNESSEE BANK, NATIONAL ASSOCIATION       11921      853     0      0      0
-FREEDOM MORTGAGE CORP.                               2        0     0      0      0
-Unknown                                       12523765   393278   962   1250   4687
-U.S. BANK N.A.                                    1608       24     0      0      0
-REGIONS BANK                                      3151      239     0      0      0
-CITIMORTGAGE ASSET MANAGEMENT, INC.               7897      507     0      1      0
-PNC BANK, N.A.                                     195        0     0      0      0
+|servicer_name_cd_zero_bal                  |  Unknown|      1|   3|    6|    9|
+|:------------------------------------------|--------:|------:|---:|----:|----:|
+|FLAGSTAR BANK, FSB                         |      106|      4|   0|    0|    0|
+|GMAC MORTGAGE, LLC                         |    15467|   1107|   0|    0|    0|
+|FLAGSTAR CAPITAL MARKETS CORPORATION       |       55|      0|   0|    0|    0|
+|OTHER                                      |    62772|   3518|   6|    4|   10|
+|EVERBANK                                   |      179|      1|   0|    0|    0|
+|JPMORGAN CHASE BANK, NA                    |    51278|   4090|   1|    3|    0|
+|AMTRUST BANK                               |      420|     18|   0|    0|    0|
+|SUNTRUST MORTGAGE INC.                     |     1602|    159|   0|    0|    0|
+|MATRIX FINANCIAL SERVICES CORPORATION      |       22|      0|   0|    0|    0|
+|WELLS FARGO BANK, N.A.                     |     1286|     37|   0|    0|    0|
+|JPMORGAN CHASE BANK, NATIONAL ASSOCIATION  |    43417|   3484|   0|   16|    0|
+|GREEN TREE SERVICING, LLC                  |     1404|      5|   0|    0|    0|
+|DITECH FINANCIAL LLC                       |     1099|      7|   0|    0|    0|
+|IRWIN MORTGAGE, CORPORATION                |       10|      3|   0|    0|    0|
+|CITIMORTGAGE, INC.                         |    24333|   1844|   0|    5|    0|
+|QUICKEN LOANS INC.                         |        4|      0|   0|    0|    0|
+|PHH MORTGAGE CORPORATION                   |     8333|    635|   0|    0|    0|
+|JP MORGAN CHASE BANK, NA                   |      439|      5|   0|    0|    0|
+|OCWEN LOAN SERVICING, LLC                  |        2|      0|   0|    0|    0|
+|FANNIE MAE/SETERUS, INC. AS SUBSERVICER    |      504|      0|   0|    0|    0|
+|BANK OF AMERICA, N.A.                      |    32394|   2309|   0|    1|    0|
+|METLIFE BANK, NA                           |      240|      4|   0|    0|    0|
+|USAA FEDERAL SAVINGS BANK                  |     2972|    301|   0|    0|    0|
+|NATIONSTAR MORTGAGE, LLC                   |      261|      0|   0|    0|    0|
+|FIRST TENNESSEE BANK, NATIONAL ASSOCIATION |    11921|    853|   0|    0|    0|
+|FREEDOM MORTGAGE CORP.                     |        2|      0|   0|    0|    0|
+|Unknown                                    | 12523765| 393278| 962| 1250| 4687|
+|U.S. BANK N.A.                             |     1608|     24|   0|    0|    0|
+|REGIONS BANK                               |     3151|    239|   0|    0|    0|
+|CITIMORTGAGE ASSET MANAGEMENT, INC.        |     7897|    507|   0|    1|    0|
+|PNC BANK, N.A.                             |      195|      0|   0|    0|    0|
 
 __End of tutorial__ - Next up is [Insert next tutorial]
