@@ -67,24 +67,47 @@ df <- withColumn(df, "matr_m", month(matr_dt))
 # Year value for `"zero_bal_dt"`
 df <- withColumn(df, 'zero_bal_yr', year(zero_bal_dt))
 df <- withColumn(df, "zero_bal_m", month(zero_bal_dt))
+# Extract date components: `year`, `month`, `hour`, `minute`, `second` (as info is needed)
 # See new date dtype columns in `df`:
 str(df)
 
 
-### Compute relative dates based on a specified increment of time
 
-cols_dt <- c("period_dt", "matr_dt", "zero_bal_dt")
+### Compute relative dates and measures based on a specified increment of time
+
+cols_dt <- c("period_dt", "matr_dt")
 df_dt <- select(df, cols_dt)
 
-## Relative dates and measures that we can extract from date dtype:
+## Relative dates: `last_day`, `next_day`, `add_months`,  `date_add`, `date_sub`
 
-# Dates:
-# `year`, `month`, `hour`, `minute`, `second`
-# `weekofyear`, `dayofyear`, `dayofmonth`,
-# `last_day`, `next_day`
+# Given a date column, returns the last day of the month which the given date belongs to. For example, input "2015-07-27" returns "2015-07-31" since July 31 is the last day of the month in July 2015.
+df_dt <- withColumn(df_dt, 'p_ld', last_day(df_dt$period_dt))
+# Given a date column, returns the first date which is later than the value of the date column that is on the specified day of the week.
+df_dt <- withColumn(df_dt, 'p_nd', next_day(df_dt$period_dt, "sunday"))
+# Returns the date that is numMonths after startDate.
+df_dt <- withColumn(df_dt, 'p_addm', add_months(df_dt$period_dt, 1))
+# Returns the date that is 'days' days after 'start'
+df_dt <- withColumn(df_dt, 'p_dtadd', date_add(df_dt$period_dt, 1))
+# Returns the date that is 'days' days before 'start'
+df_dt <- withColumn(df_dt, 'p_dtsub', date_sub(df_dt$period_dt, 1))
 
-# Measures:
-# `add_months`, `months_between`, `date_add`, `date_sub`, `datediff`
+
+## Relative measures of time: `weekofyear`, `dayofyear`, `dayofmonth`, `datediff`, `months_between`
+# Extracts the week number as an integer from a given date/timestamp/string.
+df_dt <- withColumn(df_dt, 'p_woy', weekofyear(df_dt$period_dt))
+# Extracts the day of the year as an integer from a given date/timestamp/string.
+df_dt <- withColumn(df_dt, 'p_doy', dayofyear(df_dt$period_dt))
+# Extracts the day of the month as an integer from a given date/timestamp/string.
+df_dt <- withColumn(df_dt, 'p_dom', dayofmonth(df_dt$period_dt))
+# Returns number of months between dates 'date1' and 'date2'.
+df_dt <- withColumn(df_dt, 'p_mbtw', months_between(df_dt$matr_dt, df_dt$period_dt))
+# Returns the number of days from 'start' to 'end'.
+df_dt <- withColumn(df_dt, 'p_dbtw', datediff(df_dt$matr_dt, df_dt$period_dt))
+
+
+str(df_dt)
+
+
 
 
 ### Resample a time series DF to a particular unit of time frequency
