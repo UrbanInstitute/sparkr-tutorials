@@ -46,6 +46,12 @@ str(b)
 ab1 <- join(a, b, a$loan_id == b$loan_id, "fullouter")
 str(ab1)
 
+# Note that we have an extra `"loan_id"` column. Drop column
+ab1$loan_id <- NULL
+# but drops both `"loan_id"` columns
+
+# merge operation lets you specify which merging column you want to drop
+
 # We could also use the `merge` operation to join to DFs. Rather than defining a `joinExpr`, we explictly specify the column(s) that SparkR should `merge` the DFs on with the operation parameters `by` and `by.x`/`by.y` (if we do not specify `by`, SparkR will merge the DFs on the list of common column names shared by the DFs). Rather than specifying a type of join, `merge` determines how SparkR should merge DFs based on boolean values: `all.x` and `all.y` indicate whether all the rows in `x` and `y` should be including in the join, respectively. We can specify `merge` type with the following specifications:
 
 # `all.x = FALSE`, `all.y = FALSE`: Returns an inner join (this is the default and can be achieved by not specifying values for all.x and all.y)
@@ -58,6 +64,9 @@ str(ab1)
 ab2 <- merge(a, b, by = "loan_id")
 str(ab2)
 
+ab2$loan_id_y <- NULL
+ab2 <- withColumnRenamed(ab2, "loan_id_x", "loan_id")
+str(ab2)
 
 
 # Return a new DataFrame containing the union of rows in this DataFrame and another DataFrame. Note that this does not remove duplicate rows across the two DataFrames.
