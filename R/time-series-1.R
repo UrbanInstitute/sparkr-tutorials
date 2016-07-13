@@ -34,6 +34,7 @@ cache(df)
 str(df)
 
 # Create "period", "matr_dt" and "dt_zero_bal" date dtype variable and create separate date level columns:
+# "yyyy-mm-dd"
 
 # `period`
 period_uts <- unix_timestamp(df$period, 'MM/dd/yyyy')	# Gets current Unix timestamp in seconds
@@ -55,25 +56,7 @@ str(df)
 # Note that the `"zero_bal_dt"` entries corresponding to the missing date entries in `"dt_zero_bal"`, which were empty strings, are now nulls.
 
 
-### Extract components of a date dtype column:
-
-## Extract components of date dtype column:
-# Year and month values for `"period_dt"`
-df <- withColumn(df, 'period_yr', year(period_dt))
-df <- withColumn(df, "period_m", month(period_dt))
-# Year value for `"matr_dt"`
-df <- withColumn(df, 'matr_yr', year(matr_dt))
-df <- withColumn(df, "matr_m", month(matr_dt))
-# Year value for `"zero_bal_dt"`
-df <- withColumn(df, 'zero_bal_yr', year(zero_bal_dt))
-df <- withColumn(df, "zero_bal_m", month(zero_bal_dt))
-# Extract date components: `year`, `month`, `hour`, `minute`, `second` (as info is needed)
-# See new date dtype columns in `df`:
-str(df)
-
-
-
-### Compute relative dates and measures based on a specified increment of time
+### Compute relative dates and measures based on a specified unit of time
 
 cols_dt <- c("period_dt", "matr_dt")
 df_dt <- select(df, cols_dt)
@@ -106,6 +89,28 @@ df_dt <- withColumn(df_dt, 'p_dbtw', datediff(df_dt$matr_dt, df_dt$period_dt))
 
 
 str(df_dt)
+
+
+
+### Extract components of a date dtype column:
+
+## Extract components of date dtype column:
+# Year and month values for `"period_dt"`
+df <- withColumn(df, 'period_yr', year(period_dt))
+df <- withColumn(df, "period_m", month(period_dt))
+# Year value for `"matr_dt"`
+df <- withColumn(df, 'matr_yr', year(matr_dt))
+df <- withColumn(df, "matr_m", month(matr_dt))
+# Year value for `"zero_bal_dt"`
+df <- withColumn(df, 'zero_bal_yr', year(zero_bal_dt))
+df <- withColumn(df, "zero_bal_m", month(zero_bal_dt))
+# Extract date components: `year`, `month`, `hour`, `minute`, `second` (as info is needed)
+# See new date dtype columns in `df`:
+str(df)
+
+
+
+
 
 
 
