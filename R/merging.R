@@ -72,7 +72,7 @@ str(ab2)
 
 ### Append rows of data to a DataFrame:
 
-# In order to discuss how to append the rows of one DF to those of another, we must first subset `df` into two (2) distinct DataFrames, `A` and `B`:
+# In order to discuss how to append the rows of one DF to those of another, we must first subset `df` into two (2) distinct DataFrames, `A` and `B`. Below, we define `A` as a random subset of `df` with a row count that is approximately equal to half the size of `nrow(df)`. We use the DF operation `except` to create `B`, which includes every row of `df`, `except` for those included in `A`:
 
 A <- sample(df, withReplacement = FALSE, fraction = 0.5)
 B <- except(df, A)
