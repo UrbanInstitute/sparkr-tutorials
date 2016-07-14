@@ -50,7 +50,7 @@ str(ab1)
 
 ab1$loan_id <- NULL
 
-# The `merge` operation, alternatively, allows us to join DFs and also produces two (2) distinct merge columns, which allows us to retain the column on which we joined the DFs. Therefore, `join` is a convenient operation, but we should use `merge` if we need to retain the merging column. We discuss `merge` in further detail below.
+# The `merge` operation, alternatively, allows us to join DFs and also produces two (2) distinct merge columns. We can use this feature to retain the column on which we joined the DFs. Therefore, `join` is a convenient operation, but we should use `merge` if we want the resulting DF to include the merging column. We discuss `merge` in further detail below.
 
 # Rather than defining a `joinExpr`, we explictly specify the column(s) that SparkR should `merge` the DFs on with the operation parameters `by` and `by.x`/`by.y` (if we do not specify `by`, SparkR will merge the DFs on the list of common column names shared by the DFs). Rather than specifying a type of join, `merge` determines how SparkR should merge DFs based on boolean values: `all.x` and `all.y` indicate whether all the rows in `x` and `y` should be including in the join, respectively. We can specify `merge` type with the following specifications:
 
@@ -70,19 +70,35 @@ ab2$loan_id_y <- NULL
 ab2 <- withColumnRenamed(ab2, "loan_id_x", "loan_id")
 str(ab2)
 
+### Append rows of data to a DataFrame:
 
+# Subset `df` into two distinct DFs, `A` and `B`, which we will use to discuss how to append the rows of one DF to those of another:
 
+A <- sample(df, withReplacement = FALSE, fraction = 0.5)
+B <- except(df, A)
 
+## Check for duplicates
 
+nrow(A)
+nrow(B)
+nrow(intersect(A, B))
+
+## Append rows - DFs with same columns
+
+# Combines two (2) or more SparkR DataFrames by rows. Does not remove duplicate rows.
+df1 <- rbind(A, B)
+nrow(df1)
 # Return a new DataFrame containing the union of rows in this DataFrame and another DataFrame. Note that this does not remove duplicate rows across the two DataFrames.
 # This is equivalent to 'UNION ALL' in SQL.
-unionAll(x, y)
-# Combines two (2) or more SparkR DataFrames by rows. Does not remove duplicate rows.
-rbind(x, y, z, w)
+df2 <- unionAll(A, B)
+nrow(df2)
 
 
-# Check for duplicates prior to merging with `intersect`:
-intersect(x, y)
+## Different column lists
 
-# Return a new DF that includes only distinct rows, i.e. filters out duplicate rows that may result from merging:
-distinctDF <- distinct(df)
+columns(B)
+# Remove `"period"` and `"servicer_name"`
+cols_ <- c("loan_id","new_int_rt","act_endg_upb","loan_age","mths_remng","aj_mths_remng","dt_matr","cd_msa","delq_sts","flag_mod","cd_zero_bal","dt_zero_bal")
+B_ <- select(B, cols_)
+df2 <- rbind(A, B_)
+nrow(df2)
