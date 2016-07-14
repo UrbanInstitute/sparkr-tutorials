@@ -72,33 +72,36 @@ str(ab2)
 
 ### Append rows of data to a DataFrame:
 
-# Subset `df` into two distinct DFs, `A` and `B`, which we will use to discuss how to append the rows of one DF to those of another:
+# In order to discuss how to append the rows of one DF to those of another, we must first subset `df` into two (2) distinct DataFrames, `A` and `B`:
 
 A <- sample(df, withReplacement = FALSE, fraction = 0.5)
 B <- except(df, A)
 
-## Check for duplicates
+# Let's also first examine the row count for each subsetted row and confirm that `A` and `B` are disjoint DataFrames (we can achieve this with the SparkR operation `intersect`, which performs the interaction set operation on two DFs):
 
-nrow(A)
-nrow(B)
+nA <- nrow(A)
+nB <- nrow(B)
+nA + nB # Equal to nrow(df)
 nrow(intersect(A, B))
 
-## Append rows - DFs with same columns
+## Append rows when column names are equal across DFs:
 
-# Combines two (2) or more SparkR DataFrames by rows. Does not remove duplicate rows.
+# If we are certain that the two DFs have equivalent column name lists, then appending the rows of one DF to another is straightforward. Here, we append the rows of `B` to `A` with the `rbind` operation:
+
 df1 <- rbind(A, B)
 nrow(df1)
-# Return a new DataFrame containing the union of rows in this DataFrame and another DataFrame. Note that this does not remove duplicate rows across the two DataFrames.
-# This is equivalent to 'UNION ALL' in SQL.
-df2 <- unionAll(A, B)
-nrow(df2)
+nrow(df)
 
+# We can see in the results above that `df1` is equivalent to `df`. We could, alternatively, accomplish this with the `unionALL` operation (e.g. `df1 <- unionAll(A, B)`. Note that `unionAll` is not an alias for `rbind` - we can combine any number of DFs with `rbind` while `unionAll` can only consider two (2) DataFrames at a time.
 
-## Different column lists
+## Append rows when DF column name lists are not equal:
+
+# 
+
+# We saw that in missing data tutorial that there are no null values in `"loan_age"`
+
 
 columns(B)
-# Remove `"period"` and `"servicer_name"`
-cols_ <- c("loan_id","new_int_rt","act_endg_upb","loan_age","mths_remng","aj_mths_remng","dt_matr","cd_msa","delq_sts","flag_mod","cd_zero_bal","dt_zero_bal")
+# Remove "loan_age"
+cols_ <- c("loan_id", "period", "servicer_name", "new_int_rt", "act_endg_upb", "mths_remng", "aj_mths_remng", "dt_matr", "cd_msa", "delq_sts", "flag_mod", "cd_zero_bal", "dt_zero_bal")
 B_ <- select(B, cols_)
-df2 <- rbind(A, B_)
-nrow(df2)
