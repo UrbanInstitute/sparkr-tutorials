@@ -46,13 +46,13 @@ str(b)
 ab1 <- join(a, b, a$loan_id == b$loan_id, "fullouter")
 str(ab1)
 
-# Note that we have an extra `"loan_id"` column. Drop column
+# Note that the resulting DF includes two (2) `"loan_id"` columns. Unfortunately, we cannot specify only one of these columns in SparkR, and the following command drops both `"loan_id"` columns:
+
 ab1$loan_id <- NULL
-# but drops both `"loan_id"` columns
 
-# merge operation lets you specify which merging column you want to drop
+# The `merge` operation, alternatively, allows us to join DFs and also produces two (2) distinct merge columns, which allows us to retain the column on which we joined the DFs. Therefore, `join` is a convenient operation, but we should use `merge` if we need to retain the merging column. We discuss `merge` in further detail below.
 
-# We could also use the `merge` operation to join to DFs. Rather than defining a `joinExpr`, we explictly specify the column(s) that SparkR should `merge` the DFs on with the operation parameters `by` and `by.x`/`by.y` (if we do not specify `by`, SparkR will merge the DFs on the list of common column names shared by the DFs). Rather than specifying a type of join, `merge` determines how SparkR should merge DFs based on boolean values: `all.x` and `all.y` indicate whether all the rows in `x` and `y` should be including in the join, respectively. We can specify `merge` type with the following specifications:
+# Rather than defining a `joinExpr`, we explictly specify the column(s) that SparkR should `merge` the DFs on with the operation parameters `by` and `by.x`/`by.y` (if we do not specify `by`, SparkR will merge the DFs on the list of common column names shared by the DFs). Rather than specifying a type of join, `merge` determines how SparkR should merge DFs based on boolean values: `all.x` and `all.y` indicate whether all the rows in `x` and `y` should be including in the join, respectively. We can specify `merge` type with the following specifications:
 
 # `all.x = FALSE`, `all.y = FALSE`: Returns an inner join (this is the default and can be achieved by not specifying values for all.x and all.y)
 # `all.x = TRUE`, `all.y = FALSE`: Returns a left outer join
@@ -64,9 +64,14 @@ ab1$loan_id <- NULL
 ab2 <- merge(a, b, by = "loan_id")
 str(ab2)
 
+# Note that the two merging columns are distinct, indicated by the `_x` and `_y` assignments. We utilize this distinction in the expressions below to retain a single merging column:
+
 ab2$loan_id_y <- NULL
 ab2 <- withColumnRenamed(ab2, "loan_id_x", "loan_id")
 str(ab2)
+
+
+
 
 
 # Return a new DataFrame containing the union of rows in this DataFrame and another DataFrame. Note that this does not remove duplicate rows across the two DataFrames.
