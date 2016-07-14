@@ -96,12 +96,74 @@ nrow(df)
 
 ## Append rows when DF column name lists are not equal:
 
-# 
-
-# We saw that in missing data tutorial that there are no null values in `"loan_age"`
-
+# Before we can discuss appending rows when we do not have column name equivalency, we must first create two DataFrames that have different column names. Let's define a new DataFrame, `B_` that includes every column in `A` and `B`, excluding the column `"loan_age"`:
 
 columns(B)
 # Remove "loan_age"
 cols_ <- c("loan_id", "period", "servicer_name", "new_int_rt", "act_endg_upb", "mths_remng", "aj_mths_remng", "dt_matr", "cd_msa", "delq_sts", "flag_mod", "cd_zero_bal", "dt_zero_bal")
 B_ <- select(B, cols_)
+
+# We can try to apply SparkR `rbind` operation to append `B_` to `A`, but the following expression will result in the error: `"Union can only be performed on tables with the same number of columns, but the left table has 14 columns and the right has 13"`.
+
+```{r, eval=FALSE}
+df2 <- rbind(A, B_)
+```
+
+# Two strategies to force SparkR to merge (by row) DataFrames with different column name lists are: (1) append by an intersection of the column names for each DF or (2) use `withColumn` to add columns to DF where they are missing and set each entry in the appended rows of these columns equal to `NA`. Below is a function, `rbind.intersect`, that accomplishes the first approach. Notice that we simply take an intesection of the column names and ask SparkR to perform `rbind`, considering only this subset of column names. 
+
+rbind.intersect <- function(x, y) {
+  cols <- base::intersect(colnames(x), colnames(y))
+  return(SparkR::rbind(x[, cols], y[, cols]))
+}
+
+# Here, we append `B_` to `A` using this function and then examine the dimensions of the resulting DF, `df2`, as well as its column names. We can see that the row count for `df2` is equal to that for `df`, but it does not include the `"loan_age"` column (just as we expected!).
+
+df2 <- rbind.intersect(A, B_)
+ncol(df2)
+colnames(df2)
+nrow(df2)
+
+# Accomplishing the second approach is somewhat more involved. The `rbind.fill` function, given below, identifies the outersection of the list of column names for each DataFrame and adds them onto one (1) or both of the DataFrames as needed using `withColumn`:
+
+rbind.fill <- function(x, y) {
+  m1 <- ncol(x)
+  m2 <- ncol(y)
+  col_x <- colnames(x)
+  col_y <- colnames(y)
+  
+  if (m2 < m1) {
+    col_ <- list(setdiff(col_x, col_y), setdiff(col_y, col_x)) # Outersection
+    len <- length(col_)
+    for (j in 1:len){
+      y <- withColumn(y, col_[[j]], lit(NA))
+    }
+  } else { 
+    if (m2 == m1) {
+      col_ <- list(setdiff(col_x, col_y), setdiff(col_y, col_x))
+      len <- length(col_)
+      for (j in 1:len){
+        x <- withColumn(x, col_[[j]], lit(NA))
+        y <- withColumn(y, col_[[j]], lit(NA))
+      }
+    } else {
+      col_ <- list(setdiff(col_x, col_y), setdiff(col_y, col_x))
+      len <- length(col_)
+      for (j in 1:len){
+          x <- withColumn(x, col_[[j]], lit(NA))
+      }
+    }         
+  }
+  return(SparkR::rbind(x, y))
+}
+
+# We again `B_` to `A`, this time using the `rbind.fill` function. The row count for `df3` is equal to that for `df` and it includes all fourteen (14) columns included in `df`:
+
+df3 <- rbind.fill(A, B_)
+ncol(df3)
+colnames(df3)
+nrow(df3)
+
+# We know from the missing data tutorial that `df$loan_age` does not contain any `NA` or `NaN` values. Therefore, by appending `B_` to `A` with the `rbind.fill` function, we should have introduced `nrow(B)`-many null values in `df2` since `"loan_age"` is missing in `B_` and `rbind.fill` forces SparkR to fill the new entries with null values. We can see this below:
+
+nrow(B)
+count(where(df3, isNull(df3$loan_age)))
