@@ -4,7 +4,7 @@
 # Sarah Armstrong, Urban Institute
 # July 14, 2016
 
-# Summary: Function that allows us to append rows of one SparkR DataFrame (DF) to another, regardless of the respective ncol values for each DF. If one DF contains columns not included in the other, that column is appended onto the first DF and the entries are set equal to null values.
+# Summary: Function that allows us to append rows of one SparkR DataFrame (DF) to another, regardless of the column names for each DF. If one DF contains columns not included in the other, that column is appended onto the first DF and the entries are set equal to null values.
 
 # Inputs: x (a DF) and y (another DF)
 # Returns: DataFrame
