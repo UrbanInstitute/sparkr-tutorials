@@ -126,32 +126,31 @@ nrow(df2)
 # Accomplishing the second approach is somewhat more involved. The `rbind.fill` function, given below, identifies the outersection of the list of column names for each DataFrame and adds them onto one (1) or both of the DataFrames as needed using `withColumn`:
 
 rbind.fill <- function(x, y) {
+  
   m1 <- ncol(x)
   m2 <- ncol(y)
   col_x <- colnames(x)
   col_y <- colnames(y)
+  outersect <- function(x, y) {setdiff(union(x, y), intersect(x, y))}
+  col_ <- outersect(col_x, col_y)
+  len <- length(col_)
   
   if (m2 < m1) {
-    col_ <- list(setdiff(col_x, col_y), setdiff(col_y, col_x)) # Outersection
-    len <- length(col_)
     for (j in 1:len){
-      y <- withColumn(y, col_[[j]], lit(NA))
+      y <- withColumn(y, col_[j], lit(NA))
     }
   } else { 
-    if (m2 == m1) {
-      col_ <- list(setdiff(col_x, col_y), setdiff(col_y, col_x))
-      len <- length(col_)
-      for (j in 1:len){
-        x <- withColumn(x, col_[[j]], lit(NA))
-        y <- withColumn(y, col_[[j]], lit(NA))
+    if (m2 > m1) {
+        for (j in 1:len){
+          x <- withColumn(x, col_[j], lit(NA))
+        }
       }
-    } else {
-      col_ <- list(setdiff(col_x, col_y), setdiff(col_y, col_x))
-      len <- length(col_)
+    if (m2 == m1 & col_x != col_y) {
       for (j in 1:len){
-          x <- withColumn(x, col_[[j]], lit(NA))
+        x <- withColumn(x, col_[j], lit(NA))
+        y <- withColumn(y, col_[j], lit(NA))
       }
-    }         
+    } else { }         
   }
   return(SparkR::rbind(x, y))
 }
