@@ -21,20 +21,20 @@ rbind.fill <- function(x, y) {
   
   if (m2 < m1) {
     for (j in 1:len){
-      y <- withColumn(y, col_[[j]], lit(NA))
+      y <- withColumn(y, col_[j], cast(lit(NULL), "double"))
     }
   } else { 
     if (m2 > m1) {
         for (j in 1:len){
-          x <- withColumn(x, col_[[j]], lit(NA))
+          x <- withColumn(x, col_[j], cast(lit(NULL), "double"))
         }
       }
     if (m2 == m1 & col_x != col_y) {
       for (j in 1:len){
-        x <- withColumn(x, col_[[j]], lit(NA))
-        y <- withColumn(y, col_[[j]], lit(NA))
+        x <- withColumn(x, col_[j], cast(lit(NULL), "double"))
+        y <- withColumn(y, col_[j], cast(lit(NULL), "double"))
       }
-    } else {}         
+    } else { }         
   }
   return(SparkR::rbind(x, y))
 }
