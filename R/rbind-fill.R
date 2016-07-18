@@ -16,25 +16,27 @@ rbind.fill <- function(x, y) {
   col_x <- colnames(x)
   col_y <- colnames(y)
   outersect <- function(x, y) {setdiff(union(x, y), intersect(x, y))}
-  col_ <- outersect(col_x, col_y)
-  len <- length(col_)
+  col_outer <- outersect(col_x, col_y)
+  len <- length(col_outer)
   
   if (m2 < m1) {
     for (j in 1:len){
-      y <- withColumn(y, col_[j], cast(lit(NULL), "double"))
+      y <- withColumn(y, col_outer[j], cast(lit(NULL), "double"))
     }
   } else { 
     if (m2 > m1) {
         for (j in 1:len){
-          x <- withColumn(x, col_[j], cast(lit(NULL), "double"))
+          x <- withColumn(x, col_outer[j], cast(lit(NULL), "double"))
         }
       }
     if (m2 == m1 & col_x != col_y) {
       for (j in 1:len){
-        x <- withColumn(x, col_[j], cast(lit(NULL), "double"))
-        y <- withColumn(y, col_[j], cast(lit(NULL), "double"))
+        x <- withColumn(x, col_outer[j], cast(lit(NULL), "double"))
+        y <- withColumn(y, col_outer[j], cast(lit(NULL), "double"))
       }
     } else { }         
   }
-  return(SparkR::rbind(x, y))
+  x_sort <- x[,sort(colnames(x))]
+  y_sort <- y[,sort(colnames(y))]
+  return(SparkR::rbind(x_sort, y_sort))
 }
