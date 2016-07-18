@@ -132,27 +132,29 @@ rbind.fill <- function(x, y) {
   col_x <- colnames(x)
   col_y <- colnames(y)
   outersect <- function(x, y) {setdiff(union(x, y), intersect(x, y))}
-  col_ <- outersect(col_x, col_y)
-  len <- length(col_)
+  col_outer <- outersect(col_x, col_y)
+  len <- length(col_outer)
   
   if (m2 < m1) {
     for (j in 1:len){
-      y <- withColumn(y, col_[j], lit(NA))
+      y <- withColumn(y, col_outer[j], cast(lit(NULL), "double"))
     }
   } else { 
     if (m2 > m1) {
         for (j in 1:len){
-          x <- withColumn(x, col_[j], lit(NA))
+          x <- withColumn(x, col_outer[j], cast(lit(NULL), "double"))
         }
       }
     if (m2 == m1 & col_x != col_y) {
       for (j in 1:len){
-        x <- withColumn(x, col_[j], lit(NA))
-        y <- withColumn(y, col_[j], lit(NA))
+        x <- withColumn(x, col_outer[j], cast(lit(NULL), "double"))
+        y <- withColumn(y, col_outer[j], cast(lit(NULL), "double"))
       }
     } else { }         
   }
-  return(SparkR::rbind(x, y))
+  x_sort <- x[,sort(colnames(x))]
+  y_sort <- y[,sort(colnames(y))]
+  return(SparkR::rbind(x_sort, y_sort))
 }
 
 # We again `B_` to `A`, this time using the `rbind.fill` function. The row count for `df3` is equal to that for `df` and it includes all fourteen (14) columns included in `df`:
