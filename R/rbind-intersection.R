@@ -11,5 +11,5 @@
 
 rbind.intersect <- function(x, y) {
   cols <- base::intersect(colnames(x), colnames(y))
-  return(SparkR::rbind(x[, sort(colnames(x))], y[, sort(colnames(y))]))
+  return(SparkR::rbind(x[, sort(cols)], y[, sort(cols)]))
 }
