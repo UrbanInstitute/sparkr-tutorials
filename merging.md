@@ -186,15 +186,6 @@ str(ab2)
 ##  $ dt_zero_bal  : chr "" "" "" "" "" ""
 ```
 
-The following diagram provides a visual overview of SQL join types (let `by.x` and `by.y` be A.Key and B.Key, respectively):
-
-<p align="center">
-![_Image taken from "Visual Representation of SQL Joins" by C.L. Moffatt_](http://www.codeproject.com/KB/database/Visual_SQL_Joins/Visual_SQL_JOINS_V2.png)
-</p>
-
-
-
-
 ***
 
 
