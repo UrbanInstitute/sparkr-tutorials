@@ -12,14 +12,14 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-**Objective**:
+**Objective**: We discuss how to join SparkR DataFrames by column and by row in the following tutorial. In particular, we discuss how to:
 
 * Join (merge) two DFs by column condition(s)
 * Append rows of data to a DataFrame
     + When column name lists are equal across DFs
     + When column name lists are not equal
 
-**SparkR/R Operations Discussed**: 
+**SparkR/R Operations Discussed**: `join`, `merge`, `sample`, `except`, `intersect`, `rbind`, `rbind.intersect` (defined function), `rbind.fill` (defined function)
 
 ***
 
