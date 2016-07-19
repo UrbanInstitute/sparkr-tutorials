@@ -14,58 +14,89 @@ cache(df)
 head(df)
 
 
+##################
+### Bar graph: ###
+##################
 
-### Bar graph:
+geom_bar(mapping = NULL, data = NULL, stat = "count", position = "stack", ..., width = NULL, binwidth = NULL, na.rm = FALSE, show.legend = NA, inherit.aes = TRUE)
 
-# Basic bar graph
+# Default bar graph
 
-ggplot(df, aes(x = clarity)) + geom_bar()
+ggplot(df, aes(x = cut)) + geom_bar()
+ggplot(df, aes(x = cut)) + geom_bar(binwidth = 0.5) # Specify binwidth
+
+# Weigthed bar graph (column value sums over grouped data) - NOTE cannot calculate mean across grouped data
+
+ggplot(df, aes(cut)) + geom_bar(aes(weight = carat)) + ylab("carats")
 
 # Bar graph over grouped data (bar graph with `fill` parameter specified)
-# Note on performing `geom_bar` on grouped data: The following expression successfully returns a bar graph that describes frequency of observations by clarity, grouped over diamond color. Note, however, that the varied color blocks are not ordered similarly across different levels of clarity.
+# Note on performing `geom_bar` on grouped data: The following expression successfully returns a bar graph that describes frequency of observations by clarity, grouped over diamond color. Note, however, that the varied color blocks are not necessarily ordered similarly across different levels of `"cut"`. Similarly, the `"fill"` position will not necessariyl return constant factor=level ordering across different levels of `"cut"`.
 
-ggplot(df, aes(x = clarity, fill = cut)) + geom_bar()
+ggplot(df, aes(x = cut, fill = clarity)) + geom_bar() # `position = "stack"` is default
 
-# While creating a stacked bar graphs may yield heterogeneous fill-level ordering, the `"dodge"` position specification ensures that count bars for each group are in constant order across clarity levels.
+ggplot(df, aes(x = cut, fill = clarity)) + geom_bar(position = "fill")
 
-ggplot(df, aes(clarity, fill = cut)) + geom_bar(position = "dodge")
+# While creating a stacked and filled bar graph may yield heterogeneous factor-level ordering, the `"dodge"` position specification ensures that count bars for each group are in constant order across clarity levels.
 
-# Alternatively, we can change the string-valued entries of `df$cut` to be integers so that SparkR will use this ordering to....
-
-df <- withColumn(df, cut_int, cast(lit(NULL), "double"))
-
-df_f <- filter(df, df$cut == "Fair")
-df <- fillna(df_f, list("cut_int" = 1))
-
-df_g <- filter(df, df$cut == "Good")
-df <- fillna(df_g, list("cut_int" = 2))
-
-df_vg <- filter(df, df$cut == "Very Good")
-df <- fillna(df_vg, list("cut_int" = 3))
-
-df_p <- filter(df, df$cut == "Premium")
-df <- fillna(df_p, list("cut_int" = 4))
-
-df_i <- filter(df, df$cut == "Ideal")
-df <- fillna(df_i, list("cut_int" = 5))
-
-showDF(count(groupBy(df, "cut")))
-showDF(count(groupBy(df, "cut_int")))
-
-ggplot(df, aes(x = clarity, fill = cut_int)) + geom_bar()
+ggplot(df, aes(x = cut, fill = clarity)) + geom_bar(position = "dodge")
 
 
-### Histogram
+##################
+### Histogram: ###
+##################
 
-# Default bin number/bin width
+geom_histogram(mapping = NULL, data = NULL, stat = "bin", position = "stack", ..., binwidth = NULL, bins = NULL, na.rm = FALSE, show.legend = NA, inherit.aes = TRUE)
 
-ggplot(df, aes(carat)) + geom_histogram()
+# Default histogram (can specify `binwidth` _or_ number of `bins`)
 
-# Can specify binwidth or number of bins
+ggplot(df, aes(price)) + geom_histogram()
+ggplot(df, aes(price)) + geom_histogram(binwidth = 250)
+ggplot(df, aes(price)) + geom_histogram(bins = 50)
 
-ggplot(df, aes(carat)) + geom_histogram(binwidth = 0.01)
-ggplot(df, aes(carat)) + geom_histogram(bins = 200)
+# Weighted histogram:
+
+ggplot(df, aes(cut)) + geom_histogram(aes(weight = price)) + ylab("total value")
 
 # Stacked histograms:
 
-ggplot(df, aes(price, fill = cut)) + geom_histogram(binwidth = 500)
+
+ggplot(df, aes(price, fill = cut)) + geom_histogram(aes(fill = cut))
+
+
+ggplot(df, aes(price, fill = cut)) + geom_histogram() # `position = "stack"` is default
+ggplot(df, aes(price, fill = cut)) + geom_histogram(position = "fill")
+ggplot(df, aes(price, fill = cut)) + geom_histogram(position = "dodge")
+
+
+
+###########################
+### Frequency Polygons: ###
+###########################
+
+geom_freqpoly(mapping = NULL, data = NULL, stat = "bin", position = "identity", ..., na.rm = FALSE, show.legend = NA, inherit.aes = TRUE)
+
+# Default frequency polygon
+
+ggplot(df, aes(price)) + geom_freqpoly()
+ggplot(df, aes(price)) + geom_freqpoly(binwidth = 250)
+ggplot(df, aes(price)) + geom_freqpoly(bins = 50)
+
+ggplot(df, aes(price, ..density..)) + geom_freqpoly()
+
+# Frequency polygons over grouped data are perhaps more easily interpreted than stacked histograms; the following is equivalent to the preceding stacked histogram. Note that we specify `"cut"` as `colour`, rather than `fill` as we did when using `geom_histogram`:
+
+ggplot(df, aes(price, colour = cut)) + geom_freqpoly()
+
+# To make it easier to compare distributions with very different counts, put density on the y axis instead of the default count # taken from ggplot2 site - edit
+ggplot(df, aes(price, ..density.., colour = cut)) + geom_freqpoly()
+
+
+#################################################################
+### Dealing with overplotting in scatterplot using `stat_sum` ###
+#################################################################
+
+stat_sum(mapping = NULL, data = NULL, geom = "point", position = "identity", ...)
+
+# Default `stat_sum`
+
+ggplot(df, aes(x = carat, y = price)) + stat_sum()
