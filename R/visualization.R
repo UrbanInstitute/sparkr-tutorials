@@ -59,14 +59,8 @@ ggplot(df, aes(cut)) + geom_histogram(aes(weight = price)) + ylab("total value")
 
 # Stacked histograms:
 
-
-ggplot(df, aes(price, fill = cut)) + geom_histogram(aes(fill = cut))
-
-
-ggplot(df, aes(price, fill = cut)) + geom_histogram() # `position = "stack"` is default
-ggplot(df, aes(price, fill = cut)) + geom_histogram(position = "fill")
-ggplot(df, aes(price, fill = cut)) + geom_histogram(position = "dodge")
-
+#ggplot(df, aes(price, fill = cut)) + geom_histogram() # `position = "stack"` is default
+#ggplot(df, aes(price, fill = cut)) + geom_histogram(position = "fill")
 
 
 ###########################
@@ -81,15 +75,9 @@ ggplot(df, aes(price)) + geom_freqpoly()
 ggplot(df, aes(price)) + geom_freqpoly(binwidth = 250)
 ggplot(df, aes(price)) + geom_freqpoly(bins = 50)
 
-ggplot(df, aes(price, ..density..)) + geom_freqpoly()
-
 # Frequency polygons over grouped data are perhaps more easily interpreted than stacked histograms; the following is equivalent to the preceding stacked histogram. Note that we specify `"cut"` as `colour`, rather than `fill` as we did when using `geom_histogram`:
 
 ggplot(df, aes(price, colour = cut)) + geom_freqpoly()
-
-# To make it easier to compare distributions with very different counts, put density on the y axis instead of the default count # taken from ggplot2 site - edit
-ggplot(df, aes(price, ..density.., colour = cut)) + geom_freqpoly()
-
 
 #################################################################
 ### Dealing with overplotting in scatterplot using `stat_sum` ###
@@ -99,4 +87,51 @@ stat_sum(mapping = NULL, data = NULL, geom = "point", position = "identity", ...
 
 # Default `stat_sum`
 
+# Numerical, numerical
 ggplot(df, aes(x = carat, y = price)) + stat_sum()
+
+ggplot(df, aes(x, y)) + stat_sum()
+ggplot(df, aes(x, z)) + stat_sum()
+ggplot(df, aes(y, z)) + stat_sum()
+
+# Categorical, numerical
+ggplot(df, aes(cut, price)) + stat_sum()
+
+# Categorical, categorical
+ggplot(df, aes(cut, clarity)) + stat_sum()
+
+################
+### Heatmap: ###
+################
+
+# Numerical, numerical
+
+x_min <- SparkR::collect(SparkR::agg(df, min(df$x)))
+x_max <- SparkR::collect(SparkR::agg(df, max(df$x)))
+x.bin <- seq(floor(x_min[[1]]), ceiling(x_max[[1]]), length=nbins)
+
+y_min <- SparkR::collect(SparkR::agg(df, min(df$y)))
+y_max <- SparkR::collect(SparkR::agg(df, max(df$y)))
+y.bin <- seq(floor(y_min[[1]]), ceiling(y_max[[1]]), length=nbins)
+  
+x_num <- as.numeric(unlist(collect(df[,"x"])))
+y_num <- as.numeric(unlist(collect(df[,"y"])))
+freq <-  as.data.frame(base::table(findInterval(x_num, x.bin),findInterval(y_num, y.bin)))
+freq[,1] <- as.numeric(freq[,1])
+freq[,2] <- as.numeric(freq[,2])
+  
+freq2D <- diag(nbins)*0
+freq2D[cbind(freq[,1], freq[,2])] <- freq[,3]
+
+# 2-D
+image(x.bin, y.bin, log(freq2D), col=brewer.pal(max(freq2D), "RdYlBu"))
+contour(x.bin, y.bin, log(freq2D), add=TRUE, col=rgb(1,1,1,.7))
+
+# 3-D
+palette(11, "RdYlBu")
+cols <- (freq2D[-1,-1] + freq2D[-1,-(nbins-1)] + freq2D[-(nbins-1),-(nbins-1)] + freq2D[-(nbins-1),-1])/4
+persp(freq2D, col=cols, xlab = "x", ylab = "y", zlab = "Count", theta = 20, phi = 20, r = sqrt(3))
+
+#################
+### Boxplots: ###
+#################
