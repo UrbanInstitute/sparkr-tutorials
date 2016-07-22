@@ -1,3 +1,22 @@
+###############################
+## geom_tile.SparkR Function ##
+###############################
+# Sarah Armstrong & Alex Engler, Urban Institute
+# July 21, 2016
+
+# Summary: Plots a two-dimensional (2-D) heatmap of frequency counts for two numerical DataFrame columns over a `nbin`-by-`nbin` grid of bins.
+
+# Inputs:
+# (*) df: SparkR DataFrame
+# (*) x, y (string): The names of two numerical-valued columns in the SparkR DataFrame df
+# (*) nbins (integer): The square root of the total number of bins that the frequency counts for x and y are aggregated over
+# (*) title (string): A string specifying the input for `ggtitle` input in `ggplot`
+# (*) xlab, ylab (string): A string specifying the input for `xlab` and `ylab` input in `ggplot`, respectively
+
+# Returns: 2-D heatmap of frequency counts (using `geom_tile` from ggplot2 package)
+
+# Example: geom_tile.SparkR(df = df, x = "carat", y = "price", nbins = 250, title = "This is a title", xlab = "Carat", ylab = "Price")
+
 geom_tile.SparkR <- function(df, x, y, nbins, title, xlab, ylab){
   
   library(ggplot2)
