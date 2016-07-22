@@ -15,9 +15,11 @@
 
 # Returns: 2-D heatmap of frequency counts (using `geom_tile` from ggplot2 package)
 
-# Example: geom_tile.SparkR(df = df, x = "carat", y = "price", nbins = 250, title = "This is a title", xlab = "Carat", ylab = "Price")
+# Example:
+# p1 <- geom_tile.SparkR(df = df, x = "carat", y = "price", nbins = 250)
+# p1 + scale_colour_brewer() + ggtitle("This is a title") + xlab("Carat") + ylab("Price")
 
-geom_tile.SparkR <- function(df, x, y, nbins, title, xlab, ylab){
+geom_tile.SparkR <- function(df, x, y, nbins){
   
   library(ggplot2)
   
@@ -40,8 +42,7 @@ geom_tile.SparkR <- function(df, x, y, nbins, title, xlab, ylab){
   
   dat <- collect(agg(groupBy(df_, "x_bin", "y_bin"), count = n(df_$x_bin)))
   
-  p <- ggplot(dat, aes(x = x_bin, y = y_bin, fill = count)) + geom_tile() + scale_colour_brewer() +
-    ggtitle(title) + xlab(xlab) + ylab(ylab)
+  p <- ggplot(dat, aes(x = x_bin, y = y_bin, fill = count)) + geom_tile()
   
   return(p)
 }
