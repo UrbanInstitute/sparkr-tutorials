@@ -18,7 +18,7 @@ knitr::opts_chunk$set(echo = TRUE)
 + Weighted bar graphs
 + Histograms
 
-**SparkR/R Operations Discussed**: 
+**SparkR/R Operations Discussed**: `ggplot` (`ggplot2.SparkR`), `geom_bar`
 
 ***
 
@@ -56,29 +56,33 @@ Introduced in the spring of 2016, the SparkR extension of Hadley Wickham's `ggpl
 As of the publication date of this tutorial (first version), the `ggplot2.SparkR` package is still nascent and has identifiable bugs. However, we provide `ggplot2.SparkR` in this example for its ease of use, particularly for SparkR users wanting to build basic plots. We alternatively discuss how a SparkR user may develop their own plotting function and provide an example in which we plot a two-dimensional histogram.
 
 
-_Note_: Documentation for `ggplot2.SparkR` can be found [here](http://skku-skt.github.io/ggplot2.SparkR/), and we can view the project on GitHub [here](https://github.com/SKKU-SKT/ggplot2.SparkR).
+_Note_: Documentation for `ggplot2.SparkR` can be found [here](http://skku-skt.github.io/ggplot2.SparkR/), and we can view the project on GitHub [here](https://github.com/SKKU-SKT/ggplot2.SparkR). Documentation for the latest version of `ggplot2` can be found [here](http://docs.ggplot2.org/current/).
 
 ### Bar graphs:
 
-Default
+Just as we would when using `ggplot2`, the following expression plots a basic bar graph that gives frequency counts across the different levels of `"cut"` quality in the data:
 
-```{r, collapse=TRUE}
+```{r, eval=FALSE}
 ggplot(df, aes(x = cut)) + geom_bar()
 ```
 
-Specify binwidth
+We can also specify bandwidth, just as we would in `ggplot2`. The resulting plot is given below:
 
 ```{r, collapse=TRUE}
 ggplot(df, aes(x = cut)) + geom_bar(binwidth = 0.5)
 ```
 
-#### Weighted bar graph:
+#### Bar graph across grouped data:
 
-Weigthed bar graph (column value sums over grouped data) - NOTE cannot calculate mean across grouped data
+##### Weighted bar graph:
+
+We can also use `ggplot2.SparkR` to build weighted bar graphs by specifying a `weight` in the ggplot expression. Note that the default `weight` function is to sum the numerical values of the `weight` column, i.e. the plot replaces frequency count with sums of the `weight` DF column across groups. Furthermore, `ggplot2.SparkR` is not currently (Summer 2016) able to calculate and plot the mean `weight` values across groups. In the following example, we plot the total number of carats across the different `"cut"` quality levels:
 
 ```{r, collapse=TRUE}
-ggplot(df, aes(cut)) + geom_bar(aes(weight = carat)) + ylab("carats")
+ggplot(df, aes(cut)) + geom_bar(aes(weight = carat)) + ylab("Total no. of carats")
 ```
+
+##### Stacked bar graph
 
 Note on performing `geom_bar` on grouped data: The following expression successfully returns a bar graph that describes frequency of observations by clarity, grouped over diamond color. Note, however, that the varied color blocks are not necessarily ordered similarly across different levels of `"cut"`. Similarly, the `"fill"` position will not necessariyl return constant factor=level ordering across different levels of `"cut"`.
 
