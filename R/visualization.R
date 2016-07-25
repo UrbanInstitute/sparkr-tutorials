@@ -8,36 +8,41 @@ library(ggplot2)
 sc <- sparkR.init(sparkEnvir=list(spark.executor.memory="2g", spark.driver.memory="1g", spark.driver.maxResultSize="1g"), sparkPackages="com.databricks:spark-csv_2.11:1.4.0")
 sqlContext <- sparkRSQL.init(sc)
 
-# Load diamonds dataset as `df` DF into SparkR:
+# Throughout this tutorial, we will use the diamonds data that is included in the `ggplot2` package and is frequently used `ggplot2` examples. The data consists of prices and quality information about 54,000 diamonds. The data contains the four C’s of diamond quality, carat, cut, colour and clarity; and five physical measurements, depth, table, x, y and z.
 
 df <- read.df(sqlContext, "s3://ui-spark-data/diamonds.csv", header='true', delimiter=",", source="com.databricks.spark.csv", inferSchema='true', nullValue="")
 cache(df)
 head(df)
 
+# Introduced in the spring of 2016, the SparkR extension of Hadley Wickham's `ggplot2` package, `ggplot2.SparkR`, allows SparkR users to build ggplot-type visualizations by specifying a SparkR DataFrame and DF columns in ggplot expressions identical to how we would specify R data.frame components when using the `ggplot2` package, i.e. the extension package allows SparkR users to implement ggplot without having to modify the SparkR DataFrame API.
+
+
+# As of the publication date of this tutorial (first version), the `ggplot2.SparkR` package is still nascent and has identifiable bugs. However, we provide `ggplot2.SparkR` in this example for its ease of use, particularly for SparkR users wanting to build basic plots. We alternatively discuss how a SparkR user may develop their own plotting function and provide an example in which we plot a two-dimensional histogram.
+
+# The description of the `diamonds` data given above was taken from http://ggplot2.org/book/qplot.pdf.
 
 ##################
 ### Bar graph: ###
 ##################
 
-geom_bar(mapping = NULL, data = NULL, stat = "count", position = "stack", ..., width = NULL, binwidth = NULL, na.rm = FALSE, show.legend = NA, inherit.aes = TRUE)
+# geom_bar(mapping = NULL, data = NULL, stat = "count", position = "stack", ..., width = NULL, binwidth = NULL, na.rm = FALSE, show.legend = NA, inherit.aes = TRUE)
 
-# Default bar graph
+# Just as we would when using `ggplot2`, the following expression plots a basic bar graph that gives frequency counts across the different levels of `"cut"` quality in the data:
 
 ggplot(df, aes(x = cut)) + geom_bar()
+
+# We can also specify bandwidth, just as we would in `ggplot2`. The resulting plot is given below:
+
 ggplot(df, aes(x = cut)) + geom_bar(binwidth = 0.5) # Specify binwidth
 
-# Weigthed bar graph (column value sums over grouped data) - NOTE cannot calculate mean across grouped data
+##### Stacked & proportional bar graphs
 
-ggplot(df, aes(cut)) + geom_bar(aes(weight = carat)) + ylab("carats")
-
-# Bar graph over grouped data (bar graph with `fill` parameter specified)
-# Note on performing `geom_bar` on grouped data: The following expression successfully returns a bar graph that describes frequency of observations by clarity, grouped over diamond color. Note, however, that the varied color blocks are not necessarily ordered similarly across different levels of `"cut"`. Similarly, the `"fill"` position will not necessariyl return constant factor=level ordering across different levels of `"cut"`.
+# One recognized bug within `ggplot2.SparkR` is that, when specifying a `fill` value, using the `"stack"` and `"fill"` specifications for `position` do not necessarily return plots with constant factor-level ordering across groups. For example, the following expression successfully returns a bar graph that gives frequency counts of `"clarity"` levels (string dtype), grouped over diamond `"cut"` types (also string dtype). Note, however, that the varied color blocks representing `"clarity"` levels are not ordered similarly across different levels of `"cut"`. The same issue results when we specify the `"fill"` position:
 
 ggplot(df, aes(x = cut, fill = clarity)) + geom_bar() # `position = "stack"` is default
-
 ggplot(df, aes(x = cut, fill = clarity)) + geom_bar(position = "fill")
 
-# While creating a stacked and filled bar graph may yield heterogeneous factor-level ordering, the `"dodge"` position specification ensures that count bars for each group are in constant order across clarity levels.
+# While creating a stacked or filled bar graph may yield heterogeneous factor-level ordering, the `"dodge"` position specification ensures constant across `"cut"` levels.
 
 ggplot(df, aes(x = cut, fill = clarity)) + geom_bar(position = "dodge")
 
@@ -46,7 +51,7 @@ ggplot(df, aes(x = cut, fill = clarity)) + geom_bar(position = "dodge")
 ### Histogram: ###
 ##################
 
-geom_histogram(mapping = NULL, data = NULL, stat = "bin", position = "stack", ..., binwidth = NULL, bins = NULL, na.rm = FALSE, show.legend = NA, inherit.aes = TRUE)
+# geom_histogram(mapping = NULL, data = NULL, stat = "bin", position = "stack", ..., binwidth = NULL, bins = NULL, na.rm = FALSE, show.legend = NA, inherit.aes = TRUE)
 
 # Default histogram (can specify `binwidth` _or_ number of `bins`)
 
