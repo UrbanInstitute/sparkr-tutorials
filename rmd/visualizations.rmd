@@ -15,11 +15,10 @@ knitr::opts_chunk$set(echo = TRUE)
 **Objective**: In this tutorial, we illustrate various plot types that can be created in SparkR and discuss different strategies for obtaining the plots. We discuss the SparkR ggplot2 package that is in development, and provide examples of the plots that can be created using this package, and how SparkR users may develop their own functions to build visualizations in the SparkR environment in particular. We provide examples of the following plot types:
 
 + Bar graphs
-+ Weighted bar graphs
 + Stacked & proportional bar graphs
 + Histograms
 
-**SparkR/R Operations Discussed**: `ggplot` (`ggplot2.SparkR`), `geom_bar`
+**SparkR/R Operations Discussed**: `ggplot` (`ggplot2.SparkR`), `geom_bar`, `geom_histogram`, 
 
 ***
 
@@ -67,23 +66,7 @@ Just as we would when using `ggplot2`, the following expression plots a basic ba
 ggplot(df, aes(x = cut)) + geom_bar()
 ```
 
-We can also specify bandwidth, just as we would in `ggplot2`. The resulting plot is given below:
-
-```{r, collapse=TRUE}
-ggplot(df, aes(x = cut)) + geom_bar(binwidth = 0.5)
-```
-
-#### Bar graph across grouped data:
-
-##### Weighted bar graph:
-
-We can also use `ggplot2.SparkR` to build weighted bar graphs by specifying a `weight` in the ggplot expression. Note that the default `weight` function is to sum the numerical values of the `weight` column, i.e. the plot replaces frequency count with sums of the `weight` DF column across groups. Furthermore, `ggplot2.SparkR` is not currently (Summer 2016) able to calculate and plot the mean `weight` values across groups. In the following example, we plot the total number of carats across the different `"cut"` quality levels:
-
-```{r, collapse=TRUE}
-ggplot(df, aes(cut)) + geom_bar(aes(weight = carat)) + ylab("Total no. of carats")
-```
-
-##### Stacked & proportional bar graphs
+#### Stacked & proportional bar graphs
 
 One recognized bug within `ggplot2.SparkR` is that, when specifying a `fill` value, using the `"stack"` and `"fill"` specifications for `position` do not necessarily return plots with constant factor-level ordering across groups. For example, the following expression successfully returns a bar graph that gives frequency counts of `"clarity"` levels (string dtype), grouped over diamond `"cut"` types (also string dtype). Note, however, that the varied color blocks representing `"clarity"` levels are not ordered similarly across different levels of `"cut"`. The same issue results when we specify the `"fill"` position:
 
@@ -100,36 +83,28 @@ ggplot(df, aes(x = cut, fill = clarity)) + geom_bar(position = "dodge")
 
 ### Histogram
 
-Default
+Just as we would when using `ggplot2`, the following expression plots a histogram that gives frequency counts across binned `"price"` values in the data:
 
 ```{r, collapse=TRUE}
 ggplot(df, aes(price)) + geom_histogram()
 ```
 
-Specify binwidth and number of bins
+The preceding histogram plot assumes the `ggplot2` default, `bins = 30`, but we can change this value or override the `bins` specification by setting a `binwidth` value as we do in the following examples:
 
 ```{r, collapse=TRUE}
 ggplot(df, aes(price)) + geom_histogram(binwidth = 250)
 ggplot(df, aes(price)) + geom_histogram(bins = 50)
 ```
 
-#### Histogram over grouped data:
-
-```{r, collapse=TRUE}
-ggplot(df, aes(cut)) + geom_histogram(aes(weight = price)) + ylab("total value")
-```
-
-[INSERT: Section on stacked histograms]
-
 ### Frequency polygons:
 
-Default
+Frequency polygons provide a visual alternative to histogram plots (note that they describe equivalent aggregations). We can also fit frequency polygons with `ggplot2` syntax - the following expression returns a frequency polygon that is equivalent to the first histogram plotted in the preceding section:
 
 ```{r, collapse=TRUE}
 ggplot(df, aes(price)) + geom_freqpoly()
 ```
 
-Specify binwidth or number of bins
+Again, we can change the class intervals by specifying `binwidth` or the number of `bins` for the frequency polygon:
 
 ```{r, collapse=TRUE}
 ggplot(df, aes(price)) + geom_freqpoly(binwidth = 250)
@@ -138,7 +113,7 @@ ggplot(df, aes(price)) + geom_freqpoly(bins = 50)
 
 Frequency polygons over grouped data are perhaps more easily interpreted than stacked histograms; the following is equivalent to the preceding stacked histogram. Note that we specify `"cut"` as `colour`, rather than `fill` as we did when using `geom_histogram`:
 
-[INSERT: R code for layer frequency polygons]
+
 
 ### Two-dimensional Histograms
 
