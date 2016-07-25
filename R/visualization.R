@@ -31,10 +31,6 @@ head(df)
 
 ggplot(df, aes(x = cut)) + geom_bar()
 
-# We can also specify bandwidth, just as we would in `ggplot2`. The resulting plot is given below:
-
-ggplot(df, aes(x = cut)) + geom_bar(binwidth = 0.5) # Specify binwidth
-
 ##### Stacked & proportional bar graphs
 
 # One recognized bug within `ggplot2.SparkR` is that, when specifying a `fill` value, using the `"stack"` and `"fill"` specifications for `position` do not necessarily return plots with constant factor-level ordering across groups. For example, the following expression successfully returns a bar graph that gives frequency counts of `"clarity"` levels (string dtype), grouped over diamond `"cut"` types (also string dtype). Note, however, that the varied color blocks representing `"clarity"` levels are not ordered similarly across different levels of `"cut"`. The same issue results when we specify the `"fill"` position:
@@ -53,37 +49,43 @@ ggplot(df, aes(x = cut, fill = clarity)) + geom_bar(position = "dodge")
 
 # geom_histogram(mapping = NULL, data = NULL, stat = "bin", position = "stack", ..., binwidth = NULL, bins = NULL, na.rm = FALSE, show.legend = NA, inherit.aes = TRUE)
 
-# Default histogram (can specify `binwidth` _or_ number of `bins`)
+# Just as we would when using `ggplot2`, the following expression plots a histogram that gives frequency counts across binned `"price"` values in the data:
 
 ggplot(df, aes(price)) + geom_histogram()
+
+# The preceding histogram plot assumes the `ggplot2` default, `bins = 30`, but we can change this value or override the `bins` specification by setting a `binwidth` value as we do in the following examples:
+
 ggplot(df, aes(price)) + geom_histogram(binwidth = 250)
 ggplot(df, aes(price)) + geom_histogram(bins = 50)
 
 # Weighted histogram:
 
-ggplot(df, aes(cut)) + geom_histogram(aes(weight = price)) + ylab("total value")
+# ggplot(df, aes(cut)) + geom_histogram(aes(weight = price)) + ylab("total value") NOT available in `ggplot2.SparkR`
 
 # Stacked histograms:
 
-#ggplot(df, aes(price, fill = cut)) + geom_histogram() # `position = "stack"` is default
-#ggplot(df, aes(price, fill = cut)) + geom_histogram(position = "fill")
+# ggplot(df, aes(price, fill = cut)) + geom_histogram() # NOT available in `ggplot2.SparkR`
+# ggplot(df, aes(price, fill = cut)) + geom_histogram(position = "fill")
 
 
 ###########################
 ### Frequency Polygons: ###
 ###########################
 
-geom_freqpoly(mapping = NULL, data = NULL, stat = "bin", position = "identity", ..., na.rm = FALSE, show.legend = NA, inherit.aes = TRUE)
+# geom_freqpoly(mapping = NULL, data = NULL, stat = "bin", position = "identity", ..., na.rm = FALSE, show.legend = NA, inherit.aes = TRUE)
 
-# Default frequency polygon
+# Frequency polygons provide a visual alternative to histogram plots (note that they describe equivalent aggregations). We can also fit frequency polygons with `ggplot2` syntax - the following expression returns a frequency polygon that is equivalent to the first histogram plotted in the preceding section:
 
 ggplot(df, aes(price)) + geom_freqpoly()
+
+# Again, we can change the class intervals by specifying `binwidth` or the number of `bins` for the frequency polygon:
+
 ggplot(df, aes(price)) + geom_freqpoly(binwidth = 250)
 ggplot(df, aes(price)) + geom_freqpoly(bins = 50)
 
 # Frequency polygons over grouped data are perhaps more easily interpreted than stacked histograms; the following is equivalent to the preceding stacked histogram. Note that we specify `"cut"` as `colour`, rather than `fill` as we did when using `geom_histogram`:
 
-ggplot(df, aes(price, colour = cut)) + geom_freqpoly()
+# ggplot(df, aes(price, colour = cut)) + geom_freqpoly() NOT currently supported by `ggplot2.SparkR`
 
 #################################################################
 ### Dealing with overplotting in scatterplot using `stat_sum` ###
