@@ -14,11 +14,13 @@ knitr::opts_chunk$set(echo = TRUE)
 
 **Objective**: In this tutorial, we illustrate various plot types that can be created in SparkR and discuss different strategies for obtaining the plots. We discuss the SparkR ggplot2 package that is in development, and provide examples of the plots that can be created using this package, and how SparkR users may develop their own functions to build visualizations in the SparkR environment in particular. We provide examples of the following plot types:
 
-+ Bar graphs
-+ Stacked & proportional bar graphs
-+ Histograms
++ Bar graph
++ Stacked or proportional bar graph
++ Histogram
++ Frequency polygon
++ Two-dimensional histogram (heatmap)
 
-**SparkR/R Operations Discussed**: `ggplot` (`ggplot2.SparkR`), `geom_bar`, `geom_histogram`, 
+**SparkR/R Operations Discussed**: `ggplot` (`ggplot2.SparkR`), `geom_bar` (`ggplot2.SparkR`), `geom_histogram` (`ggplot2.SparkR`), `geom_freqpoly` (`ggplot2.SparkR`), `geom_boxplot`, `geom_tile.SparkR` (defined function)
 
 ***
 
@@ -46,6 +48,12 @@ df <- read.df(sqlContext, "s3://ui-spark-data/diamonds.csv", header='true', deli
 cache(df)
 ```
 
+We can see what the data set looks like using the `str` operation:
+
+```{r, collapse=TRUE}
+str(df)
+```
+
 _Note_: The description of the `diamonds` data given above was taken from http://ggplot2.org/book/qplot.pdf.
 
 ***
@@ -58,7 +66,7 @@ As of the publication date of this tutorial (first version), the `ggplot2.SparkR
 
 _Note_: Documentation for `ggplot2.SparkR` can be found [here](http://skku-skt.github.io/ggplot2.SparkR/), and we can view the project on GitHub [here](https://github.com/SKKU-SKT/ggplot2.SparkR). Documentation for the latest version of `ggplot2` can be found [here](http://docs.ggplot2.org/current/).
 
-### Bar graphs:
+### Bar graph:
 
 Just as we would when using `ggplot2`, the following expression plots a basic bar graph that gives frequency counts across the different levels of `"cut"` quality in the data:
 
@@ -67,7 +75,7 @@ p1 <- ggplot(df, aes(x = cut))
 p1 + geom_bar()
 ```
 
-#### Stacked & proportional bar graphs
+#### Stacked or proportional bar graph:
 
 One recognized bug within `ggplot2.SparkR` is that, when specifying a `fill` value, using the `"stack"` and `"fill"` specifications for `position` do not necessarily return plots with constant factor-level ordering across groups. For example, the following expression successfully returns a bar graph that gives frequency counts of `"clarity"` levels (string dtype), grouped over diamond `"cut"` types (also string dtype). Note, however, that the varied color blocks representing `"clarity"` levels are not ordered similarly across different levels of `"cut"`. The same issue results when we specify the `"fill"` position:
 
@@ -83,7 +91,7 @@ While creating a stacked or filled bar graph may yield heterogeneous factor-leve
 p2 + geom_bar(position = "dodge")
 ```
 
-### Histogram
+### Histogram:
 
 Just as we would when using `ggplot2`, the following expression plots a histogram that gives frequency counts across binned `"price"` values in the data:
 
@@ -99,7 +107,7 @@ p3 + geom_histogram(binwidth = 250)
 p3 + geom_histogram(bins = 50)
 ```
 
-### Frequency polygons:
+### Frequency polygon:
 
 Frequency polygons provide a visual alternative to histogram plots (note that they describe equivalent aggregations). We can also fit frequency polygons with `ggplot2` syntax - the following expression returns a frequency polygon that is equivalent to the first histogram plotted in the preceding section:
 
@@ -116,9 +124,42 @@ p3 + geom_freqpoly(bins = 50)
 
 Frequency polygons over grouped data are perhaps more easily interpreted than stacked histograms; the following is equivalent to the preceding stacked histogram. Note that we specify `"cut"` as `colour`, rather than `fill` as we did when using `geom_histogram`:
 
+### Boxplot:
 
+Finally, we can create boxplots just as we would in `ggplot2`. The following expression gives a boxplot of `"price"` values across levels of `"clarity"`:
 
-### Two-dimensional Histograms
+```{r, collapse=TRUE}
+p4 <- ggplot(df, aes(x = clarity, y = price))
+p4 + geom_boxplot()
+```
+
+### Additional `ggplot2.SparkR` functionality:
+
+We can adapt the plot types discussed in the previous sections with the specifications given below: 
+
++ Facets: `facet_grid`, `facet_wrap` and `facet_null` (default)
++ Coordinate systems: `coord_cartesian` and `coord_flip`
++ Position adjustments: `position_dodge`, `position_fill`, `position_stack` (as seen in previous example)
++ Scales: `scale_x_log10`, `scale_y_log10`, `labs`, `xlab`, `ylab`, `xlim` and `ylim`
+
+For example, the following expression facets our previous histogram example across the different levels of `"cut"` quality:
+
+```{r, collapse=TRUE}
+p3 + geom_histogram() + facet_wrap(~cut)
+```
+
+### Functionality gaps between `ggplot2` and SparkR extension:
+
+Below, we list several operations supported by `ggplot2` that are not currently supported by its SparkR extension package. The list is not exhaustive and is subject to change as the package continues to be developed:
+
++ Weighted bar graph (i.e. specify `weight` in aesthetic)
++ Weighted histogram
++ Strictly ordered layers for filled and stacked bar graphs (as we saw in an earlier example)
++ Stacked or filled histograms
++ Layer frequency polygon (i.e specify `colour` in aesthetic)
++ Density plot using `geom_freqpoly` by specifying `y = ..density..` in aesthetic (note that extension package does not support `geom_density`)
+
+### Two-dimensional histogram (heatmap):
 
 Dealing with overplotting in scatterplot using `stat_sum`/2-D histogram
 

@@ -12,7 +12,10 @@ sqlContext <- sparkRSQL.init(sc)
 
 df <- read.df(sqlContext, "s3://ui-spark-data/diamonds.csv", header='true', delimiter=",", source="com.databricks.spark.csv", inferSchema='true', nullValue="")
 cache(df)
-head(df)
+
+# We can see what the data set looks like using the `str` operation:
+
+str(df)
 
 # Introduced in the spring of 2016, the SparkR extension of Hadley Wickham's `ggplot2` package, `ggplot2.SparkR`, allows SparkR users to build ggplot-type visualizations by specifying a SparkR DataFrame and DF columns in ggplot expressions identical to how we would specify R data.frame components when using the `ggplot2` package, i.e. the extension package allows SparkR users to implement ggplot without having to modify the SparkR DataFrame API.
 
@@ -94,28 +97,52 @@ p3 + geom_freqpoly(bins = 50)
 ### Dealing with overplotting in scatterplot using `stat_sum` ###
 #################################################################
 
-stat_sum(mapping = NULL, data = NULL, geom = "point", position = "identity", ...)
+# stat_sum(mapping = NULL, data = NULL, geom = "point", position = "identity", ...)
 
-# Default `stat_sum`
+# NOT supported by `ggplot2.SparkR`
 
-# Numerical, numerical
-#ggplot(df, aes(x = carat, y = price)) + stat_sum()
+################
+### Boxplot: ###
+################
 
-#ggplot(df, aes(x, y)) + stat_sum()
-#ggplot(df, aes(x, z)) + stat_sum()
-#ggplot(df, aes(y, z)) + stat_sum()
+# Finally, we can create boxplots just as we would in `ggplot2`. The following expression gives a boxplot of `"price"` values across levels of `"clarity"`:
 
-# Categorical, numerical
-#ggplot(df, aes(cut, price)) + stat_sum()
+p4 <- ggplot(df, aes(x = clarity, y = price))
+p4 + geom_boxplot()
 
-# Categorical, categorical
-#ggplot(df, aes(cut, clarity)) + stat_sum()
+##################################################
+### Additional `ggplot2.SparkR` functionality: ###
+##################################################
+
+# We can adapt the plot types discussed in the previous sections with the specifications given below: 
+
+#+ Facets: `facet_grid`, `facet_wrap` and `facet_null` (default)
+#+ Coordinate systems: `coord_cartesian` and `coord_flip`
+#+ Position adjustments: `position_dodge`, `position_fill`, `position_stack` (as seen in previous example)
+#+ Scales: `scale_x_log10`, `scale_y_log10`, `labs`, `xlab`, `ylab`, `xlim` and `ylim`
+
+# For example, the following expression facets our previous histogram example across the different levels of `"cut"` quality:
+
+p3 + geom_histogram() + facet_wrap(~cut)
+
+##################################################################
+### Functionality gaps between `ggplot2` and SparkR extension: ###
+##################################################################
+
+# Below, we list several operations supported by `ggplot2` that are not currently supported by its SparkR extension package. The list is not exhaustive and is subject to change as the package continues to be developed:
+
+#+ Weighted bar graph (i.e. specify `weight` in aesthetic)
+#+ Weighted histogram
+#+ Strictly ordered layers for filled and stacked bar graphs (as we saw in an earlier example)
+#+ Stacked or filled histograms
+#+ Layer frequency polygon (i.e specify `colour` in aesthetic)
+#+ Density plot using `geom_freqpoly` by specifying `y = ..density..` in aesthetic (note that extension package does not support `geom_density`)
 
 ############################################
 ### Two-Dimensional Histogram (Heatmap): ###
 ############################################
 
-# Numerical, numerical
+# Dealing with overplotting in scatterplot using `stat_sum`/2-D histogram
 
 geom_tile.SparkR <- function(df, x, y, nbins){
   
@@ -147,7 +174,3 @@ geom_tile.SparkR <- function(df, x, y, nbins){
 
 p1 <- geom_tile.SparkR(df = df, x = "carat", y = "price", nbins = 250)
 p1 + scale_colour_brewer(palette = "9-class Blues", type = "seq") + ggtitle("This is a title") + xlab("Carat") + ylab("Price")
-
-#################
-### Boxplots: ###
-#################
