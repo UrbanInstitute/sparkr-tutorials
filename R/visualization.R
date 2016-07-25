@@ -20,7 +20,7 @@ str(df)
 # Introduced in the spring of 2016, the SparkR extension of Hadley Wickham's `ggplot2` package, `ggplot2.SparkR`, allows SparkR users to build ggplot-type visualizations by specifying a SparkR DataFrame and DF columns in ggplot expressions identical to how we would specify R data.frame components when using the `ggplot2` package, i.e. the extension package allows SparkR users to implement ggplot without having to modify the SparkR DataFrame API.
 
 
-# As of the publication date of this tutorial (first version), the `ggplot2.SparkR` package is still nascent and has identifiable bugs. However, we provide `ggplot2.SparkR` in this example for its ease of use, particularly for SparkR users wanting to build basic plots. We alternatively discuss how a SparkR user may develop their own plotting function and provide an example in which we plot a two-dimensional histogram.
+# As of the publication date of this tutorial (first version), the `ggplot2.SparkR` package is still nascent and has identifiable bugs. However, we provide `ggplot2.SparkR` in this example for its ease of use, particularly for SparkR users wanting to build basic plots. We alternatively discuss how a SparkR user may develop their own plotting function and provide an example in which we plot a bivariate histogram.
 
 # The description of the `diamonds` data given above was taken from http://ggplot2.org/book/qplot.pdf.
 
@@ -138,13 +138,54 @@ p3 + geom_histogram() + facet_wrap(~cut)
 #+ Layer frequency polygon (i.e specify `colour` in aesthetic)
 #+ Density plot using `geom_freqpoly` by specifying `y = ..density..` in aesthetic (note that extension package does not support `geom_density`)
 
-############################################
-### Two-Dimensional Histogram (Heatmap): ###
-############################################
+############################
+### Bivariate histogram: ###
+############################
 
-# Dealing with overplotting in scatterplot using `stat_sum`/2-D histogram
+# In the previous examples, we relied on the `ggplot2.SparkR` package to build plots from DataFrames using syntax identical to that which we would use in a normal application of `ggplot2` on R data.frames. Given the current limitations of the extension package, we may need to develop our own function if we are interested in building a plot type that is not currently supported by `ggplot2.SparkR`. Here, we provide an example of a function that returns a bivariate histogram of two numerical DataFrame columns.
 
-geom_tile.SparkR <- function(df, x, y, nbins){
+# When building a function in SparkR, we want to avoid operations that are computationally expensive and building one that returns a plot is no different. One of the most expensive operations in SparkR, `collect`, is of particular interest when building functions that return plots since collecting data locally allows us to leverage graphing tools that we use in traditional frameworks, e.g. `ggplot2`. We should `collect` data as infrequently as possible since the operation is highly memory-intensive. In the following function, we `collect` data five (5) times. Four of the times, we are collecting single values (two minimum and two maximum values), which does not use up a huge amount of memory. The last `collect` that we perform, collects a 3-by-`nbins` size data.frame, which can fit in-memory on a single node (assuming we don't specify a massive value for `nbins`). When developing SparkR functions, we should only perform minor collections like the ones discussed.
+
+geom_bivar_histogram.SparkR <- function(df, x, y, nbins){
+  
+  library(ggplot2)
+  
+  x_min <- collect(agg(df, min(df[[x]]))) # Collect
+  x_max <- collect(agg(df, max(df[[x]]))) # Collect
+  x.bin <- seq(floor(x_min[[1]]), ceiling(x_max[[1]]), length = nbins)
+  
+  y_min <- collect(agg(df, min(df[[y]]))) # Collect
+  y_max <- collect(agg(df, max(df[[y]]))) # Collect
+  y.bin <- seq(floor(y_min[[1]]), ceiling(y_max[[1]]), length = nbins)
+  
+  x.bin.w <- x.bin[[2]]-x.bin[[1]]
+  y.bin.w <- y.bin[[2]]-y.bin[[1]]
+  
+  df_ <- withColumn(df, "x_bin_", ceiling((df[[x]] - x_min[[1]]) / x.bin.w))
+  df_ <- withColumn(df_, "y_bin_", ceiling((df[[y]] - y_min[[1]]) / y.bin.w))
+  
+  df_ <- mutate(df_, x_bin = ifelse(df_$x_bin_ == 0, 1, df_$x_bin_))
+  df_ <- mutate(df_, y_bin = ifelse(df_$y_bin_ == 0, 1, df_$y_bin_))
+  
+  dat <- collect(agg(groupBy(df_, "x_bin", "y_bin"), count = n(df_$x_bin))) # Collect
+  
+  p <- ggplot(dat, aes(x = x_bin, y = y_bin, fill = count)) + geom_tile()
+  
+  return(p)
+}
+
+# Here, we evaluate the `geom_bivar_histogram.SparkR` function using `"carat"` and `"price"`:
+
+p5 <- geom_bivar_histogram.SparkR(df = df, x = "carat", y = "price", nbins = 100)
+p5 + scale_colour_brewer(palette = "Blues", type = "seq") + ggtitle("This is a title") + xlab("Carat") + ylab("Price")
+
+# _Note_: Documentation for the `geom_bivar_histogram.SparkR` function is given here:
+
+# Note that the plot closely resembles a scatterplot. Bivariate histograms are one strategy for mitigating overplotting that often occurs when attempting to visualize massive data sets. Furthermore, it is sometimes impossible to gather the data necessary to map individual points to a scatterplot onto a single node within our cluster - this is when aggregation becomes necessary rather than simply preferable. Just like plotting a univariate histogram, binning data reduces the number of points to plot and, with the appropriate choice of bin number and color scale, bivariate histograms can provide an intuitive alternative to scatterplots when working with massive data sets.
+
+# For example, the following function is equivalent to our previous one, but we have changed the `fill` specification that partially determines the color scale from `count` to `log10(count)`. Then, we evaluate the new function with a larger `nbins` value, returning a new plot with more granular binning and a more nuanced color scale (since the breaks in the color scale are now log10-spaced).
+
+geom_bivar_histogram.SparkR.log10 <- function(df, x, y, nbins){
   
   library(ggplot2)
   
@@ -167,10 +208,10 @@ geom_tile.SparkR <- function(df, x, y, nbins){
   
   dat <- collect(agg(groupBy(df_, "x_bin", "y_bin"), count = n(df_$x_bin)))
   
-  p <- ggplot(dat, aes(x = x_bin, y = y_bin, fill = count)) + geom_tile()
+  p <- ggplot(dat, aes(x = x_bin, y = y_bin, fill = log10(count))) + geom_tile()
   
   return(p)
 }
 
-p1 <- geom_tile.SparkR(df = df, x = "carat", y = "price", nbins = 250)
-p1 + scale_colour_brewer(palette = "9-class Blues", type = "seq") + ggtitle("This is a title") + xlab("Carat") + ylab("Price")
+p6 <- geom_bivar_histogram.SparkR.log10(df = df, x = "carat", y = "price", nbins = 250)
+p6 + scale_colour_brewer(palette = "Blues", type = "seq") + ggtitle("This is a title") + xlab("Carat") + ylab("Price")
