@@ -203,7 +203,7 @@ p5 <- geom_bivar_histogram.SparkR(df = df, x = "carat", y = "price", nbins = 100
 p5 + scale_colour_brewer(palette = "Blues", type = "seq") + ggtitle("This is a title") + xlab("Carat") + ylab("Price")
 ```
 
-# _Note_: Documentation for the `geom_bivar_histogram.SparkR` function is given here:
+# _Note_: Documentation for the `geom_bivar_histogram.SparkR` function is given [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/R/geom_bivar_histogram_SparkR.R).
 
 Note that the plot closely resembles a scatterplot. Bivariate histograms are one strategy for mitigating overplotting that often occurs when attempting to visualize massive data sets. Furthermore, it is sometimes impossible to gather the data necessary to map individual points to a scatterplot onto a single node within our cluster - this is when aggregation becomes necessary rather than simply preferable. Just like plotting a univariate histogram, binning data reduces the number of points to plot and, with the appropriate choice of bin number and color scale, bivariate histograms can provide an intuitive alternative to scatterplots when working with massive data sets.
 
