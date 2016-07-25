@@ -1,0 +1,210 @@
+---
+title: 'Data Visualizations in SparkR'
+author: "Sarah Armstrong, Urban Institute"
+date: "July 21, 2016"
+output: 
+  html_document: 
+    keep_md: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+**Objective**: In this tutorial, we illustrate various plot types that can be created in SparkR and discuss different strategies for obtaining the plots. We discuss the SparkR ggplot2 package that is in development, and provide examples of the plots that can be created using this package, and how SparkR users may develop their own functions to build visualizations in the SparkR environment in particular. We provide examples of the following plot types:
+
++ Bar graphs
++ Weighted bar graphs
++ Histograms
+
+**SparkR/R Operations Discussed**: 
+
+***
+
+<span style="color:red">**Warning**</span>: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate your SparkR and SparkR SQL contexts.
+
+```{r, include=FALSE}
+library(devtools)
+library(SparkR)
+devtools::install_github("SKKU-SKT/ggplot2.SparkR")
+library(ggplot2.SparkR)
+library(ggplot2)
+
+sc <- sparkR.init(sparkEnvir=list(spark.executor.memory="2g", spark.driver.memory="1g", spark.driver.maxResultSize="1g"), sparkPackages="com.databricks:spark-csv_2.11:1.4.0")
+sqlContext <- sparkRSQL.init(sc)
+```
+
+You can confirm that you successfully initiated these contexts by looking at the global environment of RStudio. Only proceed if you can see `sc` and `sqlContext` listed as values in the global environment or RStudio.
+
+***
+
+**Read in initial data as DataFrame (DF)**: Throughout this tutorial, we will use the diamonds data that is included in the `ggplot2` package and is frequently used `ggplot2` examples. The data consists of prices and quality information about 54,000 diamonds. The data contains the four C’s of diamond quality, carat, cut, colour and clarity; and five physical measurements, depth, table, x, y and z.
+
+```{r, message=F, warning=F, results='hide'}
+df <- read.df(sqlContext, "s3://ui-spark-data/diamonds.csv", header='true', delimiter=",", source="com.databricks.spark.csv", inferSchema='true', nullValue="")
+cache(df)
+```
+
+_Note_: The description of the `diamonds` data given above was taken from http://ggplot2.org/book/qplot.pdf.
+
+***
+
+Introduced in the spring of 2016, the SparkR extension of Hadley Wickham's `ggplot2` package, `ggplot2.SparkR`, allows SparkR users to build ggplot-type visualizations by specifying a SparkR DataFrame and DF columns in ggplot expressions identical to how we would specify R data.frame components when using the `ggplot2` package, i.e. the extension package allows SparkR users to implement ggplot without having to modify the SparkR DataFrame API.
+
+
+As of the publication date of this tutorial (first version), the `ggplot2.SparkR` package is still nascent and has identifiable bugs. However, we provide `ggplot2.SparkR` in this example for its ease of use, particularly for SparkR users wanting to build basic plots. We alternatively discuss how a SparkR user may develop their own plotting function and provide an example in which we plot a two-dimensional histogram.
+
+
+_Note_: Documentation for `ggplot2.SparkR` can be found [here](http://skku-skt.github.io/ggplot2.SparkR/), and we can view the project on GitHub [here](https://github.com/SKKU-SKT/ggplot2.SparkR).
+
+### Bar graphs:
+
+Default
+
+```{r, collapse=TRUE}
+ggplot(df, aes(x = cut)) + geom_bar()
+```
+
+Specify binwidth
+
+```{r, collapse=TRUE}
+ggplot(df, aes(x = cut)) + geom_bar(binwidth = 0.5)
+```
+
+#### Weighted bar graph:
+
+Weigthed bar graph (column value sums over grouped data) - NOTE cannot calculate mean across grouped data
+
+```{r, collapse=TRUE}
+ggplot(df, aes(cut)) + geom_bar(aes(weight = carat)) + ylab("carats")
+```
+
+Note on performing `geom_bar` on grouped data: The following expression successfully returns a bar graph that describes frequency of observations by clarity, grouped over diamond color. Note, however, that the varied color blocks are not necessarily ordered similarly across different levels of `"cut"`. Similarly, the `"fill"` position will not necessariyl return constant factor=level ordering across different levels of `"cut"`.
+
+```{r, collapse=TRUE}
+ggplot(df, aes(x = cut, fill = clarity)) + geom_bar() # `position = "stack"` is default
+ggplot(df, aes(x = cut, fill = clarity)) + geom_bar(position = "fill")
+```
+
+While creating a stacked and filled bar graph may yield heterogeneous factor-level ordering, the `"dodge"` position specification ensures that count bars for each group are in constant order across clarity levels.
+
+```{r, collapse=TRUE}
+ggplot(df, aes(x = cut, fill = clarity)) + geom_bar(position = "dodge")
+```
+
+### Histogram
+
+Default
+
+```{r, collapse=TRUE}
+ggplot(df, aes(price)) + geom_histogram()
+```
+
+Specify binwidth and number of bins
+
+```{r, collapse=TRUE}
+ggplot(df, aes(price)) + geom_histogram(binwidth = 250)
+ggplot(df, aes(price)) + geom_histogram(bins = 50)
+```
+
+#### Histogram over grouped data:
+
+```{r, collapse=TRUE}
+ggplot(df, aes(cut)) + geom_histogram(aes(weight = price)) + ylab("total value")
+```
+
+[INSERT: Section on stacked histograms]
+
+### Frequency polygons:
+
+Default
+
+```{r, collapse=TRUE}
+ggplot(df, aes(price)) + geom_freqpoly()
+```
+
+Specify binwidth or number of bins
+
+```{r, collapse=TRUE}
+ggplot(df, aes(price)) + geom_freqpoly(binwidth = 250)
+ggplot(df, aes(price)) + geom_freqpoly(bins = 50)
+```
+
+Frequency polygons over grouped data are perhaps more easily interpreted than stacked histograms; the following is equivalent to the preceding stacked histogram. Note that we specify `"cut"` as `colour`, rather than `fill` as we did when using `geom_histogram`:
+
+[INSERT: R code for layer frequency polygons]
+
+### Two-dimensional Histograms
+
+Dealing with overplotting in scatterplot using `stat_sum`/2-D histogram
+
+```{r}
+geom_tile.SparkR <- function(df, x, y, nbins){
+  
+  library(ggplot2)
+  
+  x_min <- collect(agg(df, min(df[[x]])))
+  x_max <- collect(agg(df, max(df[[x]])))
+  x.bin <- seq(floor(x_min[[1]]), ceiling(x_max[[1]]), length = nbins)
+  
+  y_min <- collect(agg(df, min(df[[y]])))
+  y_max <- collect(agg(df, max(df[[y]])))
+  y.bin <- seq(floor(y_min[[1]]), ceiling(y_max[[1]]), length = nbins)
+  
+  x.bin.w <- x.bin[[2]]-x.bin[[1]]
+  y.bin.w <- y.bin[[2]]-y.bin[[1]]
+  
+  df_ <- withColumn(df, "x_bin_", ceiling((df[[x]] - x_min[[1]]) / x.bin.w))
+  df_ <- withColumn(df_, "y_bin_", ceiling((df[[y]] - y_min[[1]]) / y.bin.w))
+  
+  df_ <- mutate(df_, x_bin = ifelse(df_$x_bin_ == 0, 1, df_$x_bin_))
+  df_ <- mutate(df_, y_bin = ifelse(df_$y_bin_ == 0, 1, df_$y_bin_))
+  
+  dat <- collect(agg(groupBy(df_, "x_bin", "y_bin"), count = n(df_$x_bin)))
+  
+  p <- ggplot(dat, aes(x = x_bin, y = y_bin, fill = count)) + geom_tile()
+  
+  return(p)
+}
+```
+
+```{r}
+p1 <- geom_tile.SparkR(df = df, x = "carat", y = "price", nbins = 250)
+p1 + scale_colour_brewer(palette = "9-class Blues", type = "seq") + ggtitle("This is a title") + xlab("Carat") + ylab("Price")
+```
+
+Changing the color scale when appropriate
+
+```{r}
+geom_tile.SparkR <- function(df, x, y, nbins){
+  
+  library(ggplot2)
+  
+  x_min <- collect(agg(df, min(df[[x]])))
+  x_max <- collect(agg(df, max(df[[x]])))
+  x.bin <- seq(floor(x_min[[1]]), ceiling(x_max[[1]]), length = nbins)
+  
+  y_min <- collect(agg(df, min(df[[y]])))
+  y_max <- collect(agg(df, max(df[[y]])))
+  y.bin <- seq(floor(y_min[[1]]), ceiling(y_max[[1]]), length = nbins)
+  
+  x.bin.w <- x.bin[[2]]-x.bin[[1]]
+  y.bin.w <- y.bin[[2]]-y.bin[[1]]
+  
+  df_ <- withColumn(df, "x_bin_", ceiling((df[[x]] - x_min[[1]]) / x.bin.w))
+  df_ <- withColumn(df_, "y_bin_", ceiling((df[[y]] - y_min[[1]]) / y.bin.w))
+  
+  df_ <- mutate(df_, x_bin = ifelse(df_$x_bin_ == 0, 1, df_$x_bin_))
+  df_ <- mutate(df_, y_bin = ifelse(df_$y_bin_ == 0, 1, df_$y_bin_))
+  
+  dat <- collect(agg(groupBy(df_, "x_bin", "y_bin"), count = n(df_$x_bin)))
+  
+  p <- ggplot(dat, aes(x = x_bin, y = y_bin, fill = log10(count))) + geom_tile()
+  
+  return(p)
+}
+```
+
+
+### Boxplot:
