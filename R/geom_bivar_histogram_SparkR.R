@@ -1,10 +1,10 @@
-###############################
-## geom_tile.SparkR Function ##
-###############################
+##########################################
+## geom_bivar_histogram.SparkR Function ##
+##########################################
 # Sarah Armstrong & Alex Engler, Urban Institute
 # July 21, 2016
 
-# Summary: Plots a two-dimensional (2-D) heatmap of frequency counts for two numerical DataFrame columns over a `nbin`-by-`nbin` grid of bins.
+# Summary: Plots a two-dimensional (2-D) histogram of frequency counts for two numerical DataFrame columns over a `nbin`-by-`nbin` grid of bins.
 
 # Inputs:
 # (*) df: SparkR DataFrame
@@ -13,13 +13,13 @@
 # (*) title (string): A string specifying the input for `ggtitle` input in `ggplot`
 # (*) xlab, ylab (string): A string specifying the input for `xlab` and `ylab` input in `ggplot`, respectively
 
-# Returns: 2-D heatmap of frequency counts (using `geom_tile` from ggplot2 package)
+# Returns: 2-D histogram of frequency counts (using `geom_tile` from ggplot2 package)
 
 # Example:
-# p1 <- geom_tile.SparkR(df = df, x = "carat", y = "price", nbins = 250)
+# p1 <- geom_bivar_histogram.SparkR(df = df, x = "carat", y = "price", nbins = 250)
 # p1 + scale_colour_brewer() + ggtitle("This is a title") + xlab("Carat") + ylab("Price")
 
-geom_tile.SparkR <- function(df, x, y, nbins){
+geom_bivar_histogram.SparkR <- function(df, x, y, nbins){
   
   library(ggplot2)
   
