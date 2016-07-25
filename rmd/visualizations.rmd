@@ -16,6 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 + Bar graphs
 + Weighted bar graphs
++ Stacked & proportional bar graphs
 + Histograms
 
 **SparkR/R Operations Discussed**: `ggplot` (`ggplot2.SparkR`), `geom_bar`
@@ -82,16 +83,16 @@ We can also use `ggplot2.SparkR` to build weighted bar graphs by specifying a `w
 ggplot(df, aes(cut)) + geom_bar(aes(weight = carat)) + ylab("Total no. of carats")
 ```
 
-##### Stacked bar graph
+##### Stacked & proportional bar graphs
 
-Note on performing `geom_bar` on grouped data: The following expression successfully returns a bar graph that describes frequency of observations by clarity, grouped over diamond color. Note, however, that the varied color blocks are not necessarily ordered similarly across different levels of `"cut"`. Similarly, the `"fill"` position will not necessariyl return constant factor=level ordering across different levels of `"cut"`.
+One recognized bug within `ggplot2.SparkR` is that, when specifying a `fill` value, using the `"stack"` and `"fill"` specifications for `position` do not necessarily return plots with constant factor-level ordering across groups. For example, the following expression successfully returns a bar graph that gives frequency counts of `"clarity"` levels (string dtype), grouped over diamond `"cut"` types (also string dtype). Note, however, that the varied color blocks representing `"clarity"` levels are not ordered similarly across different levels of `"cut"`. The same issue results when we specify the `"fill"` position:
 
 ```{r, collapse=TRUE}
 ggplot(df, aes(x = cut, fill = clarity)) + geom_bar() # `position = "stack"` is default
 ggplot(df, aes(x = cut, fill = clarity)) + geom_bar(position = "fill")
 ```
 
-While creating a stacked and filled bar graph may yield heterogeneous factor-level ordering, the `"dodge"` position specification ensures that count bars for each group are in constant order across clarity levels.
+While creating a stacked or filled bar graph may yield heterogeneous factor-level ordering, the `"dodge"` position specification ensures constant across `"cut"` levels.
 
 ```{r, collapse=TRUE}
 ggplot(df, aes(x = cut, fill = clarity)) + geom_bar(position = "dodge")
