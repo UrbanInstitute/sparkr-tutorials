@@ -11,6 +11,8 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+**Last Updated**: July 26, 2016
+
 
 **Objective**: The SparkR DataFrame (DF) API supports a number of operations to do structured data processing. These operations range from the simple tasks that we used in the SparkR Basics I tutorial (e.g. counting the number of rows in a DF using `nrow`) to more complex tasks like computing aggregate data. This tutorial discusses the key DF operations for processing tabular data in the SparkR environment, the different types of DF operations and how to perform these operations efficiently. In particular, this tutorial discusses:
 
@@ -27,11 +29,11 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ***
 
-<span style="color:red">**Warning**</span>: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate your SparkR and SparkR SQL contexts.
+:heavy_exclamation_mark: **Warning**: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate your SparkR and SparkR SQL contexts.
 
 ```{r, include=FALSE}
 library(SparkR)
-sc <- sparkR.init(sparkEnvir=list(spark.executor.memory="2g", spark.driver.memory="1g", spark.driver.maxResultSize="1g"), sparkPackages="com.databricks:spark-csv_2.11:1.4.0")
+sc <- sparkR.init(sparkEnvir=list(spark.executor.memory="2g", spark.driver.memory="1g", spark.driver.maxResultSize="1g"), sparkPackages="com.databricks:spark-csv_2.10:1.4.0")
 sqlContext <- sparkRSQL.init(sc)
 ```
 
@@ -39,10 +41,10 @@ You can confirm that you successfully initiated these contexts by looking at the
 
 ***
 
-**Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the SparkR Basics I tutorial.
+**Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the (SparkR Basics I)[https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md] tutorial.
 
 ```{r, message=F, warning=F, results='hide'}
-df <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header='false', inferSchema='true')
+df <- read.df(sqlContext, path = "s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
 ```
 
 ```{r, include=FALSE}
@@ -83,7 +85,9 @@ We can compute a number of aggregations by specifying them in `agg` or `summariz
 If we want to compute aggregations across the elements of a dataset that share a common identifier, we can achieve this embedding the `groupBy` operation in `agg` or `summarize`. For example, the following `agg` operation returns the mean loan age and the number of observations for each distinct `"servicer_name"` in the DataFrame `df`:
 
 ```{r, collapse=TRUE}
-head(df2 <- agg(groupBy(df, df$servicer_name), loan_age_avg = avg(df$loan_age), count = n(df$loan_age)))
+gb_sn <- groupBy(df, df$servicer_name)
+df2 <- agg(gb_sn, loan_age_avg = avg(df$loan_age), count = n(df$loan_age))
+head(df2)
 ```
 
 ```{r, include=FALSE}
@@ -98,15 +102,21 @@ cache(df2)
 The operations `arrange` and `orderBy` allow us to sort a DF by a specified list of columns. If we want to sort the DataFrame that we just specified, `df2`, we can arrange the rows of `df2` by `"loan_age_avg"` or `"count"`. Note that the default for `arrange` is to order the row values as ascending:
 
 ```{r, collapse=TRUE}
-head(arrange(df2, desc(df2$loan_age_avg)))  # List servicers by descending mean loan age values
-head(arrange(df2, df2$count)) # List servicers by ascending count values
+df2_a1<- arrange(df2, desc(df2$loan_age_avg))  # List servicers by descending mean loan age values
+head(df2_a1)
+
+df2_a2 <- arrange(df2, df2$count) # List servicers by ascending count values
+head(df2_a2)
 ```
 
 We can also specify ordering as logical statements. The following expressions are equivalent to those in the preceding example:
 
 ```{r, collapse=TRUE}
-head(arrange(df2, "loan_age_avg", decreasing = TRUE))
-head(arrange(df2, "count", decreasing = c(FALSE)))
+df2_a3 <- arrange(df2, "loan_age_avg", decreasing = TRUE)
+head(df2_a3)
+
+df2_a4 <- arrange(df2, "count", decreasing = FALSE)
+head(df2_a4)
 ```
 
 ```{r, include=FALSE}
@@ -123,7 +133,8 @@ There are various reasons why we might want to introduce a new column to a DataF
 For example, the values of the `"loan_age"` column in `df` are the number of calendar months since the first full month that the mortgage loan accrues interest. If we want to convert the unit of time for loan age from calendar months to years and work with this measure as a variable in our analysis, we can evaluate the following `withColumn` expression:
 
 ```{r, collapse=TRUE}
-head(df3 <- withColumn(df, "loan_age_yrs", df$loan_age * (1/12)))
+df3 <- withColumn(df, "loan_age_yrs", df$loan_age * (1/12))
+head(df3)
 ```
 
 Note that `df3` contains every column originally included in `df`, as well as the column `"loan_age_yrs"`.
@@ -131,7 +142,8 @@ Note that `df3` contains every column originally included in `df`, as well as th
 We can also rename a DF column using the `withColumnRenamed` operation as we discussed in the SparkR Basics I tutorial. The following expression returns a DF that is equivalent to `df`, except for the fact that we have renamed `"servicer_name"` to `"servicer"`.
 
 ```{r, collapse=TRUE}
-head(df4 <- withColumnRenamed(df, "servicer_name", "servicer"))
+df4 <- withColumnRenamed(df, "servicer_name", "servicer")
+head(df4)
 ```
 
 When using either `withColumn` or `withColumnRenamed`, we could simply replace our initial DF. For example, we could rename `"servicer_name"` by simply changing the name of the DF that we save to, i.e. `df <- withColumnRenamed(df, "servicer_name", "servicer")`. Note: do this _only_ if you do not need to retain your initial DF.
@@ -166,8 +178,8 @@ Note that, in this tutorial, we have been saving transformations (e.g. `withColu
 We saved the first transformation included in this tutorial, using `read.df` to read in our example data, as `df`. This operation itself does not load data into SparkR. Instead, `df` consists of instructions communicating to SparkR that the data should be read in and how SparkR should interpret the data as it is read in. Each time we direct SparkR to evaluate the expressions:
 
 ```{r, collapse=TRUE, eval=FALSE}
-head(df, 5)
-head(df, 10)
+head(df, num = 5)
+head(df, num = 10)
 ```
 
 SparkR would:
@@ -190,8 +202,8 @@ Now that we have some understanding of how DataFrame persistence works in SparkR
 ```{r, eval=FALSE, collapse=TRUE}
 df_ <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header='false', inferSchema='true')
 cache(df_)
-head(df_, 5)
-head(df_, 10)
+head(df_, num = 5)
+head(df_, num = 10)
 ```
 
 The steps performed by SparkR change to:
@@ -244,7 +256,8 @@ The first thing you may notice is that the evaluation time for `ncol(.df)` is ap
 If we wanted to work the first five (5) rows of 'df' as a local R data.frame, we could use the `take` operation as follows:
 
 ```{r, collapse=TRUE}
-(df_loc <- take(df, 5)) # Creates a local data.frame `df_loc`
+df_loc <- take(df, num = 5) # Creates a local data.frame `df_loc`
+df_loc 
 ```
 
 Because `df_loc` is a normal R data.frame, we can work with it just as we would normally in RStudio, using R. The operation `collect` also creates an R data.frame. However, it coerces __all__ elements of a DF into a data.frame and, therefore, this should only be done if you can reasonably assume that the data called by the DF can fit onto a single node.
@@ -254,15 +267,19 @@ One way that we can safely use `collect` is to extract an aggregation as a value
 
 ```{r, collapse=TRUE}
 loan_age_avg_ <- collect(df1) # Explicitly written expression
-(loan_age_avg <- loan_age_avg_[[1]])
+
+loan_age_avg <- loan_age_avg_[[1]]
+loan_age_avg
+
 typeof(loan_age_avg)
 rm(loan_age_avg)
 
-(loan_age_avg <- collect(df1)[[1]]) # Embedded expression
+loan_age_avg <- collect(df1)[[1]] # Embedded expression
+loan_age_avg
 typeof(loan_age_avg)
 ```
 
 Notice that we can direct SparkR to do this through either set of expressions above, with the process being written explicitly or implicitly. If we had not already defind `df1`, we could have directed SparkR to compute this value in a single line with the expression `loan_age_avg <- collect(agg(df, loan_age_avg = avg(df$loan_age)))[[1]]`.
 
 
-__End of tutorial__ - Next up is [Insert next tutorial]
+__End of tutorial__ - Next up is [Subsetting SparkR DataFrames](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/subsetting.md)

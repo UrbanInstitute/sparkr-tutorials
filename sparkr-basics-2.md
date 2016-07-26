@@ -4,6 +4,8 @@ June 28, 2016
 
 
 
+**Last Updated**: July 26, 2016
+
 
 **Objective**: The SparkR DataFrame (DF) API supports a number of operations to do structured data processing. These operations range from the simple tasks that we used in the SparkR Basics I tutorial (e.g. counting the number of rows in a DF using `nrow`) to more complex tasks like computing aggregate data. This tutorial discusses the key DF operations for processing tabular data in the SparkR environment, the different types of DF operations and how to perform these operations efficiently. In particular, this tutorial discusses:
 
@@ -20,7 +22,7 @@ June 28, 2016
 
 ***
 
-<span style="color:red">**Warning**</span>: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate your SparkR and SparkR SQL contexts.
+:heavy_exclamation_mark: **Warning**: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate your SparkR and SparkR SQL contexts.
 
 
 
@@ -28,11 +30,11 @@ You can confirm that you successfully initiated these contexts by looking at the
 
 ***
 
-**Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the SparkR Basics I tutorial.
+**Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the (SparkR Basics I)[https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md] tutorial.
 
 
 ```r
-df <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header='false', inferSchema='true')
+df <- read.df(sqlContext, path = "s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
 ```
 
 
@@ -78,7 +80,9 @@ If we want to compute aggregations across the elements of a dataset that share a
 
 
 ```r
-head(df2 <- agg(groupBy(df, df$servicer_name), loan_age_avg = avg(df$loan_age), count = n(df$loan_age)))
+gb_sn <- groupBy(df, df$servicer_name)
+df2 <- agg(gb_sn, loan_age_avg = avg(df$loan_age), count = n(df$loan_age))
+head(df2)
 ##                                servicer_name loan_age_avg count
 ## 1                IRWIN MORTGAGE, CORPORATION     38.84615    13
 ## 2 FIRST TENNESSEE BANK, NATIONAL ASSOCIATION     23.45820 12774
@@ -99,7 +103,8 @@ The operations `arrange` and `orderBy` allow us to sort a DF by a specified list
 
 
 ```r
-head(arrange(df2, desc(df2$loan_age_avg)))  # List servicers by descending mean loan age values
+df2_a1<- arrange(df2, desc(df2$loan_age_avg))  # List servicers by descending mean loan age values
+head(df2_a1)
 ##                             servicer_name loan_age_avg count
 ## 1                  FREEDOM MORTGAGE CORP.     184.5000     2
 ## 2                    DITECH FINANCIAL LLC     184.2703  1106
@@ -107,10 +112,12 @@ head(arrange(df2, desc(df2$loan_age_avg)))  # List servicers by descending mean 
 ## 4 FANNIE MAE/SETERUS, INC. AS SUBSERVICER     165.9603   504
 ## 5                NATIONSTAR MORTGAGE, LLC     163.9579   261
 ## 6               GREEN TREE SERVICING, LLC     162.4933  1409
-head(arrange(df2, df2$count)) # List servicers by ascending count values
+
+df2_a2 <- arrange(df2, df2$count) # List servicers by ascending count values
+head(df2_a2)
 ##                           servicer_name loan_age_avg count
-## 1             OCWEN LOAN SERVICING, LLC    160.50000     2
-## 2                FREEDOM MORTGAGE CORP.    184.50000     2
+## 1                FREEDOM MORTGAGE CORP.    184.50000     2
+## 2             OCWEN LOAN SERVICING, LLC    160.50000     2
 ## 3                    QUICKEN LOANS INC.    160.00000     4
 ## 4           IRWIN MORTGAGE, CORPORATION     38.84615    13
 ## 5 MATRIX FINANCIAL SERVICES CORPORATION    168.04545    22
@@ -121,7 +128,8 @@ We can also specify ordering as logical statements. The following expressions ar
 
 
 ```r
-head(arrange(df2, "loan_age_avg", decreasing = TRUE))
+df2_a3 <- arrange(df2, "loan_age_avg", decreasing = TRUE)
+head(df2_a3)
 ##                             servicer_name loan_age_avg count
 ## 1                  FREEDOM MORTGAGE CORP.     184.5000     2
 ## 2                    DITECH FINANCIAL LLC     184.2703  1106
@@ -129,10 +137,12 @@ head(arrange(df2, "loan_age_avg", decreasing = TRUE))
 ## 4 FANNIE MAE/SETERUS, INC. AS SUBSERVICER     165.9603   504
 ## 5                NATIONSTAR MORTGAGE, LLC     163.9579   261
 ## 6               GREEN TREE SERVICING, LLC     162.4933  1409
-head(arrange(df2, "count", decreasing = c(FALSE)))
+
+df2_a4 <- arrange(df2, "count", decreasing = FALSE)
+head(df2_a4)
 ##                           servicer_name loan_age_avg count
-## 1                FREEDOM MORTGAGE CORP.    184.50000     2
-## 2             OCWEN LOAN SERVICING, LLC    160.50000     2
+## 1             OCWEN LOAN SERVICING, LLC    160.50000     2
+## 2                FREEDOM MORTGAGE CORP.    184.50000     2
 ## 3                    QUICKEN LOANS INC.    160.00000     4
 ## 4           IRWIN MORTGAGE, CORPORATION     38.84615    13
 ## 5 MATRIX FINANCIAL SERVICES CORPORATION    168.04545    22
@@ -152,7 +162,8 @@ For example, the values of the `"loan_age"` column in `df` are the number of cal
 
 
 ```r
-head(df3 <- withColumn(df, "loan_age_yrs", df$loan_age * (1/12)))
+df3 <- withColumn(df, "loan_age_yrs", df$loan_age * (1/12))
+head(df3)
 ##        loan_id     period servicer_name new_int_rt act_endg_upb loan_age
 ## 1 100007365142 01/01/2000                        8           NA        0
 ## 2 100007365142 02/01/2000                        8           NA        1
@@ -182,7 +193,8 @@ We can also rename a DF column using the `withColumnRenamed` operation as we dis
 
 
 ```r
-head(df4 <- withColumnRenamed(df, "servicer_name", "servicer"))
+df4 <- withColumnRenamed(df, "servicer_name", "servicer")
+head(df4)
 ##        loan_id     period servicer new_int_rt act_endg_upb loan_age
 ## 1 100007365142 01/01/2000                   8           NA        0
 ## 2 100007365142 02/01/2000                   8           NA        1
@@ -239,8 +251,8 @@ We saved the first transformation included in this tutorial, using `read.df` to 
 
 
 ```r
-head(df, 5)
-head(df, 10)
+head(df, num = 5)
+head(df, num = 10)
 ```
 
 SparkR would:
@@ -264,8 +276,8 @@ Now that we have some understanding of how DataFrame persistence works in SparkR
 ```r
 df_ <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header='false', inferSchema='true')
 cache(df_)
-head(df_, 5)
-head(df_, 10)
+head(df_, num = 5)
+head(df_, num = 10)
 ```
 
 The steps performed by SparkR change to:
@@ -295,16 +307,16 @@ Let's compare the time elapsed in evaluating the following expressions with and 
 .df <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header='false', inferSchema='true')
 system.time(ncol(.df))
 ##    user  system elapsed 
-##   0.016   0.000   0.024
+##   0.016   0.004   0.030
 system.time(nrow(.df))
 ##    user  system elapsed 
-##   0.004   0.000   0.431
+##   0.004   0.000   0.451
 system.time(dim(.df))
 ##    user  system elapsed 
-##   0.008   0.000   0.246
+##   0.008   0.000   0.299
 system.time(head(agg(groupBy(.df, .df$servicer_name), loan_age_avg = avg(.df$loan_age))))
 ##    user  system elapsed 
-##   0.016   0.000   1.555
+##   0.016   0.000   2.100
 rm(.df)
 
 # Cached
@@ -313,16 +325,16 @@ cache(.df)
 ## DataFrame[loan_id:bigint, period:string, servicer_name:string, new_int_rt:double, act_endg_upb:double, loan_age:int, mths_remng:int, aj_mths_remng:int, dt_matr:string, cd_msa:int, delq_sts:string, flag_mod:string, cd_zero_bal:int, dt_zero_bal:string]
 system.time(ncol(.df))
 ##    user  system elapsed 
-##   0.020   0.000   0.027
+##   0.020   0.004   0.031
 system.time(nrow(.df))
 ##    user  system elapsed 
-##   0.004   0.000   0.237
+##   0.008   0.000   0.210
 system.time(dim(.df))
 ##    user  system elapsed 
-##   0.008   0.000   0.211
+##   0.008   0.000   0.212
 system.time(head(agg(groupBy(.df, .df$servicer_name), loan_age_avg = avg(.df$loan_age))))
 ##    user  system elapsed 
-##   0.016   0.000   1.377
+##   0.012   0.000   1.842
 unpersist(.df)
 ## DataFrame[loan_id:bigint, period:string, servicer_name:string, new_int_rt:double, act_endg_upb:double, loan_age:int, mths_remng:int, aj_mths_remng:int, dt_matr:string, cd_msa:int, delq_sts:string, flag_mod:string, cd_zero_bal:int, dt_zero_bal:string]
 rm(.df)
@@ -339,7 +351,8 @@ If we wanted to work the first five (5) rows of 'df' as a local R data.frame, we
 
 
 ```r
-(df_loc <- take(df, 5)) # Creates a local data.frame `df_loc`
+df_loc <- take(df, num = 5) # Creates a local data.frame `df_loc`
+df_loc 
 ##        loan_id     period servicer_name new_int_rt act_endg_upb loan_age
 ## 1 100007365142 01/01/2000                        8           NA        0
 ## 2 100007365142 02/01/2000                        8           NA        1
@@ -368,13 +381,17 @@ One way that we can safely use `collect` is to extract an aggregation as a value
 
 ```r
 loan_age_avg_ <- collect(df1) # Explicitly written expression
-(loan_age_avg <- loan_age_avg_[[1]])
+
+loan_age_avg <- loan_age_avg_[[1]]
+loan_age_avg
 ## [1] 29.49168
+
 typeof(loan_age_avg)
 ## [1] "double"
 rm(loan_age_avg)
 
-(loan_age_avg <- collect(df1)[[1]]) # Embedded expression
+loan_age_avg <- collect(df1)[[1]] # Embedded expression
+loan_age_avg
 ## [1] 29.49168
 typeof(loan_age_avg)
 ## [1] "double"
@@ -383,4 +400,4 @@ typeof(loan_age_avg)
 Notice that we can direct SparkR to do this through either set of expressions above, with the process being written explicitly or implicitly. If we had not already defind `df1`, we could have directed SparkR to compute this value in a single line with the expression `loan_age_avg <- collect(agg(df, loan_age_avg = avg(df$loan_age)))[[1]]`.
 
 
-__End of tutorial__ - Next up is [Insert next tutorial]
+__End of tutorial__ - Next up is [Subsetting SparkR DataFrames](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/subsetting.md)
