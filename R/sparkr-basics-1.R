@@ -125,6 +125,7 @@ unpersist(perf)
 
 old_colnames <- c("C0","C1","C2","C3","C4","C5","C6","C7","C8","C9","C10","C11","C12","C13")
 new_colnames <- c("loan_id","period","servicer_name","new_int_rt","act_endg_upb","loan_age","mths_remng","aj_mths_remng","dt_matr","cd_msa","delq_sts","flag_mod","cd_zero_bal","dt_zero_bal")
+
 for(i in 1:14){
   perf_lim <- withColumnRenamed(perf_lim, old_colnames[i], new_colnames[i] )
 }
