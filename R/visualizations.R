@@ -37,16 +37,10 @@ p1 + geom_bar()
 
 ##### Stacked & proportional bar graphs
 
-# One recognized bug within `ggplot2.SparkR` is that, when specifying a `fill` value, using the `"stack"` and `"fill"` specifications for `position` do not necessarily return plots with constant factor-level ordering across groups. For example, the following expression successfully returns a bar graph that gives frequency counts of `"clarity"` levels (string dtype), grouped over diamond `"cut"` types (also string dtype). Note, however, that the varied color blocks representing `"clarity"` levels are not ordered similarly across different levels of `"cut"`. The same issue results when we specify the `"fill"` position:
+# One recognized bug within `ggplot2.SparkR` is that, when specifying a `fill` value, none of the `position` specifications--`"stack"`, `"fill"` nor `"dodge"`--necessarily return plots with constant factor-level ordering across groups. For example, the following expression successfully returns a bar graph that gives frequency counts of `"clarity"` levels (string dtype), grouped over diamond `"cut"` types (also string dtype). Note, however, that the varied color blocks representing `"clarity"` levels are not ordered similarly across different levels of `"cut"`. The same issue results when we specify either of the other two (2) `position` specifications:
 
 p2 <- ggplot(df, aes(x = cut, fill = clarity))
-p2 + geom_bar() # `position = "stack"` is default
-p2 + geom_bar(position = "fill")
-
-# While creating a stacked or filled bar graph may yield heterogeneous factor-level ordering, the `"dodge"` position specification ensures constant across `"cut"` levels.
-
-p2 + geom_bar(position = "dodge")
-
+p2 + geom_bar(position = "stack")
 
 ##################
 ### Histogram: ###
