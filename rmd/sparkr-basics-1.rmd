@@ -2,6 +2,7 @@
 title: 'SparkR Basics I: From CSV to SparkR DataFrame'
 author: "Sarah Armstrong, Urban Institute"
 date: "June 23, 2016"
+date: "Last Updated: July 26, 2016"
 output: 
   html_document: 
     keep_md: yes
@@ -35,7 +36,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r, include=FALSE}
 library(SparkR)
-sc <- sparkR.init(sparkEnvir=list(spark.executor.memory="2g", spark.driver.memory="1g", spark.driver.maxResultSize="1g"), sparkPackages="com.databricks:spark-csv_2.11:1.4.0")
+sc <- sparkR.init(sparkEnvir=list(spark.executor.memory="2g", spark.driver.memory="1g", spark.driver.maxResultSize="1g"), sparkPackages="com.databricks:spark-csv_2.10:1.4.0")
 sqlContext <- sparkRSQL.init(sc)
 ```
 
@@ -232,8 +233,37 @@ if (dim1[1]!=dim2[1] | dim1[2]!=dim2[2]) {
 }
 ```
 
+We can also save the DF as a folder of partitioned .csv files with syntax similar to that which we used to export the DF as partitioned parquet files. Note, however, that this does not retain the column names like saving as partitioned parquet files does. Additionally, exporting a DataFrame as partitioned .csv files requires that we specify the 2.10 version of the Databricks .csv package as the value of the `sparkPackages` parameter when initiating our SparkR context, i.e. we must set `sparkPackages = "com.databricks:spark-csv_2.10:1.4.0"` in the `sparkR.init` operation discussed in the README file for these tutorials. The `write.df` expression for exporting the DF as a folder of partitioned .csv files is given below:
+
+```{r, collapse=TRUE}
+write.df(perf_lim, "s3://sparkr-tutorials/hfpc_ex.csv", "com.databricks.spark.csv", "overwrite")
+```
+```{r, include=FALSE}
+unpersist(perf_lim)
+unpersist(dat)
+```
+
+We can read in the files as a DF with the following expression:
+
+```{r, collapse=TRUE}
+dat2 <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex.csv", source = "com.databricks.spark.csv", inferSchema = "true", header='false')
+```
+```{r, include=FALSE}
+cache(dat2)
+```
+
+Note that the DF columns are now given generic names, but we can use the same for-loop from a previous section in this tutorial to rename the columns in our new DF:
+
+```{r, collapse=TRUE}
+str(dat2)
+for(i in 1:14){
+  dat2 <- withColumnRenamed(dat2, old_colnames[i], new_colnames[i] )
+}
+str(dat2)
+```
+
 __End of tutorial__ - Next up is SparkR Basics II
 
 ```{r, include=FALSE}
-unpersist(perf_lim)
+unpersist(dat2)
 ```
