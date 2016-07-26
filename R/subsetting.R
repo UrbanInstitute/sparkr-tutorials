@@ -129,10 +129,10 @@ count(df_samp4)
 
 dat <- collect(df_samp4)
 
-## If we want to export this data.frame from RStudio as a single .csv file that we can work with in any environment, we can export the data as we normally do in R:
+## If we want to export the sampled DF from RStudio as a single .csv file that we can work with in any environment, we must first coalesce the rows of `df_samp4` to a single node in our cluster using the `repartition` operation. Then, we can use the `write.df` operation as we did in the (SparkR Basics I)[https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md] tutorial:
 
-#write.csv(dat, file = "hfpc_samp.csv") ### NOTE: Currently, cannot export .csv file to S3. Need to fix.
-#write.table(dat, file = "hfpc_samp.csv",row.names=FALSE, na="",col.names=FALSE, sep=",")
+df_samp4_1 <- repartition(df_samp4, numPartitions = 1)
+write.df(df_samp4_1, path = "s3://sparkr-tutorials/hfpc_samp.csv", source = "com.databricks.spark.csv", mode = "overwrite")
 
-## Warning: we cannot collect a DF as a data.frame unless it is sufficiently small in size since it must fit onto a single node!
+## Warning: We cannot collect a DF as a data.frame, nor can we repartition it to a single node, unless the DF is sufficiently small in size since it must fit onto a _single_ node!
 
