@@ -1,8 +1,7 @@
 ##################################################################################
 ## Data as a Spark DataFrame: How to Load Data into SparkR and Explore the Data ##
 ##################################################################################
-## Objective: read in .csv as a SparkR DataFrame, append a DataFrame
-## Operations discussed: read.df, 
+
 
 library(SparkR)
 
@@ -11,7 +10,7 @@ library(SparkR)
 sc <- sparkR.init(sparkEnvir=list(spark.executor.memory="2g", 
                                   spark.driver.memory="1g",
                                   spark.driver.maxResultSize="1g")
-                  ,sparkPackages="com.databricks:spark-csv_2.11:1.4.0") # Load CSV Spark Package
+                  ,sparkPackages="com.databricks:spark-csv_2.10:1.4.0") # Load CSV Spark Package
 
 ## AWS EMR is using Spark 2.11 so we need the associated version of spark-csv: http://spark-packages.org/package/databricks/spark-csv
 ## Define Spark executor memory, as well as driver memory and maxResultSize according to cluster configuration
@@ -331,11 +330,32 @@ columns(dat)
 ##  [7] "mths_remng"    "aj_mths_remng" "dt_matr"       "cd_msa"        "delq_sts"      "flag_mod"     
 ## [13] "cd_zero_bal"   "dt_zero_bal"  
 
+## We can also save the DF as a folder of partitioned .csv files with syntax similar to that which we used to export the DF as partitioned parquet files. Note, however, that this does not retain the column names like saving as partitioned parquet files does. Additionally, exporting a DataFrame as partitioned .csv files requires that we specify the 2.10 version of the Databricks .csv package as the value of the `sparkPackages` parameter when initiating our SparkR context, i.e. we must set `sparkPackages = "com.databricks:spark-csv_2.10:1.4.0"` in the `sparkR.init` operation discussed in the README file for these tutorials. The `write.df` expression for exporting the DF as a folder of partitioned .csv files is given below:
+
+write.df(perf_lim, "s3://sparkr-tutorials/hfpc_ex.csv", "com.databricks.spark.csv", "overwrite")
 
 ## Unpersist DFs:
 
 unpersist(perf_lim)
 unpersist(dat)
+
+## We can read in the files as a DF with the following expression:
+
+dat2 <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex.csv", source = "com.databricks.spark.csv", inferSchema = "true", header='false')
+
+cache(dat2)
+
+## Note that the DF columns are now given generic names, but we can use the same for-loop from a previous section in this tutorial to rename the columns in our new DF:
+
+str(dat2)
+for(i in 1:14){
+  dat2 <- withColumnRenamed(dat2, old_colnames[i], new_colnames[i] )
+}
+str(dat2)
+
+## Unpersist DFs:
+
+unpersist(dat2)
 
 ## Stop SparkContext:
 
