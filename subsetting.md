@@ -1,8 +1,10 @@
-# Subsetting DataFrames
+# Subsetting SparkR DataFrames
 Sarah Armstrong, Urban Institute  
 July 1, 2016  
 
 
+
+**Last Updated**: July 26, 2016
 
 
 **Objective**: Now that we understand what a SparkR DataFrame (DF) really is (remember, it's not actually data!) and can write expressions using essential DataFrame operations, such as `agg`, we are ready to start subsetting DFs using more advanced transformation operations. This tutorial discusses various ways of subsetting DFs, as well as how to work with a randomly sampled subset as a local data.frame in RStudio:
@@ -14,12 +16,13 @@ July 1, 2016
 * Subset a DF by taking a random sample
 * Collect a random sample as a local data.frame
 * Export a data.frame as a single .csv file
+* Export DF sample as a single .csv file
 
 **SparkR/R Operations Discussed**: `filter`, `where`, `select`, `sample`, `collect`, `write.table`
 
 ***
 
-<span style="color:red">**Warning**</span>: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate your SparkR and SparkR SQL contexts.
+:heavy_exclamation_mark: **Warning**: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate your SparkR and SparkR SQL contexts.
 
 
 
@@ -27,11 +30,11 @@ You can confirm that you successfully initiated these contexts by looking at the
 
 ***
 
-**Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the SparkR Basics I tutorial. Note that we are __persisting__ the DataFrame since we will use it throughout this tutorial.
+**Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the (SparkR Basics I)[https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md] tutorial. Note that we are __persisting__ the DataFrame since we will use it throughout this tutorial.
 
 
 ```r
-df <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header='false', inferSchema='true')
+df <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
 cache(df)
 ```
 
@@ -120,7 +123,7 @@ nrow(f3)
 ## [1] 1714413
 ```
 
-An alias for `filter` is `where`, which reads much more intuitively, particularly when `where` is embedded in a complex statement. For example, the following expression can be read as "aggregate and return the mean loan age and count values for observations in `df` where loan age is less than 60 months":
+An alias for `filter` is `where`, which reads much more intuitively, particularly when `where` is embedded in a complex statement. For example, the following expression can be read as "__aggregate__ the mean loan age and count values __by__ `"servicer_name"` in `df` __where__ loan age is less than 60 months":
 
 
 ```r
@@ -152,7 +155,7 @@ ncol(s1)
 We can also reference the column names through the DF name, i.e. `select(df, df$mths_remng, df$aj_mths_remng)`. Or, we can save a list of columns as a combination of strings. If we wanted to make a list of all columns that relate to remaining maturity, we could evaluate the expression `remng_mat <- c("mths_remng", "aj_mths_remng")` and then easily reference our list of columns later on with `select(df, remng_mat)`.
 
 
-Besides subsetting by a list of columns, we can also subset `df` by column expressions, or by both as we do in the example below. The DF `s2` includes the columns `"mths_remng"` and `"aj_mths_remng"` as in `s1`, but now with a column that lists the absolute value of the difference between the unadjusted and adjusted remaining maturity:
+Besides subsetting by a list of columns, we can also subset `df` while introducing a new column using a column expression, as we do in the example below. The DF `s2` includes the columns `"mths_remng"` and `"aj_mths_remng"` as in `s1`, but now with a column that lists the absolute value of the difference between the unadjusted and adjusted remaining maturity:
 
 
 ```r
@@ -235,9 +238,10 @@ Below, we take a random sample of `df` without replacement that is, in size, app
 df_samp1 <- sample(df, withReplacement = FALSE, fraction = 0.01)  # Without set seed
 df_samp2 <- sample(df, withReplacement = FALSE, fraction = 0.01)
 count(df_samp1)
-## [1] 131811
+## [1] 131960
 count(df_samp2)
-## [1] 132152
+## [1] 132429
+# The row counts are different and, obviously, the DFs are not equivalent
 
 df_samp3 <- sample(df, withReplacement = FALSE, fraction = 0.01, seed = 0)  # With set seed
 df_samp4 <- sample(df, withReplacement = FALSE, fraction = 0.01, seed = 0)
@@ -245,6 +249,7 @@ count(df_samp3)
 ## [1] 132070
 count(df_samp4)
 ## [1] 132070
+# The row counts are equal and the DFs are equivalent
 ```
 
 
@@ -261,13 +266,16 @@ typeof(dat)
 ## [1] "list"
 ```
 
-If we want to export this data.frame from RStudio as a single .csv file that we can work with in any environment, we can export the data as we normally do in R:
+#### Export DF sample as a single .csv file:
+
+If we want to export the sampled DF from RStudio as a single .csv file that we can work with in any environment, we must first coalesce the rows of `df_samp4` to a single node in our cluster using the `repartition` operation. Then, we can use the `write.df` operation as we did in the (SparkR Basics I)[https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md] tutorial:
 
 
 ```r
-write.table(dat, file = "hfpc_samp.csv",row.names=FALSE, na="",col.names=FALSE, sep=",")
+df_samp4_1 <- repartition(df_samp4, numPartitions = 1)
+write.df(df_samp4_1, path = "s3://sparkr-tutorials/hfpc_samp.csv", source = "com.databricks.spark.csv", mode = "overwrite")
 ```
 
-__Warning__: we cannot collect a DF as a data.frame unless it is sufficiently small in size since it must fit onto a single node!
+:heavy_exclamation_mark: __Warning__: We cannot collect a DF as a data.frame, nor can we repartition it to a single node, unless the DF is sufficiently small in size since it must fit onto a _single_ node!
 
-__End of tutorial__ - Next up is [Insert next tutorial]
+__End of tutorial__ - Next up is [Dealing with Missing Data in SparkR](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/missing-data.md)
