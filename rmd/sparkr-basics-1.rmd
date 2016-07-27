@@ -48,7 +48,7 @@ You can confirm that you successfully initiated these contexts by looking at the
 
 ### Load a csv file into SparkR:
 
-Use the operation `read.df` to load in quarterly Fannie Mae single-family loan performance data from the AWS S3 folder `"s3://ui-hfpc/"` as a Spark DataFrame (DF). Note that, when initiating our SparkR context, we specified that the `spark-csv` package should be included by by specifying `sparkPackages="com.databricks:spark-csv_2.11:1.4.0"` in our `sparkR.init` operation. Below, we load a single quarter (2000, Q1) into SparkR, and save it as the DF `perf`:
+Use the operation `read.df` to load in quarterly Fannie Mae single-family loan performance data from the AWS S3 folder `"s3://ui-hfpc/"` as a Spark DataFrame (DF). Note that, when initiating our SparkR context, we specified that the `spark-csv` package should be included by by specifying `sparkPackages="com.databricks:spark-csv_2.10:1.4.0"` in our `sparkR.init` operation. Below, we load a single quarter (2000, Q1) into SparkR, and save it as the DF `perf`:
 
 ```{r, message=F, warning=F, results='hide'}
 perf <- read.df(sqlContext, path = "s3://ui-hfpc/Performance_2000Q1.txt", header = "false", delimiter = "|",
