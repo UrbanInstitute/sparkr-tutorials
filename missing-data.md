@@ -39,7 +39,8 @@ Throughout this tutorial, we will use the loan performance example dataset that 
 
 
 ```r
-df <- read.df(sqlContext, path = "s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true", nullValue = "")
+df <- read.df(sqlContext, path = "s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true",
+ nullValue = "")
 cache(df)
 ```
 

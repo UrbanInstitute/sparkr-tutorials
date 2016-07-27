@@ -50,7 +50,8 @@ You can confirm that you successfully initiated these contexts by looking at the
 Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial. Note that we now include the `nullValue` option in the `read.df` transformation below. By setting `nullValue` equal to an empty string in `read.df`, we direct SparkR to interpret empty entries in the dataset as being equal to nulls in `df`. Therefore, any DF entries matching this string (here, set to equal an empty entry) will be set equal to a null value in `df`.
 
 ```{r, message=F, warning=F, results='hide', collapse=TRUE}
-df <- read.df(sqlContext, path = "s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true", nullValue = "")
+df <- read.df(sqlContext, path = "s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true",
+ nullValue = "")
 cache(df)
 ```
 
