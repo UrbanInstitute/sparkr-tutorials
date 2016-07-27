@@ -4,7 +4,7 @@ author: "Sarah Armstrong, Urban Institute"
 date: "July 1, 2016"
 output: 
   html_document: 
-  keep_md: TRUE
+  	keep_md: TRUE
 ---
 
 ```{r setup, include=FALSE}

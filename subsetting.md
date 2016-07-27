@@ -4,7 +4,7 @@ July 1, 2016
 
 
 
-**Last Updated**: July 26, 2016
+**Last Updated**: July 27, 2016
 
 
 **Objective**: Now that we understand what a SparkR DataFrame (DF) really is (remember, it's not actually data!) and can write expressions using essential DataFrame operations, such as `agg`, we are ready to start subsetting DFs using more advanced transformation operations. This tutorial discusses various ways of subsetting DFs, as well as how to work with a randomly sampled subset as a local data.frame in RStudio:
@@ -14,9 +14,8 @@ July 1, 2016
 * Subset a DF by column expressions
 * Drop a column from a DF
 * Subset a DF by taking a random sample
-* Collect a random sample as a local data.frame
-* Export a data.frame as a single .csv file
-* Export DF sample as a single .csv file
+* Collect a random sample as a local R data.frame
+* Export a DF sample as a single .csv file to S3
 
 **SparkR/R Operations Discussed**: `filter`, `where`, `select`, `sample`, `collect`, `write.table`
 
@@ -30,7 +29,7 @@ You can confirm that you successfully initiated these contexts by looking at the
 
 ***
 
-**Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the (SparkR Basics I)[https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md] tutorial. Note that we are __persisting__ the DataFrame since we will use it throughout this tutorial.
+**Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial. Note that we are __persisting__ the DataFrame since we will use it throughout this tutorial.
 
 
 ```r
@@ -86,7 +85,8 @@ We can subset `df` into a new DF, `f1`, that includes only those loans for which
 
 
 ```r
-f1 <- filter(df, df$servicer_name == "JP MORGAN CHASE BANK, NA" | df$servicer_name == "JPMORGAN CHASE BANK, NA" | df$servicer_name == "JPMORGAN CHASE BANK, NATIONAL ASSOCIATION")
+f1 <- filter(df, df$servicer_name == "JP MORGAN CHASE BANK, NA" | df$servicer_name == "JPMORGAN CHASE BANK, NA" |
+               df$servicer_name == "JPMORGAN CHASE BANK, NATIONAL ASSOCIATION")
 nrow(f1)
 ## [1] 102733
 ```
@@ -95,14 +95,16 @@ Notice that the `filter` considers normal logical syntax (e.g. logical condition
 
 
 ```r
-filter(df, "servicer_name = 'JP MORGAN CHASE BANK, NA' or servicer_name = 'JPMORGAN CHASE BANK, NA' or servicer_name = 'JPMORGAN CHASE BANK, NATIONAL ASSOCIATION'")
+filter(df, "servicer_name = 'JP MORGAN CHASE BANK, NA' or servicer_name = 'JPMORGAN CHASE BANK, NA' or
+       servicer_name = 'JPMORGAN CHASE BANK, NATIONAL ASSOCIATION'")
 ```
 
 Or, alternatively, in a syntax similar to how we subset data.frames by row in base R:
 
 
 ```r
-df[df$servicer_name == "JP MORGAN CHASE BANK, NA" | df$servicer_name == "JPMORGAN CHASE BANK, NA" | df$servicer_name == "JPMORGAN CHASE BANK, NATIONAL ASSOCIATION",]
+df[df$servicer_name == "JP MORGAN CHASE BANK, NA" | df$servicer_name == "JPMORGAN CHASE BANK, NA" | 
+     df$servicer_name == "JPMORGAN CHASE BANK, NATIONAL ASSOCIATION",]
 ```
 
 Another example of using logical syntax with `filter` is that we can subset `df` such that the new DF only includes those loans for which the servicer name is known, i.e. the column `"servicer_name"` is not equa to an empty string or listed as `"OTHER"`:
@@ -127,7 +129,9 @@ An alias for `filter` is `where`, which reads much more intuitively, particularl
 
 
 ```r
-f7 <- agg(groupBy(where(df, df$loan_age < 60), where(df, df$loan_age < 60)$servicer_name), loan_age_avg = avg(where(df, df$loan_age < 60)$loan_age), count = n(where(df, df$loan_age < 60)$loan_age))
+f7 <- agg(groupBy(where(df, df$loan_age < 60), where(df, df$loan_age < 60)$servicer_name), 
+          loan_age_avg = avg(where(df, df$loan_age < 60)$loan_age), 
+          count = n(where(df, df$loan_age < 60)$loan_age))
 head(f7)
 ##                                servicer_name loan_age_avg count
 ## 1                IRWIN MORTGAGE, CORPORATION     38.84615    13
@@ -238,9 +242,9 @@ Below, we take a random sample of `df` without replacement that is, in size, app
 df_samp1 <- sample(df, withReplacement = FALSE, fraction = 0.01)  # Without set seed
 df_samp2 <- sample(df, withReplacement = FALSE, fraction = 0.01)
 count(df_samp1)
-## [1] 131960
+## [1] 132168
 count(df_samp2)
-## [1] 132429
+## [1] 131960
 # The row counts are different and, obviously, the DFs are not equivalent
 
 df_samp3 <- sample(df, withReplacement = FALSE, fraction = 0.01, seed = 0)  # With set seed
@@ -266,16 +270,19 @@ typeof(dat)
 ## [1] "list"
 ```
 
-#### Export DF sample as a single .csv file:
+Note that this data.frame is _not_ local to _your_ personal computer, but rather it was gathered locally to a single node in our AWS cluster.
 
-If we want to export the sampled DF from RStudio as a single .csv file that we can work with in any environment, we must first coalesce the rows of `df_samp4` to a single node in our cluster using the `repartition` operation. Then, we can use the `write.df` operation as we did in the (SparkR Basics I)[https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md] tutorial:
+#### Export DF sample as a single .csv file to S3:
+
+If we want to export the sampled DF from RStudio as a single .csv file that we can work with in any environment, we must first coalesce the rows of `df_samp4` to a single node in our cluster using the `repartition` operation. Then, we can use the `write.df` operation as we did in the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial:
 
 
 ```r
 df_samp4_1 <- repartition(df_samp4, numPartitions = 1)
-write.df(df_samp4_1, path = "s3://sparkr-tutorials/hfpc_samp.csv", source = "com.databricks.spark.csv", mode = "overwrite")
+write.df(df_samp4_1, path = "s3://sparkr-tutorials/hfpc_samp.csv", source = "com.databricks.spark.csv", 
+         mode = "overwrite")
 ```
 
-:heavy_exclamation_mark: __Warning__: We cannot collect a DF as a data.frame, nor can we repartition it to a single node, unless the DF is sufficiently small in size since it must fit onto a _single_ node!
+:heavy_exclamation_mark: __Warning__: We cannot collect a DF as a data.frame, nor can we repartition it to a single node, unless the DF is sufficiently small in size since it must fit onto a _single_ node! Additionally, as discussed in the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial, exporting a DF as a .csv file requires that we specify the 2.10 version of the Databricks .csv package as the value of the `sparkPackages` parameter when initiating our SparkR context, i.e. we must set `sparkPackages = "com.databricks:spark-csv_2.10:1.4.0"` in the `sparkR.init` operation discussed in the [README](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md) file for these tutorials.
 
 __End of tutorial__ - Next up is [Dealing with Missing Data in SparkR](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/missing-data.md)
