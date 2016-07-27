@@ -1,10 +1,10 @@
 ---
-title: 'Summary Statistics'
+title: 'Computing Summary Statistics with SparkR'
 author: "Sarah Armstrong, Urban Institute"
 date: "July 8, 2016"
 output: 
   html_document: 
-    keep_md: yes
+    keep_md: true
 ---
 
 ```{r setup, include=FALSE}
@@ -12,8 +12,10 @@ knitr::opts_chunk$set(echo = TRUE)
 options(knitr.table.format = 'markdown')
 ```
 
+**Last Updated**: July 27, 2016
 
-**Objective**: Summary statistics and aggregations are essential means of summarizing a set of observations. In this tutorial, we discuss how to compute location, statistical dispersion, distribution and dependence measures of numerical variables in SparkR, as well as methods for examining categorical variables. In particular, we consider how to compute the following measurements in SparkR:
+
+**Objective**: Summary statistics and aggregations are essential means of summarizing a set of observations. In this tutorial, we discuss how to compute location, statistical dispersion, distribution and dependence measures of numerical variables in SparkR, as well as methods for examining categorical variables. In particular, we consider how to compute the following measurements and aggregations in SparkR:
 
 _Numerical Data_
 
@@ -42,7 +44,7 @@ _Categorical Data_
 
 ***
 
-<span style="color:red">**Warning**</span>: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate your SparkR and SparkR SQL contexts.
+:heavy_exclamation_mark: **Warning**: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate your SparkR and SparkR SQL contexts.
 
 ```{r, include=FALSE}
 library(SparkR)
@@ -54,16 +56,18 @@ You can confirm that you successfully initiated these contexts by looking at the
 
 ***
 
-**Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the SparkR Basics I tutorial.
+**Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial.
 
 ```{r, message=F, warning=F, results='hide', collapse=TRUE}
-df <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header='false', inferSchema='true')
+df <- read.df(sqlContext, path = "s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true",
+              nullValue = "")
 cache(df)
 ```
 
 _Note_: documentation for the quarterly loan performance data can be found at http://www.fanniemae.com/portal/funding-the-market/data/loan-performance-data.html.
 
 ***
+
 
 
 ## Numerical Data
@@ -89,13 +93,16 @@ Note that measuring all five (5) of these aggregations at once is computationall
 
 #### Mean
 
-While there are several measures of central tendency, SparkR currently only supports computing averages of numerical DF columns. The operations `mean` and `avg` can be used with the `agg` operation that we discussed in the SparkR Basics II tutorial to measure the average of a numerical DF column. Remember that `agg` returns another DF. Therefore, we can either print the DF with `showDF` or we can save the aggregation as a local data.frame. Collecting the DF may be preferred if we want to work with the mean `"mths_remng"` value as a single value in RStudio.
+The mean is the only measure of central tendency currently supported by SparkR. The operations `mean` and `avg` can be used with the `agg` operation that we discussed in the [SparkR Basics II](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-2.md) tutorial to measure the average of a numerical DF column. Remember that `agg` returns another DF. Therefore, we can either print the DF with `showDF` or we can save the aggregation as a local data.frame. Collecting the DF may be preferred if we want to work with the mean `"mths_remng"` value as a single value in RStudio.
 
 ```{r, collapse=TRUE}
 mths_remng.avg <- agg(df, mean = mean(df$mths_remng)) # Create an aggregation DF
+
+# DataFrame
 showDF(mths_remng.avg) # Print this DF
 typeof(mths_remng.avg) # Aggregation DF is of class S4
 
+# data.frame
 mths_remng.avg.l <- collect(mths_remng.avg) # Collect the DF as a local data.frame
 (mths_remng.avg.l <- mths_remng.avg.l[,1])  # Overwrite data.frame with numerical mean value (was entry in d.f)
 typeof(mths_remng.avg.l)  # Object is now of a numerical dtype
@@ -109,10 +116,11 @@ typeof(mths_remng.avg.l)  # Object is now of a numerical dtype
 
 #### Range width & limits:
 
-We can also use `agg` to create a DF that lists the minimum and maximum values within a numerical DF column (i.e. the limits of the range of values in the column) and the width of the range of these values. Here, we create compute these values for `"mths_remng"` and print the resulting DF with `showDF`:
+We can also use `agg` to create a DF that lists the minimum and maximum values within a numerical DF column (i.e. the limits of the range of values in the column) and the width of the range. Here, we create compute these values for `"mths_remng"` and print the resulting DF with `showDF`:
 
 ```{r, collapse=TRUE}
-mr_range <- agg(df, minimum = min(df$mths_remng), maximum = max(df$mths_remng), range_width = abs(max(df$mths_remng) - min(df$mths_remng)))
+mr_range <- agg(df, minimum = min(df$mths_remng), maximum = max(df$mths_remng), 
+                range_width = abs(max(df$mths_remng) - min(df$mths_remng)))
 showDF(mr_range)
 ```
 
@@ -130,9 +138,7 @@ showDF(mr_sd)
 ```
 
 
-#### Quantiles:
-
-[Insert section on measuring (approx. quantiles) with release of SparkR 2.0.0]
+#### Quantiles: [Insert section on measuring (approx. quantiles) with release of SparkR 2.0.0]
 
 
 ***
@@ -143,7 +149,7 @@ showDF(mr_sd)
 
 #### Skewness:
 
-We can measure the magnitude and direction of skew in the distribution of a numerical column (relative to horizontal symmetry) in a DF by using the operation `skewness` with `agg`, just as we did to measure the `mean`, `variance` and `stddev` of a numerical variable. Below, we measure the `skewness` of `"mths_remng"`:
+We can measure the magnitude and direction of skew in the distribution of a numerical DF column by using the operation `skewness` with `agg`, just as we did to measure the `mean`, `variance` and `stddev` of a numerical variable. Below, we measure the `skewness` of `"mths_remng"`:
 
 ```{r, collapse=TRUE}
 mr_sk <- agg(df, skewness = skewness(df$mths_remng))
@@ -182,17 +188,16 @@ typeof(corr_la.mr)
 ***
 
 
+
 ## Categorical Data
 
 
-We can compute descriptive statistics for categorical data using the `groupBy` operation that we used in the Basics II tutorial to compute aggregations of numerical data over groups, as well as operations native to SparkR for this purpose.
+We can compute descriptive statistics for categorical data using (1) the `groupBy` operation that we discussed in the [SparkR Basics II](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-2.md) tutorial and (2) operations native to SparkR for this purpose.
 
 ```{r, include=FALSE}
 df$cd_zero_bal <- ifelse(isNull(df$cd_zero_bal), "Unknown", df$cd_zero_bal)
 df$servicer_name <- ifelse(df$servicer_name == "", "Unknown", df$servicer_name)
 ```
-
-***
 
 
 #### Frequency table:
@@ -204,11 +209,11 @@ zb_f <- count(groupBy(df, "cd_zero_bal"))
 showDF(zb_f)
 ```
 
-We could also embed a grouping into an `agg` operation as we saw in the Basics II tutorial to achieve the same frequency table DF, i.e. we could evaluate the expression `agg(groupBy(df, df$cd_zero_bal), count = n(df$cd_zero_bal))`.
+We could also embed a grouping into an `agg` operation as we saw in the [SparkR Basics II](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-2.md) tutorial to achieve the same frequency table DF, i.e. we could evaluate the expression `agg(groupBy(df, df$cd_zero_bal), count = n(df$cd_zero_bal))`.
 
 #### Relative frequency table:
 
-We could similarly create a DF that consists of a relative frequency table. Here, we reproduce the frequency table from the preceding section, but now including the relative frequency for each distinct string value, as measured by "Percentage":
+We could similarly create a DF that consists of a relative frequency table. Here, we reproduce the frequency table from the preceding section, but now including the relative frequency for each distinct string value, labeled `"Percentage"`:
 
 ```{r, collapse=TRUE}
 n <- nrow(df)
@@ -218,14 +223,14 @@ showDF(zb_rf)
 
 #### Contingency table:
 
-Finally, we can create a contingency table with the operation `crosstab`, which returns a data.frame that consists of a contingency table between two categorical columns of a DF. Here, we create and print a contingency table for `"servicer_name"` and `"cd_zero_bal"`:
+Finally, we can create a contingency table with the operation `crosstab`, which returns a data.frame that consists of a contingency table between two categorical DF columns. Here, we create and print a contingency table for `"servicer_name"` and `"cd_zero_bal"`:
 
 ```{r, eval=FALSE}
 conting_sn.zb <- crosstab(df, "servicer_name", "cd_zero_bal")
 conting_sn.zb
 ```
 
-Here, is the contingency table, the output of `crosstab`, in a formatted table:
+Here, is the contingency table (the output of `crosstab`) in a formatted table:
 
 ```{r kable, echo=FALSE}
 conting_sn.zb <- crosstab(df, "servicer_name", "cd_zero_bal")
@@ -233,4 +238,4 @@ library(knitr)
 kable(conting_sn.zb)
 ```
 
-__End of tutorial__ - Next up is [Insert next tutorial]
+__End of tutorial__ - Next up is [Merging SparkR DataFrames](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/merging.md)
