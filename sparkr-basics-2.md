@@ -4,10 +4,10 @@ June 28, 2016
 
 
 
-**Last Updated**: July 26, 2016
+**Last Updated**: July 27, 2016
 
 
-**Objective**: The SparkR DataFrame (DF) API supports a number of operations to do structured data processing. These operations range from the simple tasks that we used in the SparkR Basics I tutorial (e.g. counting the number of rows in a DF using `nrow`) to more complex tasks like computing aggregate data. This tutorial discusses the key DF operations for processing tabular data in the SparkR environment, the different types of DF operations and how to perform these operations efficiently. In particular, this tutorial discusses:
+**Objective**: The SparkR DataFrame (DF) API supports a number of operations to do structured data processing. These operations range from the simple tasks that we used in the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial (e.g. counting the number of rows in a DF using `nrow`) to more complex tasks like computing aggregate data. This tutorial discusses the key DF operations for processing tabular data in the SparkR environment, the different types of DF operations and how to perform these operations efficiently. In particular, this tutorial discusses:
 
 * Computing aggregations for a specified list of columns across an entire DF
 * Computing aggregations for a specified list of columns across entries of a DF that share a common identifier
@@ -30,7 +30,7 @@ You can confirm that you successfully initiated these contexts by looking at the
 
 ***
 
-**Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the (SparkR Basics I)[https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md] tutorial.
+**Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial.
 
 
 ```r
@@ -116,8 +116,8 @@ head(df2_a1)
 df2_a2 <- arrange(df2, df2$count) # List servicers by ascending count values
 head(df2_a2)
 ##                           servicer_name loan_age_avg count
-## 1                FREEDOM MORTGAGE CORP.    184.50000     2
-## 2             OCWEN LOAN SERVICING, LLC    160.50000     2
+## 1             OCWEN LOAN SERVICING, LLC    160.50000     2
+## 2                FREEDOM MORTGAGE CORP.    184.50000     2
 ## 3                    QUICKEN LOANS INC.    160.00000     4
 ## 4           IRWIN MORTGAGE, CORPORATION     38.84615    13
 ## 5 MATRIX FINANCIAL SERVICES CORPORATION    168.04545    22
@@ -189,7 +189,7 @@ head(df3)
 
 Note that `df3` contains every column originally included in `df`, as well as the column `"loan_age_yrs"`.
 
-We can also rename a DF column using the `withColumnRenamed` operation as we discussed in the SparkR Basics I tutorial. The following expression returns a DF that is equivalent to `df`, except for the fact that we have renamed `"servicer_name"` to `"servicer"`.
+We can also rename a DF column using the `withColumnRenamed` operation as we discussed in the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial. The following expression returns a DF that is equivalent to `df`, except for the fact that we have renamed `"servicer_name"` to `"servicer"`.
 
 
 ```r
@@ -230,7 +230,7 @@ When using either `withColumn` or `withColumnRenamed`, we could simply replace o
 
 ### Types of SparkR operations:
 
-Throughout this tutorial, as well as in the SparkR Basics I tutorial, you may have noticed that some operations result in a new DataFrame (e.g. `agg`) and some return an output (e.g. `head`). SparkR operations can be classified as either:
+Throughout this tutorial, as well as in the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial, you may have noticed that some operations result in a new DataFrame (e.g. `agg`) and some return an output (e.g. `head`). SparkR operations can be classified as either:
 
 * __transformations__: those operations that return a new SparkR DataFrame; or,
 * __actions__: those operations that return an output.
@@ -307,16 +307,16 @@ Let's compare the time elapsed in evaluating the following expressions with and 
 .df <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header='false', inferSchema='true')
 system.time(ncol(.df))
 ##    user  system elapsed 
-##   0.016   0.004   0.030
+##    0.02    0.00    0.03
 system.time(nrow(.df))
 ##    user  system elapsed 
-##   0.004   0.000   0.451
+##   0.008   0.000   0.918
 system.time(dim(.df))
 ##    user  system elapsed 
-##   0.008   0.000   0.299
+##   0.008   0.000   0.453
 system.time(head(agg(groupBy(.df, .df$servicer_name), loan_age_avg = avg(.df$loan_age))))
 ##    user  system elapsed 
-##   0.016   0.000   2.100
+##   0.016   0.000   3.255
 rm(.df)
 
 # Cached
@@ -325,16 +325,16 @@ cache(.df)
 ## DataFrame[loan_id:bigint, period:string, servicer_name:string, new_int_rt:double, act_endg_upb:double, loan_age:int, mths_remng:int, aj_mths_remng:int, dt_matr:string, cd_msa:int, delq_sts:string, flag_mod:string, cd_zero_bal:int, dt_zero_bal:string]
 system.time(ncol(.df))
 ##    user  system elapsed 
-##   0.020   0.004   0.031
+##   0.020   0.000   0.027
 system.time(nrow(.df))
 ##    user  system elapsed 
-##   0.008   0.000   0.210
+##   0.008   0.000   0.287
 system.time(dim(.df))
 ##    user  system elapsed 
-##   0.008   0.000   0.212
+##   0.004   0.004   0.246
 system.time(head(agg(groupBy(.df, .df$servicer_name), loan_age_avg = avg(.df$loan_age))))
 ##    user  system elapsed 
-##   0.012   0.000   1.842
+##   0.016   0.000   3.991
 unpersist(.df)
 ## DataFrame[loan_id:bigint, period:string, servicer_name:string, new_int_rt:double, act_endg_upb:double, loan_age:int, mths_remng:int, aj_mths_remng:int, dt_matr:string, cd_msa:int, delq_sts:string, flag_mod:string, cd_zero_bal:int, dt_zero_bal:string]
 rm(.df)
