@@ -29,7 +29,8 @@ You can confirm that you successfully initiated these contexts by looking at the
 
 
 ```r
-df <- read.df(sqlContext, "s3://ui-spark-data/diamonds.csv", header='true', delimiter=",", source="com.databricks.spark.csv", inferSchema='true', nullValue="")
+df <- read.df(sqlContext, path = "s3://ui-spark-data/diamonds.csv", header = "true", delimiter = ",",
+              source = "com.databricks.spark.csv", inferSchema = "true", nullValue = "")
 cache(df)
 ```
 
@@ -249,7 +250,8 @@ Here, we evaluate the `geom_bivar_histogram.SparkR` function using `"carat"` and
 
 ```r
 p5 <- geom_bivar_histogram.SparkR(df = df, x = "carat", y = "price", nbins = 100)
-p5 + scale_colour_brewer(palette = "Blues", type = "seq") + ggtitle("This is a title") + xlab("Carat") + ylab("Price")
+p5 + scale_colour_brewer(palette = "Blues", type = "seq") + ggtitle("This is a title") + xlab("Carat") +
+  ylab("Price")
 ```
 
 ![](visualizations_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
@@ -298,7 +300,8 @@ We now evaluate the `geom_bivar_histogram.SparkR.log10` function with `"carat"` 
 
 ```r
 p6 <- geom_bivar_histogram.SparkR.log10(df = df, x = "carat", y = "price", nbins = 250)
-p6 + scale_colour_brewer(palette = "Blues", type = "seq") + ggtitle("This is a title") + xlab("Carat") + ylab("Price")
+p6 + scale_colour_brewer(palette = "Blues", type = "seq") + ggtitle("This is a title") + xlab("Carat") +
+  ylab("Price")
 ```
 
 ![](visualizations_files/figure-html/unnamed-chunk-17-1.png)<!-- -->
