@@ -4,7 +4,7 @@ June 23, 2016
 
 
 
-**Last Updated**: July 26, 2016
+**Last Updated**: July 27, 2016
 
 
 **Objective**: Become comfortable working with the SparkR DataFrame (DF) API; particularly, understand how to:
@@ -37,7 +37,7 @@ You can confirm that you successfully initiated these contexts by looking at the
 
 ### Load a csv file into SparkR:
 
-Use the operation `read.df` to load in quarterly Fannie Mae single-family loan performance data from the AWS S3 folder `"s3://ui-hfpc/"` as a Spark DataFrame (DF). Note that, when initiating our SparkR context, we specified that the `spark-csv` package should be included by by specifying `sparkPackages="com.databricks:spark-csv_2.11:1.4.0"` in our `sparkR.init` operation. Below, we load a single quarter (2000, Q1) into SparkR, and save it as the DF `perf`:
+Use the operation `read.df` to load in quarterly Fannie Mae single-family loan performance data from the AWS S3 folder `"s3://ui-hfpc/"` as a Spark DataFrame (DF). Note that, when initiating our SparkR context, we specified that the `spark-csv` package should be included by by specifying `sparkPackages="com.databricks:spark-csv_2.10:1.4.0"` in our `sparkR.init` operation. Below, we load a single quarter (2000, Q1) into SparkR, and save it as the DF `perf`:
 
 
 ```r
