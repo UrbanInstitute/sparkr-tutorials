@@ -72,7 +72,7 @@ _Note_: Documentation for `ggplot2.SparkR` can be found [here](http://skku-skt.g
 
 Just as we would when using `ggplot2`, the following expression plots a basic bar graph that gives frequency counts across the different levels of `"cut"` quality in the data:
 
-```{r, eval=FALSE}
+```{r, collapse=TRUE}
 p1 <- ggplot(df, aes(x = cut))
 p1 + geom_bar()
 ```
@@ -185,7 +185,7 @@ When building a function in SparkR (or any other environment), we want to avoid 
 
 In the following function, we `collect` data five (5) times. Four of the times, we are collecting single values (two minimum and two maximum values), which does not require a huge amount of memory. The last `collect` that we perform collects a data.frame with three (3) columns and a row for each bin assignment pairing, which can fit in-memory on a single node (assuming we don't specify a massive value for `nbins`). When developing SparkR functions, we should only perform minor collections like the ones described.
 
-```{r}
+```{r, collapse=TRUE}
 geom_bivar_histogram.SparkR <- function(df, x, y, nbins){
   
   library(ggplot2)
@@ -230,7 +230,7 @@ Note that the plot closely resembles a scatterplot. Bivariate histograms are one
 
 For example, the following function is equivalent to our previous one, but we have changed the `fill` specification that determines the color scale from `count` to `log10(count)`. Then, we evaluate the new function with a larger `nbins` value, returning a new plot with more granular binning and a more nuanced color scale (since the breaks in the color scale are now log10-spaced).
 
-```{r}
+```{r, collapse=TRUE}
 geom_bivar_histogram.SparkR.log10 <- function(df, x, y, nbins){
   
   library(ggplot2)
