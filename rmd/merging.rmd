@@ -315,7 +315,7 @@ str(df3)
 # Check that values are equal
 df3_laNull_ <- where(df3, isNull(df3$loan_age))
 
-nrow(df3_laEmpty)  # No. of empty strings
+nrow(df3_laEmpty) # No. of empty strings
 nrow(df3_laNull_) # No. of null entries
 nB                # No. of rows in DF `B`
 ```
