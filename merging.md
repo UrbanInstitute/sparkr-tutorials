@@ -4,6 +4,8 @@ July 12, 2016
 
 
 
+**Last Updated**: July 28, 2016
+
 
 **Objective**: The following tutorial provides an overview of how to join SparkR DataFrames by column and by row. In particular, we discuss how to:
 
@@ -16,7 +18,7 @@ July 12, 2016
 
 ***
 
-<span style="color:red">**Warning**</span>: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate your SparkR and SparkR SQL contexts.
+:heavy_exclamation_mark: **Warning**: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate your SparkR and SparkR SQL contexts.
 
 
 
@@ -28,7 +30,8 @@ You can confirm that you successfully initiated these contexts by looking at the
 
 
 ```r
-df <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header='false', inferSchema='true')
+df <- read.df(sqlContext, path = "s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true", 
+              nullValue = "")
 cache(df)
 ```
 
@@ -123,15 +126,15 @@ ab1$loan_id <- NULL
 We can avoid this by renaming one of the columns before performing `join` and then, utilizing that the columns have distinct names, tell SparkR to drop only one of the columns. For example, we could rename `"loan_id"` in `a` with the expression `a <- withColumnRenamed(a, "loan_id", "loan_id_")`, then drop this column with `ab1$loan_id_ <- NULL` after performing `join` on `a` and `b` to return `ab1`.
 
 
-The `merge` operation, alternatively, allows us to join DFs and also produces two (2) distinct merge columns. We can use this feature to retain the column on which we joined the DFs, but we must still perform a `withColumnRenamed` step if we want our merge column to retain its original column name.
+The `merge` operation, alternatively, allows us to join DFs and produces two (2) _distinct_ merge columns. We can use this feature to retain the column on which we joined the DFs, but we must still perform a `withColumnRenamed` step if we want our merge column to retain its original column name.
 
 
-Rather than defining a `joinExpr`, we explictly specify the column(s) that SparkR should `merge` the DFs on with the operation parameters `by` and `by.x`/`by.y`. Note that, if we do not specify `by`, SparkR will merge the DFs on the list of common column names shared by the DFs. Rather than specifying a type of join, `merge` determines how SparkR should merge DFs based on boolean values, `all.x` and `all.y`, which indicate which rows in `x` and `y` should be included in the join, respectively. We can specify `merge` type with the following parameter values:
+Rather than defining a `joinExpr`, we explictly specify the column(s) that SparkR should `merge` the DFs on with the operation parameters `by` and `by.x`/`by.y` (if the merging column is named differently across the DFs). Note that, if we do not specify `by`, SparkR will merge the DFs on the list of common column names shared by the DFs. Rather than specifying a type of join, `merge` determines how SparkR should merge DFs based on boolean values, `all.x` and `all.y`, which indicate which rows in `x` and `y` should be included in the join, respectively. We can specify `merge` type with the following parameter values:
 
 * `all.x = FALSE`, `all.y = FALSE`: Returns an inner join (this is the default and can be achieved by not specifying values for all.x and all.y)
 * `all.x = TRUE`, `all.y = FALSE`: Returns a left outer join
 * `all.x = FALSE`, `all.y = TRUE`: Returns a right outer join
-* `all.x = TRUE`, `all.y = TRUE`: Returns a full outer join
+* `all.x = TRUE`, `all.y = TRUE`: Returns a full outer join (default)
 
 The following `merge` expression is equivalent to the `join` expression in the preceding example:
 
@@ -157,7 +160,7 @@ str(ab2)
 ##  $ dt_zero_bal  : chr "" "" "" "" "" ""
 ```
 
-Note that the two merging columns are distinct as indicated by the `_x` and `_y` column name assignments performed by `merge`. We utilize this distinction in the expressions below to retain a single merge column:
+Note that the two merging columns are distinct as indicated by the `<column name>_x` and `<column name>_y` name assignments performed by `merge`. We utilize this distinction in the expressions below to retain a single merge column:
 
 
 ```r
@@ -186,6 +189,9 @@ str(ab2)
 ##  $ dt_zero_bal  : chr "" "" "" "" "" ""
 ```
 
+
+
+
 ***
 
 
@@ -204,18 +210,21 @@ Let's also examine the row count for each subsetted row and confirm that `A` and
 
 ```r
 (nA <- nrow(A))
-## [1] 6607551
+## [1] 6608693
 (nB <- nrow(B))
-## [1] 6608965
+## [1] 6607823
+
 nA + nB # Equal to nrow(df)
 ## [1] 13216516
-nrow(intersect(A, B))
+
+AintB <- intersect(A, B)
+nrow(AintB)
 ## [1] 0
 ```
 
 #### Append rows when column name lists are equal across DFs:
 
-If we are certain that the two DFs have equivalent column name lists (with respect to string values and column ordering), then appending the rows of one DF to another is straightforward. Here, we append the rows of `B` to `A` with the `rbind` operation:
+If we are certain that the two DFs have equivalent column name lists (with respect to both string values and column ordering), then appending the rows of one DF to another is straightforward. Here, we append the rows of `B` to `A` with the `rbind` operation:
 
 
 ```r
@@ -245,7 +254,9 @@ columns(B)
 ## [13] "cd_zero_bal"   "dt_zero_bal"
 
 # Define column name list that has every column in `A` and `B`, except "loan_age":
-cols_ <- c("loan_id", "period", "servicer_name", "new_int_rt", "act_endg_upb", "mths_remng", "aj_mths_remng", "dt_matr", "cd_msa", "delq_sts", "flag_mod", "cd_zero_bal", "dt_zero_bal")
+cols_ <- c("loan_id", "period", "servicer_name", "new_int_rt", "act_endg_upb", "mths_remng", "aj_mths_remng",
+           "dt_matr", "cd_msa", "delq_sts", "flag_mod", "cd_zero_bal", "dt_zero_bal")
+
 # Define subsetted DF:
 B_ <- select(B, cols_)
 ```
@@ -253,7 +264,7 @@ B_ <- select(B, cols_)
 
 
 
-We can try to apply SparkR `rbind` operation to append `B_` to `A`, but the following expression will result in the error: `"Union can only be performed on tables with the same number of columns, but the left table has 14 columns and" "the right has 13"`.
+We can try to apply SparkR `rbind` operation to append `B_` to `A`, but the expression given below will result in the error: `"Union can only be performed on tables with the same number of columns, but the left table has 14 columns and" "the right has 13"`
 
 
 ```r
@@ -262,10 +273,10 @@ df2 <- rbind(A, B_)
 
 Two strategies to force SparkR to merge DataFrames with different column name lists are to:
 
-1. Append by an intersection of the column names for each DF, or
+1. Append by an intersection of the two sets of column names, or
 2. Use `withColumn` to add columns to DF where they are missing and set each entry in the appended rows of these columns equal to `NA`.
 
-Below is a function, `rbind.intersect`, that accomplishes the first approach. Notice that we simply take an intesection of the column names and ask SparkR to perform `rbind`, considering only this subset of (sorted) column names.
+Below is a function, `rbind.intersect`, that accomplishes the first approach. Notice that, in this function, we simply take an intesection of the column names and ask SparkR to perform `rbind`, considering only this subset of (sorted) column names.
 
 
 ```r
@@ -292,7 +303,7 @@ colnames(df2)
 
 
 
-Accomplishing the second approach is somewhat more involved. The `rbind.fill` function, given below, identifies the outersection of the list of column names for two (2) DataFrames and adds them onto one (1) or both of the DataFrames as needed using `withColumn`:
+Accomplishing the second approach is somewhat more involved. The `rbind.fill` function, given below, identifies the outersection of the list of column names for two (2) DataFrames and adds them onto one (1) or both of the DataFrames as needed using `withColumn`. The function appends these columns as string dtype, and we can later recast columns as needed:
 
 
 ```r
@@ -308,18 +319,18 @@ rbind.fill <- function(x, y) {
   
   if (m2 < m1) {
     for (j in 1:len){
-      y <- withColumn(y, col_outer[j], cast(lit(NULL), "double"))
+      y <- withColumn(y, col_outer[j], cast(lit(""), "string"))
     }
   } else { 
     if (m2 > m1) {
         for (j in 1:len){
-          x <- withColumn(x, col_outer[j], cast(lit(NULL), "double"))
+          x <- withColumn(x, col_outer[j], cast(lit(""), "string"))
         }
       }
     if (m2 == m1 & col_x != col_y) {
       for (j in 1:len){
-        x <- withColumn(x, col_outer[j], cast(lit(NULL), "double"))
-        y <- withColumn(y, col_outer[j], cast(lit(NULL), "double"))
+        x <- withColumn(x, col_outer[j], cast(lit(""), "string"))
+        y <- withColumn(y, col_outer[j], cast(lit(""), "string"))
       }
     } else { }         
   }
@@ -351,15 +362,54 @@ colnames(df3)
 ## [13] "period"        "servicer_name"
 ```
 
-We know from the missing data tutorial that `df$loan_age` does not contain any `NA` or `NaN` values. By appending `B_` to `A` with the `rbind.fill` function, therefore, we should have introduced exactly `nrow(B)` many null values in `df2`. We can see that these values are equal below:
+We know from the missing data tutorial that `df$loan_age` does not contain any `NA` or `NaN` values. By appending `B_` to `A` with the `rbind.fill` function, therefore, we should have inserted exactly `nrow(B)` many empty string entries in `df3`. Note that `"loan_age"` is currently cast as string dtype and, therefore, the column does not contain any null values and we will need to recast the column to a numerical dtype.
 
 
 ```r
-nB
-## [1] 6608965
-count(where(df3, isNull(df3$loan_age)))
-## [1] 6608965
+df3_laEmpty <- where(df3, df3$loan_age == "")
+nrow(df3_laEmpty)
+## [1] 6607823
+
+# There are no "loan_age" null values since it is string dtype
+df3_laNull <- where(df3, isNull(df3$loan_age))
+nrow(df3_laNull)
+## [1] 0
 ```
+
+Below, we recast `"loan_age"` as integer dtype and check that the number of `"loan_age"` null values in `df3` now matches the number of entry string values in `df3` prior to recasting, as well as the number of rows in `B`:
+
+
+```r
+# Recast
+df3$loan_age <- cast(df3$loan_age, dataType = "integer")
+str(df3)
+## 'DataFrame': 14 variables:
+##  $ act_endg_upb : num NA NA NA NA 74693 74587.91
+##  $ aj_mths_remng: int 359 357 355 355 354 352
+##  $ cd_msa       : int 0 0 0 0 0 0
+##  $ cd_zero_bal  : int NA NA NA NA NA NA
+##  $ delq_sts     : chr "0" "0" "0" "0" "0" "0"
+##  $ dt_matr      : chr "01/2030" "01/2030" "01/2030" "01/2030" "01/2030" "01/2030"
+##  $ dt_zero_bal  : chr "" "" "" "" "" ""
+##  $ flag_mod     : chr "N" "N" "N" "N" "N" "N"
+##  $ loan_age     : int 0 2 4 5 6 7
+##  $ loan_id      : num 100007365142 100007365142 100007365142 100007365142 100007365142 100007365142
+##  $ mths_remng   : int 360 358 356 355 354 353
+##  $ new_int_rt   : num 8 8 8 8 8 8
+##  $ period       : chr "01/01/2000" "03/01/2000" "05/01/2000" "06/01/2000" "07/01/2000" "08/01/2000"
+##  $ servicer_name: chr "" "" "" "" "" ""
+
+# Check that values are equal
+df3_laNull_ <- where(df3, isNull(df3$loan_age))
+
+nrow(df3_laEmpty)  # No. of empty strings
+## [1] 6607823
+nrow(df3_laNull_) # No. of null entries
+## [1] 6607823
+nB                # No. of rows in DF `B`
+## [1] 6607823
+```
+
 
 Documentation for rbind.intersection can be found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/R/rbind-intersection.R), and [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/R/rbind-fill.R) for rbind.fill.
 
