@@ -1,4 +1,4 @@
-# 3 - Subsetting SparkR DataFrames
+# Subsetting SparkR DataFrames
 Sarah Armstrong, Urban Institute  
 July 1, 2016  
 

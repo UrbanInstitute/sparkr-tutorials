@@ -1,4 +1,4 @@
-# 1 - SparkR Basics I: From CSV to SparkR DataFrame
+# SparkR Basics I: From CSV to SparkR DataFrame
 Sarah Armstrong, Urban Institute  
 June 23, 2016  
 
