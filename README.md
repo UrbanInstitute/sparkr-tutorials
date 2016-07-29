@@ -2,7 +2,7 @@
 
 Description: Code snippets and tutorials for working with SparkR.
 
-## SparkR for Social Science Manual
+## Spark Social Science Manual
 
 [Insert link to manual here]
 
