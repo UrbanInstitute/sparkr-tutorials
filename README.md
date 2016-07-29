@@ -1,20 +1,28 @@
 # sparkr-tutorials
-Code snippets and tutorials for working with SparkR.
 
+Description: Code snippets and tutorials for working with SparkR.
+
+## SparkR Tutorials Manual
+
+[Insert link to manual here]
 
 ## Getting Started
 
+In order to begin working with SparkR, users must first:
 
-You must always load the SparkR library and initiliaze the spark context before working with SparkR and tabular data.
+1. Load the `SparkR` library
+2. Initialize a Spark context (and specify necessary Sparkpackages in the `sparkPackages` parameter)
+3. Initiate a SparkR SQL context
 
 ```r
 library(SparkR)
-sc <- sparkR.init(sparkPackages="com.databricks:spark-csv_2.11:1.4.0")
 
+sc <- sparkR.init(sparkPackages="com.databricks:spark-csv_2.10:1.4.0")
 sqlContext <- sparkRSQL.init(sc)
 ```
 
-Example data loading will be included in each tutorial.
+:heavy_exclamation_mark: The expressions given above _must_ be evaluated in SparkR before beginning any of the tutorials hosted here. Example data loading is included in each tutorial.
+
 
 ## Table of Contents:
 
