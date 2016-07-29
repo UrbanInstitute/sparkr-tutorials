@@ -2,11 +2,11 @@
 
 Description: Code snippets and tutorials for working with SparkR.
 
-## SparkR Tutorials Manual
+## SparkR for Social Science Manual
 
 [Insert link to manual here]
 
-## Getting Started
+## Getting Started with SparkR Tutorials
 
 In order to begin working with SparkR, users must first:
 
