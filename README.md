@@ -16,7 +16,7 @@ sqlContext <- sparkRSQL.init(sc)
 
 Example data loading will be included in each tutorial.
 
-# Table of Contents:
+## Table of Contents:
 
   * [Merging SparkR DataFrames](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/merging.md#merging-sparkr-dataframes)
       * [Join (merge) two DataFrames by column condition(s):](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/merging.md#join-merge-two-dataframes-by-column-conditions)

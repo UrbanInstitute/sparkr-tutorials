@@ -1,4 +1,4 @@
-# SparkR Basics II: Essential DataFrame Operations
+# 2 - SparkR Basics II: Essential DataFrame Operations
 Sarah Armstrong, Urban Institute  
 June 28, 2016  
 
