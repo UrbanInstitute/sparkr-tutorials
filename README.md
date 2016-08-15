@@ -10,18 +10,29 @@ Description: Code snippets and tutorials for working with SparkR.
 
 In order to begin working with SparkR, users must first:
 
-1. Load the `SparkR` library
-2. Initialize a Spark context (and specify necessary Sparkpackages in the `sparkPackages` parameter)
-3. Initiate a SparkR SQL context
+1. Make sure that `SPARK_HOME` is set in environment (using the `R` function `Sys.getenv`)
+2. Load the `SparkR` library
+3. Initiate a `sparkR.session`
 
 ```r
-library(SparkR)
+if (nchar(Sys.getenv("SPARK_HOME")) < 1) {
+  Sys.setenv(SPARK_HOME = "/home/spark")
+}
 
-sc <- sparkR.init(sparkPackages="com.databricks:spark-csv_2.10:1.4.0")
-sqlContext <- sparkRSQL.init(sc)
+# Load the SparkR library
+library(SparkR, lib.loc = c(file.path(Sys.getenv("SPARK_HOME"), "R", "lib")))
+
+# Initiate a SparkR session
+sparkR.session()
 ```
 
 :heavy_exclamation_mark: The expressions given above _must_ be evaluated in SparkR before beginning any of the tutorials hosted here. Example data loading is included in each tutorial.
+
+Users can end a SparkR session with the following expression:
+
+```r
+sparkR.session.stop()
+```
 
 
 ## Table of Contents:
