@@ -4,7 +4,7 @@ June 23, 2016
 
 
 
-**Last Updated**: July 27, 2016
+**Last Updated**: August 15, 2016
 
 
 **Objective**: Become comfortable working with the SparkR DataFrame (DF) API; particularly, understand how to:
@@ -26,27 +26,33 @@ June 23, 2016
 
 ***
 
-:heavy_exclamation_mark: **Warning**: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate your SparkR and SparkR SQL contexts.
+:heavy_exclamation_mark: **Warning**: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate a SparkR session.
 
 
 
-You can confirm that you successfully initiated these contexts by looking at the global environment of RStudio. Can you see `sc` and `sqlContext` listed as values? If the answer is yes, then you are ready to learn how to work with tabular data in SparkR!
+The following error indicates that you have not initiated a SparkR session:
+
+
+```r
+Error in getSparkSession() : SparkSession not initialized
+```
+
+If you receive this message, return to the SparkR tutorials [README](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md) for guidance.
 
 ***
 
 
 ### Load a csv file into SparkR:
 
-Use the operation `read.df` to load in quarterly Fannie Mae single-family loan performance data from the AWS S3 folder `"s3://ui-hfpc/"` as a Spark DataFrame (DF). Note that, when initiating our SparkR context, we specified that the `spark-csv` package should be included by by specifying `sparkPackages="com.databricks:spark-csv_2.10:1.4.0"` in our `sparkR.init` operation. Below, we load a single quarter (2000, Q1) into SparkR, and save it as the DF `perf`:
+Use the operation `read.df` to load in quarterly Fannie Mae single-family loan performance data from the AWS S3 folder `"s3://sparkr-tutorials/"` as a Spark DataFrame (DF). Below, we load a single quarter (2000, Q1) into SparkR, and save it as the DF `perf`:
 
 
 ```r
-perf <- read.df(sqlContext, path = "s3://ui-hfpc/Performance_2000Q1.txt", header = "false", delimiter = "|",
-                source = "com.databricks.spark.csv", inferSchema = "true", nullValue = "")
+perf <- read.df("s3://sparkr-tutorials/Performance_2000Q1.txt", header = "false", delimiter = "|", source = "csv", inferSchema = "true", na.strings = "")
 ```
 
 
-In the `read.df` operation, we included typical specifications included when reading data into Stata and SAS, such as what character represents the delimiter in the .csv file. However, we also included `sqlContext` (which we previously defined with the `sparkRSQL.init` operation in the README). This is essential for SparkR to understand how the read-in data should be partitioned and distributed across the computers (nodes) that make up the AWS cluster currently being used. Another input that is SparkR-specific is `inferSchema`, which SparkRSQL requires in order to interpet data types for each column in the DF. We discuss this in more detail later on in this tutorial. An additional detail is that 'read.df' includes the `nullValue=""` specification because we want `read.df` to read entries of empty strings in our .csv dataset as NA in the SparkR DF, i.e. we are telling read.df to read entries equal to `""` as `NA` in the DF. We will discuss how SparkR handles empty and null entries in further detail in a subsequent tutorial.
+In the `read.df` operation, we give specifications typically included when reading data into Stata and SAS, such as the delimiter character for .csv files. However, we also include SparkR-specific input including `inferSchema`, which Spark uses to interpet data types for each column in the DF. We discuss this in more detail later on in this tutorial. An additional detail is that `read.df` includes the `na.strings = ""` specification because we want `read.df` to read entries of empty strings in our .csv dataset as NA in the SparkR DF, i.e. we are telling read.df to read entries equal to `""` as `NA` in the DF. We will discuss how SparkR handles empty and null entries in further detail in a subsequent tutorial.
 
 
 _Note_: documentation for the quarterly loan performance data can be found at http://www.fanniemae.com/portal/funding-the-market/data/loan-performance-data.html.
@@ -67,18 +73,19 @@ We can save the dimensions of the 'perf' DF through the following operations. No
 
 ### Update a DataFrame with new rows of data:
 
-In order to take advantage of the newfound computing power that SparkR provides, and since we'll want to analyze loan performance data beyond 2000 Q1, we append the `perf` DF below with the data from subsequent quarters of the same single-family loan performance dataset. Here, we're only appending one subsequent quarter (2000 Q2) to the DF so that our analysis in these tutorials runs quickly, but the following code can be easily adapted by specifying the `a` and `b` values to reflect the quarters that we want to append to our DF. Note that the for-loop below again includes the `read.df` operation, here specified just as we did when initial loading the .csv file as a DF:
+Since we'll want to analyze loan performance data beyond 2000 Q1, we append the `perf` DF below with the data from subsequent quarters of the same single-family loan performance dataset. Here, we're only appending one subsequent quarter (2000 Q2) to the DF so that our analysis in these tutorials runs quickly, but the following code can be easily adapted by specifying the `a` and `b` values to reflect the quarters that we want to append to our DF. Note that the for-loop below also uses the `read.df` operation, specified here just as when we loaded the initial .csv file as a DF:
 
 
 ```r
 a <- 2
 b <- 2
+
 for(q in a:b){
   
   filename <- paste0("Performance_2000Q", q)
-  filepath <- paste0("s3://ui-hfpc/", filename, ".txt")
-  .perf <- read.df(sqlContext, path = filepath, header = "false", delimiter = "|", 
-                   source = "com.databricks.spark.csv", inferSchema = "true", nullValue="")
+  filepath <- paste0("s3://sparkr-tutorials/", filename, ".txt")
+  .perf <- read.df(filepath, header = "false", delimiter = "|", 
+                   source = "csv", inferSchema = "true", na.strings = "")
   
   perf <- rbind(perf, .perf)
 }
@@ -99,30 +106,32 @@ The result of the for-loop is an appended `perf` DF that consists of the same co
 
 ### Rename DataFrame column(s):
 
-The `select` operation selects columns specified as strings in the operation line and then returns a new DF including only those specified columns. Here, we create a new DF called `perf_lim` that includes only the first 14 columns in the `perf` DF, i.e. the DF `perf_lim` is a subset of `perf`:
+The `select` operation performs a by column subset of an existing DF. The columns to be returned in the new DF are specified as a list of column name strings in the `select` operation. Here, we create a new DF called `perf_lim` that includes only the first 14 columns in the `perf` DF, i.e. the DF `perf_lim` is a subset of `perf`:
 
 
 ```r
-perf_lim <- select(perf, col = c("C0","C1","C2","C3","C4","C5","C6","C7","C8","C9","C10","C11","C12","C13"))
+cols <- c("_C0","_C1","_C2","_C3","_C4","_C5","_C6","_C7","_C8","_C9","_C10","_C11","_C12","_C13")
+perf_lim <- select(perf, col = cols)
 ```
 
 
 We will discuss subsetting DataFrames in further detail in the "Subsetting" tutorial. For now, we will use this subsetted DF to learn how to change column names of DataFrames.
 
 
-Using a for-loop and the SparkR operation `withColumnRenamed`, we rename the columns of `perf_lim`. The operation `withColumnRenamed` renames an existing column, or columns, in a DF and returns a new DF. By specifying the "new" DF name as `perf_lim`, we are simply renaming the columns of `perf_lim`, but we could create an entirely separate DF with new column names by specifying a different DF name for `withColumnRenamed`:
+Using a for-loop and the SparkR operation `withColumnRenamed`, we rename the columns of `perf_lim`. The operation `withColumnRenamed` renames an existing column, or columns, in a DF and returns a new DF. By specifying the "new" DF name as `perf_lim`, however, we simply rename the columns of `perf_lim` (we could create an entirely separate DF with new column names by specifying a different DF name for `withColumnRenamed`):
 
 
 ```r
-old_colnames <- c("C0","C1","C2","C3","C4","C5","C6","C7","C8","C9","C10","C11","C12","C13")
+old_colnames <- c("_C0","_C1","_C2","_C3","_C4","_C5","_C6","_C7","_C8","_C9","_C10","_C11","_C12","_C13")
 new_colnames <- c("loan_id","period","servicer_name","new_int_rt","act_endg_upb","loan_age","mths_remng",
                   "aj_mths_remng","dt_matr","cd_msa","delq_sts","flag_mod","cd_zero_bal","dt_zero_bal")
+
 for(i in 1:14){
   perf_lim <- withColumnRenamed(perf_lim, existingCol = old_colnames[i], newCol = new_colnames[i] )
 }
 ```
 
-We can check the column names of `perf_lim` with the `columns` operation:
+We can check the column names of `perf_lim` with the `columns` operation or with its alias `colnames`:
 
 
 ```r
@@ -160,9 +169,10 @@ head(perf_lim, num = 5)
 
 We can also use the `str` operation to return a compact visualization of the first several rows of a DF:
 
+
 ```r
 str(perf_lim)
-## 'DataFrame': 14 variables:
+## 'SparkDataFrame': 14 variables:
 ##  $ loan_id      : num 100007365142 100007365142 100007365142 100007365142 100007365142 100007365142
 ##  $ period       : chr "01/01/2000" "02/01/2000" "03/01/2000" "04/01/2000" "05/01/2000" "06/01/2000"
 ##  $ servicer_name: chr "" "" "" "" "" ""
@@ -184,11 +194,11 @@ str(perf_lim)
 
 ### Understanding data-types & schema:
 
-We can see in the output for the command `head(perf_lim, num = 5)` that we have what appears to be several different data types (dtypes) in our DF, but we obviously cannot infer what dtype is currently specified for each column in our DF by simply looking at that output. Luckily, there are three (3) different ways to view dtype in SparkR - the operations `dtypes`, `schema` and `printSchema`. As stated above, SparkRSQL relies on a "schema" to determine what data type to assign to each column in the DF (which is easy to remember since the English schema comes from the Greek word for shape or plan!). We can print a visual representation of the schema for a DF with the operations `schema` and `printSchema`:
+We can see in the output for the command `head(perf_lim, num = 5)` that we have what appears to be several different data types (dtypes) in our DF. There are three (3) different ways to explicitly view dtype in SparkR - the operations `dtypes`, `schema` and `printSchema`. As stated above, Spark relies on a "schema" to determine what dtype to assign to each column in a DF (which is easy to remember since the English schema comes from the Greek word for shape or plan!). We can print a visual representation of the schema for a DF with the operations `schema` and `printSchema` while the `dtypes` operation prints a list of DF column names and their corresponding dtypes:
 
 
 ```r
-dtypes(perf_lim)	# Prints pairs of strings that correspond to a column name and its data type
+dtypes(perf_lim)	# Prints a list of DF column names and corresponding dtypes
 ## [[1]]
 ## [1] "loan_id" "bigint" 
 ## 
@@ -266,13 +276,13 @@ printSchema(perf_lim) # Prints the schema of the DF in a concise tree format
 
 #### Specifying schema in `read.df` operation & defining a custom schema:
 
-Remember that, when we read in our DF from the S3 .csv file, we included the condition `inferSchema='true'`. This is just one of three (3) ways to communicate to SparkRSQL how the dtypes of the DF columns should be assigned. By specifying `inferSchema='true'` in `read.df`, we allow SparkRSQL to infer the dtype of each column in the DF. Conversely, we could specify our own schema and pass this into the load call, forcing SparkRSQL to adopt our dtype specifications for each column. Each of these approaches have their pros and cons, which determine when it is appropriate to prefer one over the other:
+Remember that, when we read in our DF from the S3-hosted .csv file, we included the condition `inferSchema = "true"`. This is just one of three (3) ways to communicate to Spark how the dtypes of the DF columns should be assigned. By specifying `inferSchema = "true"` in `read.df`, we allow Spark to infer the dtype of each column in the DF. Conversely, we could specify our own schema and pass this into the load call, forcing Spark to adopt our dtype specifications for each column. Each of these approaches have their pros and cons, which determine when it is appropriate to prefer one over the other:
 
-* `inferSchema='true'`: This approach minimizes programmer-driven error since we aren't required to make assertions about the dtypes of each column; however, it is comparatively computationally expensive
+* `inferSchema = "true"`: This approach minimizes programmer-driven error since we aren't required to make assertions about the dtypes of each column; however, it is comparatively computationally expensive
 
-* `customSchema`: While computationally more efficient, manually specifying a schema will lead to errors if incorrect dtypes are assigned to columns - if SparkRSQL is not able to interpret a column as the specified dtype, `read.df` will fill that column in the DF with NA
+* `customSchema`: While computationally more efficient, manually specifying a schema will lead to errors if incorrect dtypes are assigned to columns - if Spark is not able to interpret a column as the specified dtype, `read.df` will fill that column in the DF with NA
 
-Clearly, the situations in which these approaches would be helpful are starkly different. In the context of this tutorial, an efficient use of both approaches would be to use `inferSchema='true'` when reading in `perf`. At this point, we could print the schema with `schema` or `printSchema`, note the dtype for each column (all 28 of them), and then write a customSchema with the corresponding specifications. We could then use this customSchema when appending the subsequent quarters to `perf`. While writing the customSchema may be tedious, including it in the appending for-loop would help that process to be much more efficient - this would be especially useful if we were appending, for example, 20 years worth of quarterly data together. The third way to communicate to SparkRSQL how to define dtypes is to not specify any schema, i.e. to not include `inferSchema` in `read.df`. Under this condition, every column in the DF is read in as a string dtype. Below is the an example of how we could specify a customSchema (here, however, we just use the same dtypes as interpreted for `inferSchema='true'`):
+Clearly, the situations in which these approaches would be helpful are starkly different. In the context of this tutorial, an efficient use of both approaches would be to use `inferSchema = "true"` when reading in `perf`. At this point, we could print the schema with `schema` or `printSchema`, note the dtype for each column (all 28 of them), and then write a `customSchema` with the corresponding specifications (or changed from the inferred schema as needed). We could then use this `customSchema` when appending the subsequent quarters to `perf`. While writing the customSchema may be tedious, including it in the appending for-loop would help that process to be much more efficient - this would be especially useful if we were appending, for example, 20 years worth of quarterly data together. The third way to communicate to Spark how to define dtypes is to not specify any schema, i.e. to not include `inferSchema` in `read.df`. Under this condition, every column in the DF is read in as a string dtype. Below is the an example of how we could specify a customSchema (here, however, we just use the same dtypes as interpreted for `inferSchema = "true"`):
 
 
 ```r
@@ -349,17 +359,17 @@ Throughout this tutorial, we've built the Spark DataFrame `perf_lim` of quarterl
 write.df(perf_lim, path = "s3://sparkr-tutorials/hfpc_ex", source = "parquet", mode = "overwrite")
 ```
 
-When working with the DF `perf_lim` in the analysis above, we were really accessing data that was partitioned across our cluster. In order to export this partitioned data, we export each partition from its node (computer) and then collect them into the folder `"hfpc_ex"`. This "file" of indiviudal, partitioned files should be treated like an indiviudal file when organizing an S3 folder, i.e. __do not__ attempt to save other DataFrames or files to this file. Also, note that we have specified `mode = "overwrite"`, indicating that existing data in this folder is expected to be overwritten by the contents of this DF (additional mode specifications include `"error"`, `"ignore"` and `"append"`).
+When working with the DF `perf_lim` in the analysis above, we were really accessing data that was partitioned across our cluster. In order to export this partitioned data, we export each partition from its node (computer) and then collect them into the folder `"hfpc_ex"`. This "file" of indiviudal, partitioned files should be treated like an indiviudal file when organizing an S3 folder, i.e. __do not__ attempt to save other DataFrames or files to this file. SparkR saves the DF in this partitioned structure to accomodate massive data.
 
 
-SparkR saves the DF in this partitioned structure to accomodate massive data. Consider the conditions required for us to be able to save a DataFrame as a single .csv file: the given DF would need to be able to fit onto a single node of our cluster, i.e. it would need to be able to fit onto a single computer. Any data that would necessitate using SparkR in analysis will likely not fit onto a single computer.
+Consider the conditions required for us to be able to save a DataFrame as a single .csv file: the given DF would need to be able to fit onto a single node of our cluster, i.e. it would need to be able to fit onto a single computer. Any data that would necessitate using SparkR in analysis will likely not fit onto a single computer. Note that we have specified `mode = "overwrite"`, indicating that existing data in this folder is expected to be overwritten by the contents of this DF (additional mode specifications include `"error"`, `"ignore"` and `"append"`).
 
 
 The partitioned nature of `"hfpc_ex"` does not affect our ability to load it back into SparkR and perform further analysis. Below, we use the `read.df` to read in the partitioned parquet file from S3 as the DF `dat`:
 
 
 ```r
-dat <- read.df(sqlContext, path = "s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
+dat <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
 ```
 
 Below, we confirm that the dimensions and column names of `dat` and `perf_lim` are equal. When comparing DFs, each with a large number of columns, the following if-else statement can be adapted to check equal dimensions and column names across DFs:
@@ -376,20 +386,19 @@ if (dim1[1]!=dim2[1] | dim1[2]!=dim2[2]) {
 ## [1] "Dimension values are equal"
 ```
 
-We can also save the DF as a folder of partitioned .csv files with syntax similar to that which we used to export the DF as partitioned parquet files. Note, however, that this does not retain the column names like saving as partitioned parquet files does. Additionally, exporting a DataFrame as partitioned .csv files requires that we specify the 2.10 version of the Databricks .csv package as the value of the `sparkPackages` parameter when initiating our SparkR context, i.e. we must set `sparkPackages = "com.databricks:spark-csv_2.10:1.4.0"` in the `sparkR.init` operation discussed in the README file for these tutorials. The `write.df` expression for exporting the DF as a folder of partitioned .csv files is given below:
+We can also save the DF as a folder of partitioned .csv files with syntax similar to that which we used to export the DF as partitioned parquet files. Note, however, that this does not retain the column names like saving as partitioned parquet files does. The `write.df` expression for exporting the DF as a folder of partitioned .csv files is given below:
 
 
 ```r
-write.df(perf_lim, path = "s3://sparkr-tutorials/hfpc_ex.csv", source = "com.databricks.spark.csv", mode = "overwrite")
+write.df(perf_lim, path = "s3://sparkr-tutorials/hfpc_ex_csv", source = "csv", mode = "overwrite")
 ```
 
 
-We can read in the files as a DF with the following expression:
+We can read in the .csv files as a DF with the following expression:
 
 
 ```r
-dat2 <- read.df(sqlContext, path = "s3://sparkr-tutorials/hfpc_ex.csv", source = "com.databricks.spark.csv",
-                inferSchema = "true")
+dat2 <- read.df("s3://sparkr-tutorials/hfpc_ex_csv", source = "csv", inferSchema = "true")
 ```
 
 
@@ -397,43 +406,17 @@ Note that the DF columns are now given generic names, but we can use the same fo
 
 
 ```r
-str(dat2)
-## 'DataFrame': 14 variables:
-##  $ C0 : num 100007365142 100007365142 100007365142 100007365142 100007365142 100007365142
-##  $ C1 : chr "01/01/2000" "02/01/2000" "03/01/2000" "04/01/2000" "05/01/2000" "06/01/2000"
-##  $ C2 : chr "" "" "" "" "" ""
-##  $ C3 : chr "8.0" "8.0" "8.0" "8.0" "8.0" "8.0"
-##  $ C4 : chr "null" "null" "null" "null" "null" "null"
-##  $ C5 : int 0 1 2 3 4 5
-##  $ C6 : chr "360" "359" "358" "357" "356" "355"
-##  $ C7 : chr "359" "358" "357" "356" "355" "355"
-##  $ C8 : chr "01/2030" "01/2030" "01/2030" "01/2030" "01/2030" "01/2030"
-##  $ C9 : int 0 0 0 0 0 0
-##  $ C10: chr "0" "0" "0" "0" "0" "0"
-##  $ C11: chr "N" "N" "N" "N" "N" "N"
-##  $ C12: chr "null" "null" "null" "null" "null" "null"
-##  $ C13: chr "" "" "" "" "" ""
+colnames(dat2)
+##  [1] "_c0"  "_c1"  "_c2"  "_c3"  "_c4"  "_c5"  "_c6"  "_c7"  "_c8"  "_c9" 
+## [11] "_c10" "_c11" "_c12" "_c13"
 
 for(i in 1:14){
   dat2 <- withColumnRenamed(dat2, existingCol = old_colnames[i], newCol = new_colnames[i])
 }
 
-str(dat2)
-## 'DataFrame': 14 variables:
-##  $ loan_id      : num 100007365142 100007365142 100007365142 100007365142 100007365142 100007365142
-##  $ period       : chr "01/01/2000" "02/01/2000" "03/01/2000" "04/01/2000" "05/01/2000" "06/01/2000"
-##  $ servicer_name: chr "" "" "" "" "" ""
-##  $ new_int_rt   : chr "8.0" "8.0" "8.0" "8.0" "8.0" "8.0"
-##  $ act_endg_upb : chr "null" "null" "null" "null" "null" "null"
-##  $ loan_age     : int 0 1 2 3 4 5
-##  $ mths_remng   : chr "360" "359" "358" "357" "356" "355"
-##  $ aj_mths_remng: chr "359" "358" "357" "356" "355" "355"
-##  $ dt_matr      : chr "01/2030" "01/2030" "01/2030" "01/2030" "01/2030" "01/2030"
-##  $ cd_msa       : int 0 0 0 0 0 0
-##  $ delq_sts     : chr "0" "0" "0" "0" "0" "0"
-##  $ flag_mod     : chr "N" "N" "N" "N" "N" "N"
-##  $ cd_zero_bal  : chr "null" "null" "null" "null" "null" "null"
-##  $ dt_zero_bal  : chr "" "" "" "" "" ""
+colnames(dat2)
+##  [1] "_c0"  "_c1"  "_c2"  "_c3"  "_c4"  "_c5"  "_c6"  "_c7"  "_c8"  "_c9" 
+## [11] "_c10" "_c11" "_c12" "_c13"
 ```
 
 __End of tutorial__ - Next up is [SparkR Basics II](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-2.md)
