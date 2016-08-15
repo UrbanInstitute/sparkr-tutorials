@@ -61,7 +61,8 @@ If you receive this message, return to the SparkR tutorials [README](https://git
 Use the operation `read.df` to load in quarterly Fannie Mae single-family loan performance data from the AWS S3 folder `"s3://sparkr-tutorials/"` as a Spark DataFrame (DF). Below, we load a single quarter (2000, Q1) into SparkR, and save it as the DF `perf`:
 
 ```{r, message=F, warning=F, results='hide'}
-perf <- read.df("s3://sparkr-tutorials/Performance_2000Q1.txt", header = "false", delimiter = "|", source = "csv", inferSchema = "true", na.strings = "")
+perf <- read.df("s3://sparkr-tutorials/Performance_2000Q1.txt", header = "false", delimiter = "|", source = "csv",
+                inferSchema = "true", na.strings = "")
 
 ```
 ```{r, include=FALSE}
@@ -204,8 +205,8 @@ customSchema <- structType(
 Finally, dtypes can be changed after the DF has been created, using the `cast` operation. However, it is clearly more efficient to properly specify dtypes when creating the DF. A quick example of using the `cast` operation is given below:
 
 ```{r, collapse=TRUE}
-# We can see in the results from the previous printSchema output that `loan_id` is a `long` dtype, here we `cast` it
-# as a `string` and then call `printSchema` on this new DF
+# We can see in the results from the previous printSchema output that `loan_id` is `long` dtype, here we `cast`
+# it as a `string` and then call `printSchema` on this new DF
 perf_lim$loan_id <- cast(perf_lim$loan_id, dataType = "string")
 printSchema(perf_lim)
 # If we want our original `perf_lim` DF, we can simply recast `loan_id` as a `long` dtype
