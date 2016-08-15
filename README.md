@@ -8,6 +8,8 @@ Description: Code snippets and tutorials for working with SparkR.
 
 ## Getting Started with SparkR Tutorials
 
+**Last Updated**: August 15, 2016 (Updated for SparkR 2.0.0)
+
 In order to begin working with SparkR, users must first:
 
 1. Make sure that `SPARK_HOME` is set in environment (using the `R` function `Sys.getenv`)
