@@ -4,7 +4,7 @@ June 28, 2016
 
 
 
-**Last Updated**: July 27, 2016
+**Last Updated**: August 17, 2016
 
 
 **Objective**: The SparkR DataFrame (DF) API supports a number of operations to do structured data processing. These operations range from the simple tasks that we used in the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial (e.g. counting the number of rows in a DF using `nrow`) to more complex tasks like computing aggregate data. This tutorial discusses the key DF operations for processing tabular data in the SparkR environment, the different types of DF operations and how to perform these operations efficiently. In particular, this tutorial discusses:
@@ -22,11 +22,18 @@ June 28, 2016
 
 ***
 
-:heavy_exclamation_mark: **Warning**: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate your SparkR and SparkR SQL contexts.
+:heavy_exclamation_mark: **Warning**: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate a SparkR session.
 
 
 
-You can confirm that you successfully initiated these contexts by looking at the global environment of RStudio. Only proceed if you can see `sc` and `sqlContext` listed as values in the global environment or RStudio.
+The following error indicates that you have not initiated a SparkR session:
+
+
+```r
+Error in getSparkSession() : SparkSession not initialized
+```
+
+If you receive this message, return to the SparkR tutorials [README](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md) for guidance.
 
 ***
 
@@ -34,7 +41,7 @@ You can confirm that you successfully initiated these contexts by looking at the
 
 
 ```r
-df <- read.df(sqlContext, path = "s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
+df <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
 ```
 
 
@@ -84,12 +91,12 @@ gb_sn <- groupBy(df, df$servicer_name)
 df2 <- agg(gb_sn, loan_age_avg = avg(df$loan_age), count = n(df$loan_age))
 head(df2)
 ##                                servicer_name loan_age_avg count
-## 1                IRWIN MORTGAGE, CORPORATION     38.84615    13
-## 2 FIRST TENNESSEE BANK, NATIONAL ASSOCIATION     23.45820 12774
-## 3                         FLAGSTAR BANK, FSB     50.28182   110
-## 4                             PNC BANK, N.A.     88.67179   195
-## 5                   PHH MORTGAGE CORPORATION     22.15332  8968
-## 6                         QUICKEN LOANS INC.    160.00000     4
+## 1                                   EVERBANK    144.31667   180
+## 2                         QUICKEN LOANS INC.    160.00000     4
+## 3       FLAGSTAR CAPITAL MARKETS CORPORATION     99.69091    55
+## 4                   NATIONSTAR MORTGAGE, LLC    163.95785   261
+## 5 FIRST TENNESSEE BANK, NATIONAL ASSOCIATION     23.45820 12774
+## 6                      BANK OF AMERICA, N.A.     20.97741 34704
 ```
 
 
@@ -165,26 +172,26 @@ For example, the values of the `"loan_age"` column in `df` are the number of cal
 df3 <- withColumn(df, "loan_age_yrs", df$loan_age * (1/12))
 head(df3)
 ##        loan_id     period servicer_name new_int_rt act_endg_upb loan_age
-## 1 100007365142 01/01/2000                        8           NA        0
-## 2 100007365142 02/01/2000                        8           NA        1
-## 3 100007365142 03/01/2000                        8           NA        2
-## 4 100007365142 04/01/2000                        8           NA        3
-## 5 100007365142 05/01/2000                        8           NA        4
-## 6 100007365142 06/01/2000                        8           NA        5
+## 1 404371459720 09/01/2005                     7.75     79331.20       67
+## 2 404371459720 10/01/2005                     7.75     79039.52       68
+## 3 404371459720 11/01/2005                     7.75     79358.51       69
+## 4 404371459720 12/01/2005                     7.75     79358.51       70
+## 5 404371459720 01/01/2006                     7.75     78365.73       71
+## 6 404371459720 02/01/2006                     7.75     78365.73       72
 ##   mths_remng aj_mths_remng dt_matr cd_msa delq_sts flag_mod cd_zero_bal
-## 1        360           359 01/2030      0        0        N          NA
-## 2        359           358 01/2030      0        0        N          NA
-## 3        358           357 01/2030      0        0        N          NA
-## 4        357           356 01/2030      0        0        N          NA
-## 5        356           355 01/2030      0        0        N          NA
-## 6        355           355 01/2030      0        0        N          NA
+## 1        293           286 02/2030      0        5        N          NA
+## 2        292           283 02/2030      0        3        N          NA
+## 3        291           287 02/2030      0        8        N          NA
+## 4        290           287 02/2030      0        9        N          NA
+## 5        289           277 02/2030      0        0        N          NA
+## 6        288           277 02/2030      0        1        N          NA
 ##   dt_zero_bal loan_age_yrs
-## 1               0.00000000
-## 2               0.08333333
-## 3               0.16666667
-## 4               0.25000000
-## 5               0.33333333
-## 6               0.41666667
+## 1                 5.583333
+## 2                 5.666667
+## 3                 5.750000
+## 4                 5.833333
+## 5                 5.916667
+## 6                 6.000000
 ```
 
 Note that `df3` contains every column originally included in `df`, as well as the column `"loan_age_yrs"`.
@@ -196,19 +203,19 @@ We can also rename a DF column using the `withColumnRenamed` operation as we dis
 df4 <- withColumnRenamed(df, "servicer_name", "servicer")
 head(df4)
 ##        loan_id     period servicer new_int_rt act_endg_upb loan_age
-## 1 100007365142 01/01/2000                   8           NA        0
-## 2 100007365142 02/01/2000                   8           NA        1
-## 3 100007365142 03/01/2000                   8           NA        2
-## 4 100007365142 04/01/2000                   8           NA        3
-## 5 100007365142 05/01/2000                   8           NA        4
-## 6 100007365142 06/01/2000                   8           NA        5
+## 1 404371459720 09/01/2005                7.75     79331.20       67
+## 2 404371459720 10/01/2005                7.75     79039.52       68
+## 3 404371459720 11/01/2005                7.75     79358.51       69
+## 4 404371459720 12/01/2005                7.75     79358.51       70
+## 5 404371459720 01/01/2006                7.75     78365.73       71
+## 6 404371459720 02/01/2006                7.75     78365.73       72
 ##   mths_remng aj_mths_remng dt_matr cd_msa delq_sts flag_mod cd_zero_bal
-## 1        360           359 01/2030      0        0        N          NA
-## 2        359           358 01/2030      0        0        N          NA
-## 3        358           357 01/2030      0        0        N          NA
-## 4        357           356 01/2030      0        0        N          NA
-## 5        356           355 01/2030      0        0        N          NA
-## 6        355           355 01/2030      0        0        N          NA
+## 1        293           286 02/2030      0        5        N          NA
+## 2        292           283 02/2030      0        3        N          NA
+## 3        291           287 02/2030      0        8        N          NA
+## 4        290           287 02/2030      0        9        N          NA
+## 5        289           277 02/2030      0        0        N          NA
+## 6        288           277 02/2030      0        1        N          NA
 ##   dt_zero_bal
 ## 1            
 ## 2            
@@ -223,7 +230,7 @@ When using either `withColumn` or `withColumnRenamed`, we could simply replace o
 ***
 
 
-### User-defined Functions (UDFs): [Note insert upon SparkR 2.0.0 release]
+### User-defined Functions (UDFs): In progress
 
 ***
 
@@ -274,7 +281,7 @@ Now that we have some understanding of how DataFrame persistence works in SparkR
 
 
 ```r
-df_ <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header='false', inferSchema='true')
+df_ <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
 cache(df_)
 head(df_, num = 5)
 head(df_, num = 10)
@@ -304,39 +311,39 @@ Let's compare the time elapsed in evaluating the following expressions with and 
 
 ```r
 # Uncached
-.df <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header='false', inferSchema='true')
+.df <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
 system.time(ncol(.df))
 ##    user  system elapsed 
-##    0.02    0.00    0.03
+##   0.020   0.000   0.023
 system.time(nrow(.df))
 ##    user  system elapsed 
-##   0.008   0.000   0.918
+##   0.004   0.000   0.264
 system.time(dim(.df))
 ##    user  system elapsed 
-##   0.008   0.000   0.453
+##   0.008   0.000   0.113
 system.time(head(agg(groupBy(.df, .df$servicer_name), loan_age_avg = avg(.df$loan_age))))
 ##    user  system elapsed 
-##   0.016   0.000   3.255
+##    0.02    0.00    1.87
 rm(.df)
 
 # Cached
-.df <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header='false', inferSchema='true')
+.df <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
 cache(.df)
-## DataFrame[loan_id:bigint, period:string, servicer_name:string, new_int_rt:double, act_endg_upb:double, loan_age:int, mths_remng:int, aj_mths_remng:int, dt_matr:string, cd_msa:int, delq_sts:string, flag_mod:string, cd_zero_bal:int, dt_zero_bal:string]
+## SparkDataFrame[loan_id:bigint, period:string, servicer_name:string, new_int_rt:double, act_endg_upb:double, loan_age:int, mths_remng:int, aj_mths_remng:int, dt_matr:string, cd_msa:int, delq_sts:string, flag_mod:string, cd_zero_bal:int, dt_zero_bal:string]
 system.time(ncol(.df))
 ##    user  system elapsed 
-##   0.020   0.000   0.027
+##   0.020   0.004   0.026
 system.time(nrow(.df))
 ##    user  system elapsed 
-##   0.008   0.000   0.287
+##   0.008   0.000   0.150
 system.time(dim(.df))
 ##    user  system elapsed 
-##   0.004   0.004   0.246
+##   0.008   0.000   0.140
 system.time(head(agg(groupBy(.df, .df$servicer_name), loan_age_avg = avg(.df$loan_age))))
 ##    user  system elapsed 
-##   0.016   0.000   3.991
+##   0.020   0.000   1.625
 unpersist(.df)
-## DataFrame[loan_id:bigint, period:string, servicer_name:string, new_int_rt:double, act_endg_upb:double, loan_age:int, mths_remng:int, aj_mths_remng:int, dt_matr:string, cd_msa:int, delq_sts:string, flag_mod:string, cd_zero_bal:int, dt_zero_bal:string]
+## SparkDataFrame[loan_id:bigint, period:string, servicer_name:string, new_int_rt:double, act_endg_upb:double, loan_age:int, mths_remng:int, aj_mths_remng:int, dt_matr:string, cd_msa:int, delq_sts:string, flag_mod:string, cd_zero_bal:int, dt_zero_bal:string]
 rm(.df)
 ```
 
@@ -352,19 +359,19 @@ If we wanted to work the first five (5) rows of 'df' as a local R data.frame, we
 
 ```r
 df_loc <- take(df, num = 5) # Creates a local data.frame `df_loc`
-df_loc 
+df_loc
 ##        loan_id     period servicer_name new_int_rt act_endg_upb loan_age
-## 1 100007365142 01/01/2000                        8           NA        0
-## 2 100007365142 02/01/2000                        8           NA        1
-## 3 100007365142 03/01/2000                        8           NA        2
-## 4 100007365142 04/01/2000                        8           NA        3
-## 5 100007365142 05/01/2000                        8           NA        4
+## 1 404371459720 09/01/2005                     7.75     79331.20       67
+## 2 404371459720 10/01/2005                     7.75     79039.52       68
+## 3 404371459720 11/01/2005                     7.75     79358.51       69
+## 4 404371459720 12/01/2005                     7.75     79358.51       70
+## 5 404371459720 01/01/2006                     7.75     78365.73       71
 ##   mths_remng aj_mths_remng dt_matr cd_msa delq_sts flag_mod cd_zero_bal
-## 1        360           359 01/2030      0        0        N          NA
-## 2        359           358 01/2030      0        0        N          NA
-## 3        358           357 01/2030      0        0        N          NA
-## 4        357           356 01/2030      0        0        N          NA
-## 5        356           355 01/2030      0        0        N          NA
+## 1        293           286 02/2030      0        5        N          NA
+## 2        292           283 02/2030      0        3        N          NA
+## 3        291           287 02/2030      0        8        N          NA
+## 4        290           287 02/2030      0        9        N          NA
+## 5        289           277 02/2030      0        0        N          NA
 ##   dt_zero_bal
 ## 1            
 ## 2            

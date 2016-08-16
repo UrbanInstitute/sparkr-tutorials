@@ -11,7 +11,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-**Last Updated**: July 27, 2016
+**Last Updated**: August 17, 2016
 
 
 **Objective**: The SparkR DataFrame (DF) API supports a number of operations to do structured data processing. These operations range from the simple tasks that we used in the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial (e.g. counting the number of rows in a DF using `nrow`) to more complex tasks like computing aggregate data. This tutorial discusses the key DF operations for processing tabular data in the SparkR environment, the different types of DF operations and how to perform these operations efficiently. In particular, this tutorial discusses:
@@ -29,22 +29,32 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ***
 
-:heavy_exclamation_mark: **Warning**: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate your SparkR and SparkR SQL contexts.
+:heavy_exclamation_mark: **Warning**: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate a SparkR session.
 
 ```{r, include=FALSE}
-library(SparkR)
-sc <- sparkR.init(sparkEnvir=list(spark.executor.memory="2g", spark.driver.memory="1g", spark.driver.maxResultSize="1g"), sparkPackages="com.databricks:spark-csv_2.10:1.4.0")
-sqlContext <- sparkRSQL.init(sc)
+if (nchar(Sys.getenv("SPARK_HOME")) < 1) {
+  Sys.setenv(SPARK_HOME = "/home/spark")
+}
+
+library(SparkR, lib.loc = c(file.path(Sys.getenv("SPARK_HOME"), "R", "lib")))
+
+sparkR.session()
 ```
 
-You can confirm that you successfully initiated these contexts by looking at the global environment of RStudio. Only proceed if you can see `sc` and `sqlContext` listed as values in the global environment or RStudio.
+The following error indicates that you have not initiated a SparkR session:
+
+```{r, eval=FALSE}
+Error in getSparkSession() : SparkSession not initialized
+```
+
+If you receive this message, return to the SparkR tutorials [README](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md) for guidance.
 
 ***
 
 **Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial.
 
 ```{r, message=F, warning=F, results='hide'}
-df <- read.df(sqlContext, path = "s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
+df <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
 ```
 
 ```{r, include=FALSE}
@@ -151,7 +161,7 @@ When using either `withColumn` or `withColumnRenamed`, we could simply replace o
 ***
 
 
-### User-defined Functions (UDFs): [Note insert upon SparkR 2.0.0 release]
+### User-defined Functions (UDFs): In progress
 
 ***
 
@@ -200,7 +210,7 @@ By caching a given DataFrame, we can ensure that future actions on that DF (or t
 Now that we have some understanding of how DataFrame persistence works in SparkR, let's see how this operation affects the processes in the preceding example. By including `cache` with our expressions as
 
 ```{r, eval=FALSE, collapse=TRUE}
-df_ <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header='false', inferSchema='true')
+df_ <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
 cache(df_)
 head(df_, num = 5)
 head(df_, num = 10)
@@ -228,7 +238,7 @@ Let's compare the time elapsed in evaluating the following expressions with and 
 
 ```{r, collapse=TRUE}
 # Uncached
-.df <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header='false', inferSchema='true')
+.df <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
 system.time(ncol(.df))
 system.time(nrow(.df))
 system.time(dim(.df))
@@ -236,7 +246,7 @@ system.time(head(agg(groupBy(.df, .df$servicer_name), loan_age_avg = avg(.df$loa
 rm(.df)
 
 # Cached
-.df <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header='false', inferSchema='true')
+.df <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
 cache(.df)
 system.time(ncol(.df))
 system.time(nrow(.df))
@@ -257,7 +267,7 @@ If we wanted to work the first five (5) rows of 'df' as a local R data.frame, we
 
 ```{r, collapse=TRUE}
 df_loc <- take(df, num = 5) # Creates a local data.frame `df_loc`
-df_loc 
+df_loc
 ```
 
 Because `df_loc` is a normal R data.frame, we can work with it just as we would normally in RStudio, using R. The operation `collect` also creates an R data.frame. However, it coerces __all__ elements of a DF into a data.frame and, therefore, this should only be done if you can reasonably assume that the data called by the DF can fit onto a single node.
