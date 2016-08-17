@@ -318,9 +318,6 @@ system.time(ncol(.df))
 system.time(nrow(.df))
 ##    user  system elapsed 
 ##   0.004   0.000   0.264
-system.time(dim(.df))
-##    user  system elapsed 
-##   0.008   0.000   0.113
 system.time(head(agg(groupBy(.df, .df$servicer_name), loan_age_avg = avg(.df$loan_age))))
 ##    user  system elapsed 
 ##    0.02    0.00    1.87
@@ -336,9 +333,6 @@ system.time(ncol(.df))
 system.time(nrow(.df))
 ##    user  system elapsed 
 ##   0.008   0.000   0.150
-system.time(dim(.df))
-##    user  system elapsed 
-##   0.008   0.000   0.140
 system.time(head(agg(groupBy(.df, .df$servicer_name), loan_age_avg = avg(.df$loan_age))))
 ##    user  system elapsed 
 ##   0.020   0.000   1.625
