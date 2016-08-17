@@ -1,164 +1,215 @@
-###############################################
-## Performing SparkR operations on DataFrame ##
-###############################################
-## Objective: provide examples of essential SparkR operations, discuss how lazy computing works & differences between cache/persist, provide examples of persist/cache (with
-## timing tracked to show differences in compute time for cache placement)
+######################################################
+## SparkR Basics II: Essential DataFrame Operations ##
+######################################################
 
-## The SparkR DataFrame (DF) API supports a number of operations to do structured data processing. These operations range from the simple tasks that we used in the SparkR
-## Basics I tutorial (e.g. counting the number of rows in a DF using `nrow`) to more complex tasks like aggregating statistics
-## by DF column. This tutorial discusses the key DF operations for processing tabular data in the SparkR environment, the different types of DF operations and how to perform these operations efficiently.
+## Sarah Armstrong, Urban Institute
+## June 28, 2016
+## Last Updated: August 17, 2016
 
-## Operations discussed: groupBy, aggregate, collect, persist, cache, unpersist
+## Objective: The SparkR DataFrame (DF) API supports a number of operations to do structured data processing. These operations range from the simple tasks that we used in the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial (e.g. counting the number of rows in a DF using `nrow`) to more complex tasks like computing aggregate data. This tutorial discusses the key DF operations for processing tabular data in the SparkR environment, the different types of DF operations and how to perform these operations efficiently. In particular, this tutorial discusses:
 
-library(SparkR)
+## * Computing aggregations for a specified list of columns across an entire DF
+## * Computing aggregations for a specified list of columns across entries of a DF that share a common identifier
+## * Arranging (ordering) rows in a DF
+## * Appending a column to a DF
+## * User-defined functions (UDFs)
+## * Types of DF operations
+## * DataFrame persistence: what is persistence and when should we persist DFs?
+## * Converting a SparkR DF to a local R data.frame
 
-## Initiate SparkContext:
-
-sc <- sparkR.init(sparkEnvir=list(spark.executor.memory="2g", 
-                                  spark.driver.memory="1g",
-                                  spark.driver.maxResultSize="1g")
-                  ,sparkPackages="com.databricks:spark-csv_2.11:1.4.0") # Load CSV Spark Package
-
-## AWS EMR is using Spark 2.11 so we need the associated version of spark-csv: http://spark-packages.org/package/databricks/spark-csv
-## Define Spark executor memory, as well as driver memory and maxResultSize according to cluster configuration
-
-## Initiate SparkRSQL:
-
-sqlContext <- sparkRSQL.init(sc)
-
-## Read in loan performance example data:
-
-df <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header='false', inferSchema='true')
-cache(df)
+## SparkR/R Operations Discussed: `agg`, `summarize`, `showDF`, `avg`, `mean`, `sd`, `stddev`, `stddev_samp`, `stddev_pop`, `var`, `variance`, `var_samp`, `var_pop`, `countDistinct`, `n_distinct`, `first`, `last`, `max`, `min`, `sum`, `arrange`, `orderBy`, `withColumn`, `withColumnRenamed`, `persist`, `cache`, `unpersist`, `take`, `collect`
 
 
-## Grouping & Aggregating: want to aggregate statistics across all elements in a DataFrame that share a common identifier - agg & summarize compute aggregations of DF entries
-## based on a specified list of columns (Note: for consistency, we'll use only `agg` for the remainder of the tutorial)
+## Initiate SparkR session:
 
-# Average loan age across the entire DF:
+if (nchar(Sys.getenv("SPARK_HOME")) < 1) {
+  Sys.setenv(SPARK_HOME = "/home/spark")
+}
+library(SparkR, lib.loc = c(file.path(Sys.getenv("SPARK_HOME"), "R", "lib")))
+sparkR.session()
+
+## Read in example HFPC data from AWS S3 as a DataFrame (DF):
+
+df <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
+
+
+######################
+## (1) Aggregating: ##
+######################
+
+## Computing aggregations across a dataset is a basic goal when working with tabular data and, because our data is distributed across nodes, we must explicitly direct SparkR to perform an aggregation if we want to compute and return a summary statistic. Both the `agg` and `summarize` operations achieve this by computing aggregations of DF entries based on a specified list of columns. For example, we can return the mean loan age for all rows in the DF `df` with:
+
 df1 <- agg(df, loan_age_avg = avg(df$loan_age))
-head(df1)
+showDF(df1) # Prints the first numRows rows of a DF; the default is numRows = 20
 
-# There are number of aggregation functions that can be computed when included in `agg` - these are the statistics that can be aggregated in SparkR (though the list below is
-# not exhaustive):
-# count & n returns the number of items/rows in a group. The resulting DataFrame will also contain the grouping columns
-# avg, mean: returns the avg for the group
-# sd, stddev, stddev_samp: returns the unbiased sample standard deviation of the expression in a group
-# stddev_pop: returns the population standard deviation of the expression in a group
-# var, variance, var_samp: returns the unbiased variance of the values in a group
-# var_pop: returns the population variance of the values in a group
-# countDistinct, n_distinct: returns the number of distinct items in a group
-# first, last: returns the first, last item in a group
-# max, min: returns the maximum, minimum value of the expression in a group
-# sum: returns the sum of all values in the expression
+## We can compute a number of aggregations by specifying them in `agg` or `summarize`. The following list illustrates the types of summary statistics that can be computed and is not exhaustive:
 
-## groupBy: by embedding `groupBy` in `agg`, `agg` returns aggregated statistics across distinct elements of the DF column specified in `groupBy'
+## * `avg`, `mean`: return the mean of a DF column
+## * `sd`, `stddev`, `stddev_samp`: return the unbiased sample standard deviation in the values of a DF column
+## * `stddev_pop`: returns the population standard deviation in a DF column
+## * `var`, `variance`, `var_samp`: return the unbiased variance of the values in a DF column
+## * `var_pop`: returns the population variance of the values in a DF column
+## * `countDistinct`, `n_distinct`: return the number of distinct items in a DF column
+## * `first`, `last`: return the first and last item in a DF column, respectively
+## * `max`, `min`: return the maximum and minimum of the values in a DF column
+## * `sum`: returns the sum of all values in a DF column
 
-# For each distinct `"servicer_name"` entry, the following `agg` operation returns the average loan_age and the number of observations in the DF for a distinct
-# `"servicer_name"` entry:
-df2 <- agg(groupBy(df, df$servicer_name), loan_age_avg = avg(df$loan_age), count = n(df$loan_age))
-cache(df2)
+###################
+## (2) Grouping: ##
+###################
+
+## If we want to compute aggregations across the elements of a dataset that share a common identifier, we can achieve this embedding the `groupBy` operation in `agg` or `summarize`. For example, the following `agg` operation returns the mean loan age and the number of observations for each distinct `"servicer_name"` in the DataFrame `df`:
+
+gb_sn <- groupBy(df, df$servicer_name)
+df2 <- agg(gb_sn, loan_age_avg = avg(df$loan_age), count = n(df$loan_age))
 head(df2)
-# Note that we can specify the `agg` operation to return several statistics
 
+###################################################
+## (3) Arranging (Ordering) rows in a DataFrame: ##
+###################################################
 
+## The operations `arrange` and `orderBy` allow us to sort a DF by a specified list of columns. If we want to sort the DataFrame that we just specified, `df2`, we can arrange the rows of `df2` by `"loan_age_avg"` or `"count"`. Note that the default for `arrange` is to order the row values as ascending:
 
-## Arrange/orderBy - Sort a DataFrame by the specified column(s)
-## Using the DF `df2` that we created above, we can order the DF rows by either `loan_age_avg` or `count`:
+df2_a1<- arrange(df2, desc(df2$loan_age_avg))  # List servicers by descending mean loan age values
+head(df2_a1)
 
-head(arrange(df2, df2$loan_age_avg))	# Default is "asc"
-head(arrange(df2, desc(df2$count), asc(df2$loan_age_avg)))
+df2_a2 <- arrange(df2, df2$count) # List servicers by ascending count values
+head(df2_a2)
 
-## You can also specify ordering as logical statements:
-arrange(df2, "loan_age_avg", decreasing = FALSE)
-arrange(df2, "count", "loan_age_avg", decreasing = c(TRUE, FALSE))
+## We can also specify ordering as logical statements. The following expressions are equivalent to those in the preceding example:
 
-unpersist(df2)
+df2_a3 <- arrange(df2, "loan_age_avg", decreasing = TRUE)
+head(df2_a3)
 
+df2_a4 <- arrange(df2, "count", decreasing = FALSE)
+head(df2_a4)
 
-## Create new DF with new col
+#########################################
+## (4) Append a column to a DataFrame: ##
+#########################################
 
-## The values of `loan_age` are the number of calendar months since the first full month the mortgage loan accrues interest. If we want to work with this measurement in
-## terms of calendar years, we can create a new DF using the `withColumn` operation - this DF contains every column originally included in `df`, as well as with an
-## additional column `loan_age_yrs` that has the described year values as entries
-head(df3 <- withColumn(df, "loan_age_yrs", df$loan_age * (1/12)))
+## There are various reasons why we might want to introduce a new column to a DataFrame. A simple example is creating a new variable using our data. In the SparkR environment, this could be acheived by appending an existing DF using the `withColumn` operation.
 
-## We can rename a column using the `withColumnRenamed` operation - returns a DF that is equivalent to `df`, but we have replaced `loan_age` with `loan_age_yrs`
+## For example, the values of the `"loan_age"` column in `df` are the number of calendar months since the first full month that the mortgage loan accrues interest. If we want to convert the unit of time for loan age from calendar months to years and work with this measure as a variable in our analysis, we can evaluate the following `withColumn` expression:
+
+df3 <- withColumn(df, "loan_age_yrs", df$loan_age * (1/12))
+head(df3)
+
+## Note that `df3` contains every column originally included in `df`, as well as the column `"loan_age_yrs"`.
+
+## We can also rename a DF column using the `withColumnRenamed` operation as we discussed in the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial. The following expression returns a DF that is equivalent to `df`, except for the fact that we have renamed `"servicer_name"` to `"servicer"`.
+
 df4 <- withColumnRenamed(df, "servicer_name", "servicer")
+head(df4)
 
+## When using either `withColumn` or `withColumnRenamed`, we could simply replace our initial DF. For example, we could rename `"servicer_name"` by simply changing the name of the DF that we save to, i.e. `df <- withColumnRenamed(df, "servicer_name", "servicer")`. Note: do this _only_ if you do not need to retain your initial DF.
 
-## [Insert: section on UDFs (available in SparkR 2.0)]
+########################################
+## (5) User-defined Functions (UDFs): ##
+########################################
 
+#####################################
+## (6) Types of SparkR operations: ##
+#####################################
 
-## Differentiating between operation types & why :
+## Throughout this tutorial, as well as in the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial, you may have noticed that some operations result in a new DataFrame (e.g. `agg`) and some return an output (e.g. `head`). SparkR operations can be classified as either:
 
-## Throughout this tutorial, as well as in the SparkR Basics I tutorial, you may have noticed that some operations result in a new DF (e.g. `agg`) and some return an output
-## (e.g. `head`). SparkR operations can be classified as
-## * transformations - those operations that return a new SparkR DataFrame; or,
-## * actions - those operations that return an output (these outputs range from a single, aggregated statistic to the entire DF being printed)
+## * __transformations__: those operations that return a new SparkR DataFrame; or,
+## * __actions__: those operations that return an output.
 
-## A fundamental characteristic of Apache Spark that allows us SparkR-users to perform efficient analysis on massive data is that transformations are lazily
-## evaluated, meaning that SparkR delays evaluating these operations until we direct it to return some ouput (as communicated by an action operation). We can intuitively
-## think of transformations as instructions that SparkR acts on only once its directed to return a result.
-## This lazy evaluation strategy (1) reduces the number of processes SparkR is required to complete and (2) allows SparkR to interpret the entire set of instructions
-## (transformations) before acting, and make processing decisions that are obscured from SparkR-users in order to further optimize the evaluation of the expressions that we communicate
-## to SparkR.
+## A fundamental characteristic of Apache Spark that allows us SparkR-users to perform efficient analysis on massive data is that transformations are lazily evaluated, meaning that SparkR delays evaluating these operations until we direct it to return some ouput (as communicated by an action operation). We can intuitively think of transformations as instructions that SparkR acts on only once its directed to return a result.
 
+## This lazy evaluation strategy (1) reduces the number of processes SparkR is required to complete and (2) allows SparkR to interpret an entire set of instructions before acting, and then make processing decisions that are obscured from SparkR-users in order to further optimize the evaluation of the expressions.
 
-## DataFrame Persistence (& what is a DataFrame actually?)
+################################
+## (7) DataFrame Persistence: ##
+################################
 
-## Note that, in this tutorial, we have been saving the output of transformation operations (e.g. `withColumn`) in the format `dfi`. SparkR saves the output of a transformation
-## as a SparkR DataFrame, which is distinct from an R data.frame. We store the instructions communicated by a transformation as a SparkR DataFrame. An R data.frame,
-## conversely, is an actual data structure defined by a list of vectors.
+## Note that, in this tutorial, we have been saving transformations (e.g. `withColumn`) in the format `dfi` since, as we discussed in the preceding section, SparkR saves a transformation as a SparkR DataFrame, which is distinct from an R data.frame. We store the instructions communicated by a transformation as a DataFrame. An R data.frame, conversely, is an actual data structure defined by a list of vectors.
 
-## We saved the output of the first transformation included in this tutorial, `read.df`, as `df`. This operation does not load data into SparkR - the DataFrame `df` details
-## instructions that the data should be read in and how SparkR should interpret the data as it is read in. Every time we directed SparkR to evaluate the expressions
-head(df, 5)
-head(df, 10)
-## SparkR would need to:
-## (1) Read in the data as a DataFrame
-## (2) Look for the first five (5) rows of the DataFrame
-## (3) Return the first five (5) rows of the DataFrame
-## (4) Read in the data as a DataFrame
-## (5) Look for the first ten (10) rows of the DataFrame
-## (6) Return the first ten (10) rows of the DataFrame
-## Note that nothing is stored since the DataFrame is not data! This would be incredibly inefficient if not for the `cache` operation, which directs each node in our
-## cluster to store in memory any partitions of a DataFrame that it computes (in the course of evaluating an action) and then to reuse them in subsequent actions evaluated
-## on that DataFrame (or DataFrames derived from it). By caching a given DataFrame, we can ensure that future actions on that DataFrame (or those derived from it) are
-## evaluated much more efficiently. Both `cache` and `persist` can be used to cache a DataFrame. The `cache` operation stores a DataFrame in memory, while `persist` allows
-## SparkR-users to persist a DataFrame using different storage levels (i.e. store to disk, memory or both). The default storage level for `persist` is memory only and, at
-## this storage level, `persist` and `cache` are equivalent operations. More often than not, we can simply use `cache` - if our DataFrames can fit in memory only, then
-## we should exclusively store DataFrames in memory only since this is the most CPU-efficient storage option.
+## We saved the first transformation included in this tutorial, using `read.df` to read in our example data, as `df`. This operation itself does not load data into SparkR. Instead, `df` consists of instructions communicating to SparkR that the data should be read in and how SparkR should interpret the data as it is read in. Each time we direct SparkR to evaluate the expressions:
 
-## Now that we have some understanding of how DataFrame persistence works in SparkR, let's see this powerful operation in action. In the following expressions, we are
-## giving SparkR directions to:
-## (1) Read in the data as a DataFrame
-## (2) Cache the DataFrame
-## (3) Look for the first five (5) rows of the DataFrame
-## (4) Return the first five (5) rows of the DataFrame
-## (5) Look for the first ten (10) rows of the DataFrame
-## (6) Return the first ten (10) rows of the DataFrame
-df_ <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header='false', inferSchema='true')
+head(df, num = 5)
+head(df, num = 10)
+
+## SparkR would:
+
+## 1. read in the data as a DataFrame,
+## 2. look for the first five (5) rows of the DF,
+## 3. return the first five (5) rows of the DF,
+## 4. read in the data as a DF,
+## 5. look for the first ten (10) rows of the DF and
+## 6. return the first ten (10) rows of the DF
+
+## Note that nothing is stored since the `df` is not data! This would be incredibly inefficient if not for the `cache` operation, which directs each node in our cluster to store in memory any partitions of a DF that it computes (in the course of evaluating an action) and then to reuse this cache of the partitions in subsequent actions evaluated on that DF (or DFs derived from it).
+
+## By caching a given DataFrame, we can ensure that future actions on that DF (or those derived from it) are evaluated much more efficiently. Both `cache` and `persist` can be used to cache a DataFrame. The `cache` operation stores a DF in memory, while `persist` allows SparkR-users to persist a DataFrame using different storage levels (i.e. store to disk, memory or both). The default storage level for `persist` is memory only and, at this storage level, `persist` and `cache` are equivalent operations. More often than not, we can simply use `cache`: if our DataFrames can fit in memory only, then we should exclusively store DFs in memory since this is the most CPU-efficient storage option.
+
+## Now that we have some understanding of how DataFrame persistence works in SparkR, let's see how this operation affects the processes in the preceding example. By including `cache` with our expressions as
+
+df_ <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
 cache(df_)
-head(df_, 5)
-head(df_, 10)
-## While the number of steps required remains six (6), the time required to `cache` a DataFrame is significantly less than that required to read in data as a DataFrame.
-## If we continuited to perform actions on `df_`, clearly directing SparkR to load and then cache the DataFrame would reduce our overal evaluation time. We can direct
-## SparkR to stop persisting a DataFrame with the `unpersist` operation:
+head(df_, num = 5)
+head(df_, num = 10)
+
+## The steps performed by SparkR change to:
+
+## 1. read in the data as a DF,
+## 2. look for the first five (5) rows of the DF,
+## 3. return the first five (5) rows of the DF,
+## 4. cache the DF
+## 5. look for the first ten (10) rows of the DF (using the cache) and
+## 6. return the first ten (10) rows of the DF.
+
+## While the number of steps required remains six (6), the time required to `cache` a DF once is significantly less than that required to read in data as a DF several times. If we continuited to perform actions on `df_`, clearly directing SparkR to cache the DF would reduce our overall evaluation time. We can direct SparkR to stop persisting a DataFrame with the `unpersist` operation:
+
 unpersist(df_)
 
-## Let's compare computation time for several sequences of operations with, and without, caching:
+## Be sure to `unpersist` a DF if you are not continuing to reference it - minimizing the number of DFs stored in memory at a given time will help SparkR to perform more efficiently.
 
-.df <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header='false', inferSchema='true')
-(t1 <- system.time(ncol(.df)))
-(t2 <- system.time(nrow(.df)))
-(t3 <- system.time(dim(.df)))
+## Let's compare the time elapsed in evaluating the following expressions with and without persistence:
+
+# Uncached
+.df <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
+system.time(ncol(.df))
+system.time(nrow(.df))
+system.time(head(agg(groupBy(.df, .df$servicer_name), loan_age_avg = avg(.df$loan_age))))
 rm(.df)
 
-.df <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header='false', inferSchema='true')
+# Cached
+.df <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
 cache(.df)
-(t1_ <- system.time(ncol(.df)))
-(t2_ <- system.time(nrow(.df)))
-(t3_ <- system.time(dim(.df)))
+system.time(ncol(.df))
+system.time(nrow(.df))
+system.time(head(agg(groupBy(.df, .df$servicer_name), loan_age_avg = avg(.df$loan_age))))
 unpersist(.df)
 rm(.df)
+
+## The first thing you may notice is that the evaluation time for `ncol(.df)` is approximately the same with and without persistence. Remember from our the discussion above that SparkR caches a DF at the first action operation using the DF. So, the evaluation time for `ncol(.df)` with persistence is not noticeably smaller in value since it is the first action that uses `.df`. However, we can see that the evaluation time for each subsequent expression is significantly less when we cache `.df`, relative to when we do not. Our example dataset is actually quite small relative to the massive datasets that SparkR allows us to work with. Consider how essential persistence would be if we were peforming analysis on 15 years worth of quarterly loan performance data. Intelligently caching and unpersisting DFs would clearly make our analysis more efficient in that case.
+
+################################################################
+## (8) Converting a SparkR DataFrame to a local R data.frame: ##
+################################################################
+
+## If we wanted to work the first five (5) rows of 'df' as a local R data.frame, we could use the `take` operation as follows:
+
+df_loc <- take(df, num = 5) # Creates a local data.frame `df_loc`
+df_loc
+
+## Because `df_loc` is a normal R data.frame, we can work with it just as we would normally in RStudio, using R. The operation `collect` also creates an R data.frame. However, it coerces __all__ elements of a DF into a data.frame and, therefore, this should only be done if you can reasonably assume that the data called by the DF can fit onto a single node.
+
+## One way that we can safely use `collect` is to extract an aggregation as a value type in SparkR. Earlier in this tutorial, we computed the mean loan age across every entry of `df` with the transformation `df1 <- agg(df, loan_age_avg = avg(df$loan_age))`. This, however, returns a DF instead of a value (because it is a transformation!). Fortunately, we can use `collect` to extract the mean as a value data type as follows:
+
+loan_age_avg_ <- collect(df1) # Explicitly written expression
+
+loan_age_avg <- loan_age_avg_[[1]]
+loan_age_avg
+
+typeof(loan_age_avg)
+rm(loan_age_avg)
+
+loan_age_avg <- collect(df1)[[1]] # Embedded expression
+loan_age_avg
+typeof(loan_age_avg)
+
+## Notice that we can direct SparkR to do this through either set of expressions above, with the process being written explicitly or implicitly. If we had not already defind `df1`, we could have directed SparkR to compute this value in a single line with the expression `loan_age_avg <- collect(agg(df, loan_age_avg = avg(df$loan_age)))[[1]]`.
