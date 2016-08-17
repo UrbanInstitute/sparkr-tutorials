@@ -49,114 +49,6 @@ Use the operation `read.df` to load in quarterly Fannie Mae single-family loan p
 
 
 ```r
-perf <- read.df("s3://sparkr-tutorials/Performance_2000Q1.txt", header = "false", delimiter = "|", source = "csv", inferSchema = "true", na.strings = "")
-```
-
-
-In the `read.df` operation, we give specifications typically included when reading data into Stata and SAS, such as the delimiter character for .csv files. However, we also include SparkR-specific input including `inferSchema`, which Spark uses to interpet data types for each column in the DF. We discuss this in more detail later on in this tutorial. An additional detail is that `read.df` includes the `na.strings = ""` specification because we want `read.df` to read entries of empty strings in our .csv dataset as NA in the SparkR DF, i.e. we are telling read.df to read entries equal to `""` as `NA` in the DF. We will discuss how SparkR handles empty and null entries in further detail in a subsequent tutorial.
-
-
-_Note_: documentation for the quarterly loan performance data can be found at http://www.fanniemae.com/portal/funding-the-market/data/loan-performance-data.html.
-
-
-We can save the dimensions of the 'perf' DF through the following operations. Note that wrapping the computation with () forces SparkR/R to print the computed value:
-
-
-```r
-(n1 <- nrow(perf))	# Save the number of rows in 'perf'
-## [1] 6887100
-(m1 <- ncol(perf))	# Save the number of columns in 'perf'
-## [1] 28
-```
-
-***
-
-
-### Update a DataFrame with new rows of data:
-
-Since we'll want to analyze loan performance data beyond 2000 Q1, we append the `perf` DF below with the data from subsequent quarters of the same single-family loan performance dataset. Here, we're only appending one subsequent quarter (2000 Q2) to the DF so that our analysis in these tutorials runs quickly, but the following code can be easily adapted by specifying the `a` and `b` values to reflect the quarters that we want to append to our DF. Note that the for-loop below also uses the `read.df` operation, specified here just as when we loaded the initial .csv file as a DF:
-
-
-```r
-a <- 2
-b <- 2
-
-for(q in a:b){
-  
-  filename <- paste0("Performance_2000Q", q)
-  filepath <- paste0("s3://sparkr-tutorials/", filename, ".txt")
-  .perf <- read.df(filepath, header = "false", delimiter = "|", 
-                   source = "csv", inferSchema = "true", na.strings = "")
-  
-  perf <- rbind(perf, .perf)
-}
-```
-
-The result of the for-loop is an appended `perf` DF that consists of the same columns as the initial `perf` DF that we read in from S3, but now with many appended rows. We can confirm this by taking the dimensions of the new DF:
-
-
-```r
-(n2 <- nrow(perf))
-## [1] 13216516
-(m2 <- ncol(perf))
-## [1] 28
-```
-
-***
-
-
-### Rename DataFrame column(s):
-
-# SparkR Basics I: From CSV to SparkR DataFrame
-Sarah Armstrong, Urban Institute  
-June 23, 2016  
-
-
-
-**Last Updated**: August 15, 2016
-
-
-**Objective**: Become comfortable working with the SparkR DataFrame (DF) API; particularly, understand how to:
-
-* Read a .csv file into SparkR as a DF
-* Measure dimensions of a DF
-* Append a DF with additional rows
-* Rename columns of a DF
-* Print column names of a DF
-* Print a specified number of rows from a DF
-* Print the SparkR schema
-* Specify schema in `read.df` operation
-* Manually specify a schema
-* Change the data type of a column in a DF
-* Export a DF to AWS S3 as a folder of partitioned parquet files
-* Read a partitioned file from S3 into SparkR
-
-**SparkR Operations Discussed**: `read.df`, `nrow`, `ncol`, `dim`, `withColumnRenamed`, `columns`, `head`, `str`, `dtypes`, `schema`, `printSchema`, `cast`, `write.df`
-
-***
-
-:heavy_exclamation_mark: **Warning**: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate a SparkR session.
-
-
-
-The following error indicates that you have not initiated a SparkR session:
-
-
-```r
-Error in getSparkSession() : SparkSession not initialized
-```
-
-If you receive this message, return to the SparkR tutorials [README](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md) for guidance.
-
-***
-
-
-### Load a csv file into SparkR:
-
-Use the operation `read.df` to load in quarterly Fannie Mae single-family loan performance data from the AWS S3 folder `"s3://sparkr-tutorials/"` as a Spark DataFrame (DF). Below, we load a single quarter (2000, Q1) into SparkR, and save it as the DF `perf`:
-
-
-```r
 perf <- read.df("s3://sparkr-tutorials/Performance_2000Q1.txt", header = "false", delimiter = "|", source = "csv",
                 inferSchema = "true", na.strings = "")
 ```
@@ -172,9 +64,9 @@ We can save the dimensions of the 'perf' DF through the following operations. No
 
 
 ```r
-(n1 <- nrow(perf))	# Save the number of rows in 'perf'
+(n1 <- nrow(perf))  # Save the number of rows in 'perf'
 ## [1] 6887100
-(m1 <- ncol(perf))	# Save the number of columns in 'perf'
+(m1 <- ncol(perf))  # Save the number of columns in 'perf'
 ## [1] 28
 ```
 
@@ -308,7 +200,7 @@ We can see in the output for the command `head(perf_lim, num = 5)` that we have 
 
 
 ```r
-dtypes(perf_lim)	# Prints a list of DF column names and corresponding dtypes
+dtypes(perf_lim)  # Prints a list of DF column names and corresponding dtypes
 ## [[1]]
 ## [1] "loan_id" "bigint" 
 ## 
@@ -350,7 +242,7 @@ dtypes(perf_lim)	# Prints a list of DF column names and corresponding dtypes
 ## 
 ## [[14]]
 ## [1] "dt_zero_bal" "string"
-schema(perf_lim)	# Prints the schema of the DF
+schema(perf_lim)  # Prints the schema of the DF
 ## StructType
 ## |-name = "loan_id", type = "LongType", nullable = TRUE
 ## |-name = "period", type = "StringType", nullable = TRUE
@@ -530,5 +422,3 @@ colnames(dat2)
 ```
 
 __End of tutorial__ - Next up is [SparkR Basics II](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-2.md)
-
-
