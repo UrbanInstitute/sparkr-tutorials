@@ -12,7 +12,7 @@ Description: Code snippets and tutorials for working with SparkR.
 
 In order to begin working with SparkR, users must first:
 
-1. Make sure that `SPARK_HOME` is set in environment (using the `R` function `Sys.getenv`)
+1. Make sure that `SPARK_HOME` is set in environment (using `Sys.getenv`)
 2. Load the `SparkR` library
 3. Initiate a `sparkR.session`
 
