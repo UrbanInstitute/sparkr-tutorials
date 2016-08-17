@@ -4,7 +4,7 @@ July 8, 2016
   
 
 
-**Last Updated**: July 27, 2016
+**Last Updated**: August 17, 2016
 
 
 **Objective**: In this tutorial, we discuss general strategies for dealing with missing data in the SparkR environment. While we do not consider conceptually how and why we might impute missing values in a dataset, we do discuss logistically how we could drop rows with missing data and impute missing data with replacement values. We specifically consider the following during this tutorial:
@@ -25,26 +25,32 @@ July 8, 2016
 
 ***
 
-:heavy_exclamation_mark: **Warning**: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate your SparkR and SparkR SQL contexts.
+:heavy_exclamation_mark: **Warning**: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate a SparkR session.
 
 
 
-You can confirm that you successfully initiated these contexts by looking at the global environment of RStudio. Only proceed if you can see `sc` and `sqlContext` listed as values in the global environment or RStudio.
+The following error indicates that you have not initiated a SparkR session:
+
+
+```r
+Error in getSparkSession() : SparkSession not initialized
+```
+
+If you receive this message, return to the SparkR tutorials [README](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md) for guidance.
 
 ***
   
 ### Specify null values when loading data in as a SparkR DataFrame (DF):
   
-Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial. Note that we now include the `nullValue` option in the `read.df` transformation below. By setting `nullValue` equal to an empty string in `read.df`, we direct SparkR to interpret empty entries in the dataset as being equal to nulls in `df`. Therefore, any DF entries matching this string (here, set to equal an empty entry) will be set equal to a null value in `df`.
+Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial. Note that we now include the `na.strings` option in the `read.df` transformation below. By setting `na.strings` equal to an empty string in `read.df`, we direct SparkR to interpret empty entries in the dataset as being equal to nulls in `df`. Therefore, any DF entries matching this string (here, set to equal an empty entry) will be set equal to a null value in `df`.
 
 
 ```r
-df <- read.df(sqlContext, path = "s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true",
- nullValue = "")
+df <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true", na.strings = "")
 cache(df)
 ```
 
-We can replace this empty string with any string that we know indicates a null entry in the dataset, i.e. with `nullValue="<string>"`. Note that SparkR only reads empty entries as null values in numerical and integer datatype (dtype) DF columns, meaning that empty entries in DF columns of string dtype will simply equal an empty string. We consider how to work with this type of observation throughout this tutorial alongside our treatment of null values.
+We can replace this empty string with any string that we know indicates a null entry in the dataset, i.e. with `na.strings="<string>"`. Note that SparkR only reads empty entries as null values in numerical and integer datatype (dtype) DF columns, meaning that empty entries in DF columns of string dtype will simply equal an empty string. We consider how to work with this type of observation throughout this tutorial alongside our treatment of null values.
 
 
 With `printSchema`, we can see the dtype of each column in `df` and, noting which columns are of a numerical and integer dtypes and which are string, use this to determine how we should examine missing data in each column of `df`. We also count the number of rows in `df` so that we can compare this value to row counts that we compute throughout this tutorial:
@@ -128,15 +134,15 @@ mrNull_by_sn <- agg(gb_sn_mrNull, Nulls = n(df_mrNull$servicer_name))
 mrNull_by_sn.dat <- collect(mrNull_by_sn)
 mrNull_by_sn.dat
 ##                             servicer_name Nulls
-## 1                          PNC BANK, N.A.     2
-## 2               GREEN TREE SERVICING, LLC     5
-## 3                      CITIMORTGAGE, INC.     4
-## 4                  WELLS FARGO BANK, N.A.    16
+## 1                NATIONSTAR MORTGAGE, LLC     1
+## 2                  WELLS FARGO BANK, N.A.    16
+## 3 FANNIE MAE/SETERUS, INC. AS SUBSERVICER     4
+## 4                    DITECH FINANCIAL LLC     2
 ## 5                                   OTHER    16
-## 6 FANNIE MAE/SETERUS, INC. AS SUBSERVICER     4
-## 7                                          8264
-## 8                NATIONSTAR MORTGAGE, LLC     1
-## 9                    DITECH FINANCIAL LLC     2
+## 6                      CITIMORTGAGE, INC.     4
+## 7                          PNC BANK, N.A.     2
+## 8                                          8264
+## 9               GREEN TREE SERVICING, LLC     5
 # Alternatively, we could have evaluated showDF(mrNull_by_sn) to print DF
 ```
 
@@ -180,7 +186,7 @@ The parameter `how` allows us to decide whether we want to drop a row if it cont
 
 ```r
 df_all <- dropna(df, how = "all")
-nrow(df_all)		# Equal in value to n
+nrow(df_all)    # Equal in value to n
 ## [1] 13216516
 
 df_any <- dropna(df, how = "any")
@@ -195,7 +201,7 @@ We can set a minimum number of non-null entries required for a row to remain in 
 
 ```r
 df_5 <- dropna(df, minNonNulls = 5)
-nrow(df_5)
+nrow(df_5)    # Equal in value to n
 ## [1] 13216516
 
 df_12 <- dropna(df, minNonNulls = 12)
@@ -230,36 +236,36 @@ The `fillna` operation allows us to replace null entries with some specified val
 
 ```r
 str(df)
-## 'DataFrame': 14 variables:
-##  $ loan_id      : num 100007365142 100007365142 100007365142 100007365142 100007365142 100007365142
-##  $ period       : chr "01/01/2000" "02/01/2000" "03/01/2000" "04/01/2000" "05/01/2000" "06/01/2000"
+## 'SparkDataFrame': 14 variables:
+##  $ loan_id      : num 404371459720 404371459720 404371459720 404371459720 404371459720 404371459720
+##  $ period       : chr "09/01/2005" "10/01/2005" "11/01/2005" "12/01/2005" "01/01/2006" "02/01/2006"
 ##  $ servicer_name: chr "" "" "" "" "" ""
-##  $ new_int_rt   : num 8 8 8 8 8 8
-##  $ act_endg_upb : num NA NA NA NA NA NA
-##  $ loan_age     : int 0 1 2 3 4 5
-##  $ mths_remng   : int 360 359 358 357 356 355
-##  $ aj_mths_remng: int 359 358 357 356 355 355
-##  $ dt_matr      : chr "01/2030" "01/2030" "01/2030" "01/2030" "01/2030" "01/2030"
+##  $ new_int_rt   : num 7.75 7.75 7.75 7.75 7.75 7.75
+##  $ act_endg_upb : num 79331.2 79039.52 79358.51 79358.51 78365.73 78365.73
+##  $ loan_age     : int 67 68 69 70 71 72
+##  $ mths_remng   : int 293 292 291 290 289 288
+##  $ aj_mths_remng: int 286 283 287 287 277 277
+##  $ dt_matr      : chr "02/2030" "02/2030" "02/2030" "02/2030" "02/2030" "02/2030"
 ##  $ cd_msa       : int 0 0 0 0 0 0
-##  $ delq_sts     : chr "0" "0" "0" "0" "0" "0"
+##  $ delq_sts     : chr "5" "3" "8" "9" "0" "1"
 ##  $ flag_mod     : chr "N" "N" "N" "N" "N" "N"
 ##  $ cd_zero_bal  : int NA NA NA NA NA NA
 ##  $ dt_zero_bal  : chr "" "" "" "" "" ""
 
 df_ <- fillna(df, value = 12345)
 str(df_)
-## 'DataFrame': 14 variables:
-##  $ loan_id      : num 100007365142 100007365142 100007365142 100007365142 100007365142 100007365142
-##  $ period       : chr "01/01/2000" "02/01/2000" "03/01/2000" "04/01/2000" "05/01/2000" "06/01/2000"
+## 'SparkDataFrame': 14 variables:
+##  $ loan_id      : num 404371459720 404371459720 404371459720 404371459720 404371459720 404371459720
+##  $ period       : chr "09/01/2005" "10/01/2005" "11/01/2005" "12/01/2005" "01/01/2006" "02/01/2006"
 ##  $ servicer_name: chr "" "" "" "" "" ""
-##  $ new_int_rt   : num 8 8 8 8 8 8
-##  $ act_endg_upb : num 12345 12345 12345 12345 12345 12345
-##  $ loan_age     : int 0 1 2 3 4 5
-##  $ mths_remng   : int 360 359 358 357 356 355
-##  $ aj_mths_remng: int 359 358 357 356 355 355
-##  $ dt_matr      : chr "01/2030" "01/2030" "01/2030" "01/2030" "01/2030" "01/2030"
+##  $ new_int_rt   : num 7.75 7.75 7.75 7.75 7.75 7.75
+##  $ act_endg_upb : num 79331.2 79039.52 79358.51 79358.51 78365.73 78365.73
+##  $ loan_age     : int 67 68 69 70 71 72
+##  $ mths_remng   : int 293 292 291 290 289 288
+##  $ aj_mths_remng: int 286 283 287 287 277 277
+##  $ dt_matr      : chr "02/2030" "02/2030" "02/2030" "02/2030" "02/2030" "02/2030"
 ##  $ cd_msa       : int 0 0 0 0 0 0
-##  $ delq_sts     : chr "0" "0" "0" "0" "0" "0"
+##  $ delq_sts     : chr "5" "3" "8" "9" "0" "1"
 ##  $ flag_mod     : chr "N" "N" "N" "N" "N" "N"
 ##  $ cd_zero_bal  : int 12345 12345 12345 12345 12345 12345
 ##  $ dt_zero_bal  : chr "" "" "" "" "" ""
@@ -271,36 +277,36 @@ If we want to replace null values within a list of DF columns, we can specify a 
 
 ```r
 str(df)
-## 'DataFrame': 14 variables:
-##  $ loan_id      : num 100007365142 100007365142 100007365142 100007365142 100007365142 100007365142
-##  $ period       : chr "01/01/2000" "02/01/2000" "03/01/2000" "04/01/2000" "05/01/2000" "06/01/2000"
+## 'SparkDataFrame': 14 variables:
+##  $ loan_id      : num 404371459720 404371459720 404371459720 404371459720 404371459720 404371459720
+##  $ period       : chr "09/01/2005" "10/01/2005" "11/01/2005" "12/01/2005" "01/01/2006" "02/01/2006"
 ##  $ servicer_name: chr "" "" "" "" "" ""
-##  $ new_int_rt   : num 8 8 8 8 8 8
-##  $ act_endg_upb : num NA NA NA NA NA NA
-##  $ loan_age     : int 0 1 2 3 4 5
-##  $ mths_remng   : int 360 359 358 357 356 355
-##  $ aj_mths_remng: int 359 358 357 356 355 355
-##  $ dt_matr      : chr "01/2030" "01/2030" "01/2030" "01/2030" "01/2030" "01/2030"
+##  $ new_int_rt   : num 7.75 7.75 7.75 7.75 7.75 7.75
+##  $ act_endg_upb : num 79331.2 79039.52 79358.51 79358.51 78365.73 78365.73
+##  $ loan_age     : int 67 68 69 70 71 72
+##  $ mths_remng   : int 293 292 291 290 289 288
+##  $ aj_mths_remng: int 286 283 287 287 277 277
+##  $ dt_matr      : chr "02/2030" "02/2030" "02/2030" "02/2030" "02/2030" "02/2030"
 ##  $ cd_msa       : int 0 0 0 0 0 0
-##  $ delq_sts     : chr "0" "0" "0" "0" "0" "0"
+##  $ delq_sts     : chr "5" "3" "8" "9" "0" "1"
 ##  $ flag_mod     : chr "N" "N" "N" "N" "N" "N"
 ##  $ cd_zero_bal  : int NA NA NA NA NA NA
 ##  $ dt_zero_bal  : chr "" "" "" "" "" ""
 
 df_ <- fillna(df, list("act_endg_upb" = 12345))
 str(df_)
-## 'DataFrame': 14 variables:
-##  $ loan_id      : num 100007365142 100007365142 100007365142 100007365142 100007365142 100007365142
-##  $ period       : chr "01/01/2000" "02/01/2000" "03/01/2000" "04/01/2000" "05/01/2000" "06/01/2000"
+## 'SparkDataFrame': 14 variables:
+##  $ loan_id      : num 404371459720 404371459720 404371459720 404371459720 404371459720 404371459720
+##  $ period       : chr "09/01/2005" "10/01/2005" "11/01/2005" "12/01/2005" "01/01/2006" "02/01/2006"
 ##  $ servicer_name: chr "" "" "" "" "" ""
-##  $ new_int_rt   : num 8 8 8 8 8 8
-##  $ act_endg_upb : num 12345 12345 12345 12345 12345 12345
-##  $ loan_age     : int 0 1 2 3 4 5
-##  $ mths_remng   : int 360 359 358 357 356 355
-##  $ aj_mths_remng: int 359 358 357 356 355 355
-##  $ dt_matr      : chr "01/2030" "01/2030" "01/2030" "01/2030" "01/2030" "01/2030"
+##  $ new_int_rt   : num 7.75 7.75 7.75 7.75 7.75 7.75
+##  $ act_endg_upb : num 79331.2 79039.52 79358.51 79358.51 78365.73 78365.73
+##  $ loan_age     : int 67 68 69 70 71 72
+##  $ mths_remng   : int 293 292 291 290 289 288
+##  $ aj_mths_remng: int 286 283 287 287 277 277
+##  $ dt_matr      : chr "02/2030" "02/2030" "02/2030" "02/2030" "02/2030" "02/2030"
 ##  $ cd_msa       : int 0 0 0 0 0 0
-##  $ delq_sts     : chr "0" "0" "0" "0" "0" "0"
+##  $ delq_sts     : chr "5" "3" "8" "9" "0" "1"
 ##  $ flag_mod     : chr "N" "N" "N" "N" "N" "N"
 ##  $ cd_zero_bal  : int NA NA NA NA NA NA
 ##  $ dt_zero_bal  : chr "" "" "" "" "" ""
@@ -315,35 +321,35 @@ Finally, we can replace the empty entries in string dtype columns with the `ifel
 
 ```r
 str(df)
-## 'DataFrame': 14 variables:
-##  $ loan_id      : num 100007365142 100007365142 100007365142 100007365142 100007365142 100007365142
-##  $ period       : chr "01/01/2000" "02/01/2000" "03/01/2000" "04/01/2000" "05/01/2000" "06/01/2000"
+## 'SparkDataFrame': 14 variables:
+##  $ loan_id      : num 404371459720 404371459720 404371459720 404371459720 404371459720 404371459720
+##  $ period       : chr "09/01/2005" "10/01/2005" "11/01/2005" "12/01/2005" "01/01/2006" "02/01/2006"
 ##  $ servicer_name: chr "" "" "" "" "" ""
-##  $ new_int_rt   : num 8 8 8 8 8 8
-##  $ act_endg_upb : num NA NA NA NA NA NA
-##  $ loan_age     : int 0 1 2 3 4 5
-##  $ mths_remng   : int 360 359 358 357 356 355
-##  $ aj_mths_remng: int 359 358 357 356 355 355
-##  $ dt_matr      : chr "01/2030" "01/2030" "01/2030" "01/2030" "01/2030" "01/2030"
+##  $ new_int_rt   : num 7.75 7.75 7.75 7.75 7.75 7.75
+##  $ act_endg_upb : num 79331.2 79039.52 79358.51 79358.51 78365.73 78365.73
+##  $ loan_age     : int 67 68 69 70 71 72
+##  $ mths_remng   : int 293 292 291 290 289 288
+##  $ aj_mths_remng: int 286 283 287 287 277 277
+##  $ dt_matr      : chr "02/2030" "02/2030" "02/2030" "02/2030" "02/2030" "02/2030"
 ##  $ cd_msa       : int 0 0 0 0 0 0
-##  $ delq_sts     : chr "0" "0" "0" "0" "0" "0"
+##  $ delq_sts     : chr "5" "3" "8" "9" "0" "1"
 ##  $ flag_mod     : chr "N" "N" "N" "N" "N" "N"
 ##  $ cd_zero_bal  : int NA NA NA NA NA NA
 ##  $ dt_zero_bal  : chr "" "" "" "" "" ""
 df$servicer_name <- ifelse(df$servicer_name == "", "Unknown", df$servicer_name)
 str(df)
-## 'DataFrame': 14 variables:
-##  $ loan_id      : num 100007365142 100007365142 100007365142 100007365142 100007365142 100007365142
-##  $ period       : chr "01/01/2000" "02/01/2000" "03/01/2000" "04/01/2000" "05/01/2000" "06/01/2000"
+## 'SparkDataFrame': 14 variables:
+##  $ loan_id      : num 404371459720 404371459720 404371459720 404371459720 404371459720 404371459720
+##  $ period       : chr "09/01/2005" "10/01/2005" "11/01/2005" "12/01/2005" "01/01/2006" "02/01/2006"
 ##  $ servicer_name: chr "Unknown" "Unknown" "Unknown" "Unknown" "Unknown" "Unknown"
-##  $ new_int_rt   : num 8 8 8 8 8 8
-##  $ act_endg_upb : num NA NA NA NA NA NA
-##  $ loan_age     : int 0 1 2 3 4 5
-##  $ mths_remng   : int 360 359 358 357 356 355
-##  $ aj_mths_remng: int 359 358 357 356 355 355
-##  $ dt_matr      : chr "01/2030" "01/2030" "01/2030" "01/2030" "01/2030" "01/2030"
+##  $ new_int_rt   : num 7.75 7.75 7.75 7.75 7.75 7.75
+##  $ act_endg_upb : num 79331.2 79039.52 79358.51 79358.51 78365.73 78365.73
+##  $ loan_age     : int 67 68 69 70 71 72
+##  $ mths_remng   : int 293 292 291 290 289 288
+##  $ aj_mths_remng: int 286 283 287 287 277 277
+##  $ dt_matr      : chr "02/2030" "02/2030" "02/2030" "02/2030" "02/2030" "02/2030"
 ##  $ cd_msa       : int 0 0 0 0 0 0
-##  $ delq_sts     : chr "0" "0" "0" "0" "0" "0"
+##  $ delq_sts     : chr "5" "3" "8" "9" "0" "1"
 ##  $ flag_mod     : chr "N" "N" "N" "N" "N" "N"
 ##  $ cd_zero_bal  : int NA NA NA NA NA NA
 ##  $ dt_zero_bal  : chr "" "" "" "" "" ""

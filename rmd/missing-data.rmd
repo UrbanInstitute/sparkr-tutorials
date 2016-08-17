@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 options(knitr.table.format = 'markdown')
 ```
 
-**Last Updated**: July 27, 2016
+**Last Updated**: August 17, 2016
 
 
 **Objective**: In this tutorial, we discuss general strategies for dealing with missing data in the SparkR environment. While we do not consider conceptually how and why we might impute missing values in a dataset, we do discuss logistically how we could drop rows with missing data and impute missing data with replacement values. We specifically consider the following during this tutorial:
@@ -33,29 +33,38 @@ options(knitr.table.format = 'markdown')
 
 ***
 
-:heavy_exclamation_mark: **Warning**: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate your SparkR and SparkR SQL contexts.
+:heavy_exclamation_mark: **Warning**: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate a SparkR session.
 
 ```{r, include=FALSE}
-library(SparkR)
-sc <- sparkR.init(sparkEnvir=list(spark.executor.memory="2g", spark.driver.memory="1g", spark.driver.maxResultSize="1g"), sparkPackages="com.databricks:spark-csv_2.11:1.4.0")
-sqlContext <- sparkRSQL.init(sc)
+if (nchar(Sys.getenv("SPARK_HOME")) < 1) {
+  Sys.setenv(SPARK_HOME = "/home/spark")
+}
+
+library(SparkR, lib.loc = c(file.path(Sys.getenv("SPARK_HOME"), "R", "lib")))
+
+sparkR.session()
 ```
 
-You can confirm that you successfully initiated these contexts by looking at the global environment of RStudio. Only proceed if you can see `sc` and `sqlContext` listed as values in the global environment or RStudio.
+The following error indicates that you have not initiated a SparkR session:
+
+```{r, eval=FALSE}
+Error in getSparkSession() : SparkSession not initialized
+```
+
+If you receive this message, return to the SparkR tutorials [README](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md) for guidance.
 
 ***
   
 ### Specify null values when loading data in as a SparkR DataFrame (DF):
   
-Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial. Note that we now include the `nullValue` option in the `read.df` transformation below. By setting `nullValue` equal to an empty string in `read.df`, we direct SparkR to interpret empty entries in the dataset as being equal to nulls in `df`. Therefore, any DF entries matching this string (here, set to equal an empty entry) will be set equal to a null value in `df`.
+Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial. Note that we now include the `na.strings` option in the `read.df` transformation below. By setting `na.strings` equal to an empty string in `read.df`, we direct SparkR to interpret empty entries in the dataset as being equal to nulls in `df`. Therefore, any DF entries matching this string (here, set to equal an empty entry) will be set equal to a null value in `df`.
 
 ```{r, message=F, warning=F, results='hide', collapse=TRUE}
-df <- read.df(sqlContext, path = "s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true",
- nullValue = "")
+df <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true", na.strings = "")
 cache(df)
 ```
 
-We can replace this empty string with any string that we know indicates a null entry in the dataset, i.e. with `nullValue="<string>"`. Note that SparkR only reads empty entries as null values in numerical and integer datatype (dtype) DF columns, meaning that empty entries in DF columns of string dtype will simply equal an empty string. We consider how to work with this type of observation throughout this tutorial alongside our treatment of null values.
+We can replace this empty string with any string that we know indicates a null entry in the dataset, i.e. with `na.strings="<string>"`. Note that SparkR only reads empty entries as null values in numerical and integer datatype (dtype) DF columns, meaning that empty entries in DF columns of string dtype will simply equal an empty string. We consider how to work with this type of observation throughout this tutorial alongside our treatment of null values.
 
 
 With `printSchema`, we can see the dtype of each column in `df` and, noting which columns are of a numerical and integer dtypes and which are string, use this to determine how we should examine missing data in each column of `df`. We also count the number of rows in `df` so that we can compare this value to row counts that we compute throughout this tutorial:
@@ -151,7 +160,7 @@ The parameter `how` allows us to decide whether we want to drop a row if it cont
   
 ```{r, collapse=TRUE}
 df_all <- dropna(df, how = "all")
-nrow(df_all)		# Equal in value to n
+nrow(df_all)    # Equal in value to n
 
 df_any <- dropna(df, how = "any")
 (n_any <- nrow(df_any))
@@ -162,7 +171,7 @@ We can set a minimum number of non-null entries required for a row to remain in 
 
 ```{r, collapse=TRUE}
 df_5 <- dropna(df, minNonNulls = 5)
-nrow(df_5)
+nrow(df_5)    # Equal in value to n
 
 df_12 <- dropna(df, minNonNulls = 12)
 (n_12 <- nrow(df_12))
