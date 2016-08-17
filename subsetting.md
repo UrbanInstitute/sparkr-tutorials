@@ -4,7 +4,7 @@ July 1, 2016
 
 
 
-**Last Updated**: July 27, 2016
+**Last Updated**: August 17, 2016
 
 
 **Objective**: Now that we understand what a SparkR DataFrame (DF) really is (remember, it's not actually data!) and can write expressions using essential DataFrame operations, such as `agg`, we are ready to start subsetting DFs using more advanced transformation operations. This tutorial discusses various ways of subsetting DFs, as well as how to work with a randomly sampled subset as a local data.frame in RStudio:
@@ -21,11 +21,18 @@ July 1, 2016
 
 ***
 
-:heavy_exclamation_mark: **Warning**: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate your SparkR and SparkR SQL contexts.
+:heavy_exclamation_mark: **Warning**: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate a SparkR session.
 
 
 
-You can confirm that you successfully initiated these contexts by looking at the global environment of RStudio. Only proceed if you can see `sc` and `sqlContext` listed as values in the global environment or RStudio.
+The following error indicates that you have not initiated a SparkR session:
+
+
+```r
+Error in getSparkSession() : SparkSession not initialized
+```
+
+If you receive this message, return to the SparkR tutorials [README](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md) for guidance.
 
 ***
 
@@ -33,7 +40,7 @@ You can confirm that you successfully initiated these contexts by looking at the
 
 
 ```r
-df <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
+df <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
 cache(df)
 ```
 
@@ -129,16 +136,16 @@ An alias for `filter` is `where`, which reads much more intuitively, particularl
 
 
 ```r
-f7 <- agg(groupBy(where(df, df$loan_age < 60), where(df, df$loan_age < 60)$servicer_name), 
+f4 <- agg(groupBy(where(df, df$loan_age < 60), where(df, df$loan_age < 60)$servicer_name), 
           loan_age_avg = avg(where(df, df$loan_age < 60)$loan_age), 
           count = n(where(df, df$loan_age < 60)$loan_age))
-head(f7)
+head(f4)
 ##                                servicer_name loan_age_avg count
-## 1                IRWIN MORTGAGE, CORPORATION     38.84615    13
-## 2 FIRST TENNESSEE BANK, NATIONAL ASSOCIATION     23.45820 12774
-## 3                         FLAGSTAR BANK, FSB     42.82895    76
-## 4                   PHH MORTGAGE CORPORATION     20.77649  8872
-## 5  JPMORGAN CHASE BANK, NATIONAL ASSOCIATION     21.32419 46917
+## 1 FIRST TENNESSEE BANK, NATIONAL ASSOCIATION     23.45820 12774
+## 2                      BANK OF AMERICA, N.A.     20.95203 34688
+## 3                     WELLS FARGO BANK, N.A.     47.94743   799
+## 4                         GMAC MORTGAGE, LLC     21.17096 16554
+## 5                         FLAGSTAR BANK, FSB     42.82895    76
 ## 6                  USAA FEDERAL SAVINGS BANK     20.35909  3080
 ```
 
@@ -168,12 +175,12 @@ ncol(s2)
 ## [1] 3
 head(s2)
 ##   mths_remng aj_mths_remng abs((aj_mths_remng - mths_remng))
-## 1        360           359                                 1
-## 2        359           358                                 1
-## 3        358           357                                 1
-## 4        357           356                                 1
-## 5        356           355                                 1
-## 6        355           355                                 0
+## 1        293           286                                 7
+## 2        292           283                                 9
+## 3        291           287                                 4
+## 4        290           287                                 3
+## 5        289           277                                12
+## 6        288           277                                11
 ```
 
 Note that, just as we can subset by row with syntax similar to that in base R, we can similarly acheive subsetting by column. The following expressions are equivalent:
@@ -192,12 +199,12 @@ To simultaneously subset by column and row specifications, you can simply embed 
 s3 <- select(where(df, df$servicer_name == "" | df$servicer_name == "OTHER"), "loan_age")
 head(s3)
 ##   loan_age
-## 1        0
-## 2        1
-## 3        2
-## 4        3
-## 5        4
-## 6        5
+## 1       67
+## 2       68
+## 3       69
+## 4       70
+## 5       71
+## 6       72
 ```
 
 Note that we could have also written the above expression as `df[df$servicer_name == "" | df$servicer_name == "OTHER", "loan_age"]`.
@@ -211,21 +218,21 @@ We can drop a column from a DF very simply by assigning `NULL` to a DF column. B
 ```r
 head(s1)
 ##   mths_remng aj_mths_remng
-## 1        360           359
-## 2        359           358
-## 3        358           357
-## 4        357           356
-## 5        356           355
-## 6        355           355
+## 1        293           286
+## 2        292           283
+## 3        291           287
+## 4        290           287
+## 5        289           277
+## 6        288           277
 s1$aj_mths_remng <- NULL
 head(s1)
 ##   mths_remng
-## 1        360
-## 2        359
-## 3        358
-## 4        357
-## 5        356
-## 6        355
+## 1        293
+## 2        292
+## 3        291
+## 4        290
+## 5        289
+## 6        288
 ```
 
 ***
@@ -242,17 +249,17 @@ Below, we take a random sample of `df` without replacement that is, in size, app
 df_samp1 <- sample(df, withReplacement = FALSE, fraction = 0.01)  # Without set seed
 df_samp2 <- sample(df, withReplacement = FALSE, fraction = 0.01)
 count(df_samp1)
-## [1] 132168
+## [1] 132133
 count(df_samp2)
-## [1] 131960
+## [1] 132392
 # The row counts are different and, obviously, the DFs are not equivalent
 
 df_samp3 <- sample(df, withReplacement = FALSE, fraction = 0.01, seed = 0)  # With set seed
 df_samp4 <- sample(df, withReplacement = FALSE, fraction = 0.01, seed = 0)
 count(df_samp3)
-## [1] 132070
+## [1] 131997
 count(df_samp4)
-## [1] 132070
+## [1] 131997
 # The row counts are equal and the DFs are equivalent
 ```
 
@@ -279,10 +286,10 @@ If we want to export the sampled DF from RStudio as a single .csv file that we c
 
 ```r
 df_samp4_1 <- repartition(df_samp4, numPartitions = 1)
-write.df(df_samp4_1, path = "s3://sparkr-tutorials/hfpc_samp.csv", source = "com.databricks.spark.csv", 
+write.df(df_samp4_1, path = "s3://sparkr-tutorials/hfpc_samp.csv", source = "csv", 
          mode = "overwrite")
 ```
 
-:heavy_exclamation_mark: __Warning__: We cannot collect a DF as a data.frame, nor can we repartition it to a single node, unless the DF is sufficiently small in size since it must fit onto a _single_ node! Additionally, as discussed in the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial, exporting a DF as a .csv file requires that we specify the 2.10 version of the Databricks .csv package as the value of the `sparkPackages` parameter when initiating our SparkR context, i.e. we must set `sparkPackages = "com.databricks:spark-csv_2.10:1.4.0"` in the `sparkR.init` operation discussed in the [README](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md) file for these tutorials.
+:heavy_exclamation_mark: __Warning__: We cannot collect a DF as a data.frame, nor can we repartition it to a single node, unless the DF is sufficiently small in size since it must fit onto a _single_ node!
 
 __End of tutorial__ - Next up is [Dealing with Missing Data in SparkR](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/missing-data.md)
