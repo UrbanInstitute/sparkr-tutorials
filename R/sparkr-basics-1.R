@@ -26,6 +26,7 @@
 ## SparkR Operations Discussed: `read.df`, `nrow`, `ncol`, `dim`, `withColumnRenamed`, `columns`, `head`, `str`, `dtypes`, `schema`, `printSchema`, `cast`, `write.df`
 
 
+## Initiate Spark session:
 
 if (nchar(Sys.getenv("SPARK_HOME")) < 1) {
   Sys.setenv(SPARK_HOME = "/home/spark")
