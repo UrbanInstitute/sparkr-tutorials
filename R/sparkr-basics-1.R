@@ -20,6 +20,7 @@
 ## * Manually specify a schema
 ## * Change the data type of a column in a DF
 ## * Export a DF to AWS S3 as a folder of partitioned parquet files
+## * Export a DF to AWS S3 as a folder of partitioned .csv files
 ## * Read a partitioned file from S3 into SparkR
 
 ## SparkR Operations Discussed: `read.df`, `nrow`, `ncol`, `dim`, `withColumnRenamed`, `columns`, `head`, `str`, `dtypes`, `schema`, `printSchema`, `cast`, `write.df`
