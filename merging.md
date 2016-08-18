@@ -18,20 +18,26 @@ July 12, 2016
 
 ***
 
-:heavy_exclamation_mark: **Warning**: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate your SparkR and SparkR SQL contexts.
+:heavy_exclamation_mark: **Warning**: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate a SparkR session.
 
 
 
-You can confirm that you successfully initiated these contexts by looking at the global environment of RStudio. Only proceed if you can see `sc` and `sqlContext` listed as values in the global environment or RStudio.
-
-***
-
-**Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the SparkR Basics I tutorial.
+The following error indicates that you have not initiated a SparkR session:
 
 
 ```r
-df <- read.df(sqlContext, path = "s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true", 
-              nullValue = "")
+Error in getSparkSession() : SparkSession not initialized
+```
+
+If you receive this message, return to the SparkR tutorials [README](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md) for guidance.
+
+***
+
+**Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial.
+
+
+```r
+df <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true", na.strings = "")
 cache(df)
 ```
 
@@ -63,21 +69,21 @@ b <- select(df, cols_b)
 
 # Print several rows from each subsetted DF:
 str(a)
-## 'DataFrame': 7 variables:
-##  $ loan_id      : num 100007365142 100007365142 100007365142 100007365142 100007365142 100007365142
-##  $ period       : chr "01/01/2000" "02/01/2000" "03/01/2000" "04/01/2000" "05/01/2000" "06/01/2000"
+## 'SparkDataFrame': 7 variables:
+##  $ loan_id      : num 404371459720 404371459720 404371459720 404371459720 404371459720 404371459720
+##  $ period       : chr "09/01/2005" "10/01/2005" "11/01/2005" "12/01/2005" "01/01/2006" "02/01/2006"
 ##  $ servicer_name: chr "" "" "" "" "" ""
-##  $ new_int_rt   : num 8 8 8 8 8 8
-##  $ act_endg_upb : num NA NA NA NA NA NA
-##  $ loan_age     : int 0 1 2 3 4 5
-##  $ mths_remng   : int 360 359 358 357 356 355
+##  $ new_int_rt   : num 7.75 7.75 7.75 7.75 7.75 7.75
+##  $ act_endg_upb : num 79331.2 79039.52 79358.51 79358.51 78365.73 78365.73
+##  $ loan_age     : int 67 68 69 70 71 72
+##  $ mths_remng   : int 293 292 291 290 289 288
 str(b)
-## 'DataFrame': 8 variables:
-##  $ loan_id      : num 100007365142 100007365142 100007365142 100007365142 100007365142 100007365142
-##  $ aj_mths_remng: int 359 358 357 356 355 355
-##  $ dt_matr      : chr "01/2030" "01/2030" "01/2030" "01/2030" "01/2030" "01/2030"
+## 'SparkDataFrame': 8 variables:
+##  $ loan_id      : num 404371459720 404371459720 404371459720 404371459720 404371459720 404371459720
+##  $ aj_mths_remng: int 286 283 287 287 277 277
+##  $ dt_matr      : chr "02/2030" "02/2030" "02/2030" "02/2030" "02/2030" "02/2030"
 ##  $ cd_msa       : int 0 0 0 0 0 0
-##  $ delq_sts     : chr "0" "0" "0" "0" "0" "0"
+##  $ delq_sts     : chr "5" "3" "8" "9" "0" "1"
 ##  $ flag_mod     : chr "N" "N" "N" "N" "N" "N"
 ##  $ cd_zero_bal  : int NA NA NA NA NA NA
 ##  $ dt_zero_bal  : chr "" "" "" "" "" ""
@@ -92,24 +98,24 @@ We can use the SparkR operation `join` to merge `a` and `b` by row, returning a 
 * `"right"`, `"rightouter"`, `"right_outer"`: Returns all rows from the right DF, even if there are no matches in the left DF
 * Cartesian: Returns the Cartesian product of the sets of records from the two or more joined DFs - `join` will return this DF when we _do not_ specify a `joinType` _nor_ a `joinExpr` (discussed below)
 
-We communicate to SparkR what condition we want to join DFs on with the `joinExpr` specification in `join`. Below, we perform a `"fullouter"` join on the DFs `a` and `b` on the condition that their `"loan_id"` values be equal:
+We communicate to SparkR what condition we want to join DFs on with the `joinExpr` specification in `join`. Below, we perform an `"inner"` (default) join on the DFs `a` and `b` on the condition that their `"loan_id"` values be equal:
 
 
 ```r
-ab1 <- join(a, b, a$loan_id == b$loan_id, "fullouter")
+ab1 <- join(a, b, a$loan_id == b$loan_id)
 str(ab1)
-## 'DataFrame': 15 variables:
-##  $ loan_id      : num 100272527248 100272527248 100272527248 100272527248 100272527248 100272527248
-##  $ period       : chr "01/01/2000" "01/01/2000" "01/01/2000" "01/01/2000" "01/01/2000" "01/01/2000"
+## 'SparkDataFrame': 15 variables:
+##  $ loan_id      : num 100410686761 100410686761 100410686761 100410686761 100410686761 100410686761
+##  $ period       : chr "02/01/2000" "02/01/2000" "02/01/2000" "02/01/2000" "02/01/2000" "02/01/2000"
 ##  $ servicer_name: chr "" "" "" "" "" ""
-##  $ new_int_rt   : num 7.75 7.75 7.75 7.75 7.75 7.75
+##  $ new_int_rt   : num 8.25 8.25 8.25 8.25 8.25 8.25
 ##  $ act_endg_upb : num NA NA NA NA NA NA
 ##  $ loan_age     : int 0 0 0 0 0 0
 ##  $ mths_remng   : int 360 360 360 360 360 360
-##  $ loan_id      : num 100272527248 100272527248 100272527248 100272527248 100272527248 100272527248
-##  $ aj_mths_remng: int 359 358 358 357 356 355
-##  $ dt_matr      : chr "01/2030" "01/2030" "01/2030" "01/2030" "01/2030" "01/2030"
-##  $ cd_msa       : int 0 0 0 0 0 0
+##  $ loan_id      : num 100410686761 100410686761 100410686761 100410686761 100410686761 100410686761
+##  $ aj_mths_remng: int 358 357 356 356 356 355
+##  $ dt_matr      : chr "02/2030" "02/2030" "02/2030" "02/2030" "02/2030" "02/2030"
+##  $ cd_msa       : int 13460 13460 13460 13460 13460 13460
 ##  $ delq_sts     : chr "0" "0" "0" "0" "0" "0"
 ##  $ flag_mod     : chr "N" "N" "N" "N" "N" "N"
 ##  $ cd_zero_bal  : int NA NA NA NA NA NA
@@ -134,7 +140,7 @@ Rather than defining a `joinExpr`, we explictly specify the column(s) that Spark
 * `all.x = FALSE`, `all.y = FALSE`: Returns an inner join (this is the default and can be achieved by not specifying values for all.x and all.y)
 * `all.x = TRUE`, `all.y = FALSE`: Returns a left outer join
 * `all.x = FALSE`, `all.y = TRUE`: Returns a right outer join
-* `all.x = TRUE`, `all.y = TRUE`: Returns a full outer join (default)
+* `all.x = TRUE`, `all.y = TRUE`: Returns a full outer join
 
 The following `merge` expression is equivalent to the `join` expression in the preceding example:
 
@@ -142,7 +148,7 @@ The following `merge` expression is equivalent to the `join` expression in the p
 ```r
 ab2 <- merge(a, b, by = "loan_id")
 str(ab2)
-## 'DataFrame': 15 variables:
+## 'SparkDataFrame': 15 variables:
 ##  $ loan_id_x    : num 100004547910 100004547910 100004547910 100004547910 100004547910 100004547910
 ##  $ period       : chr "05/01/2000" "05/01/2000" "05/01/2000" "05/01/2000" "05/01/2000" "05/01/2000"
 ##  $ servicer_name: chr "" "" "" "" "" ""
@@ -172,7 +178,7 @@ ab2 <- withColumnRenamed(ab2, "loan_id_x", "loan_id")
 
 # Final DF with single "loan_id" column:
 str(ab2)
-## 'DataFrame': 14 variables:
+## 'SparkDataFrame': 14 variables:
 ##  $ loan_id      : num 100004547910 100004547910 100004547910 100004547910 100004547910 100004547910
 ##  $ period       : chr "05/01/2000" "05/01/2000" "05/01/2000" "05/01/2000" "05/01/2000" "05/01/2000"
 ##  $ servicer_name: chr "" "" "" "" "" ""
@@ -201,7 +207,7 @@ In order to discuss how we can append the rows of one DF to those of another in 
 
 
 ```r
-A <- sample(df, withReplacement = FALSE, fraction = 0.5)
+A <- sample(df, withReplacement = FALSE, fraction = 0.5, seed = 1)
 B <- except(df, A)
 ```
 
@@ -210,9 +216,9 @@ Let's also examine the row count for each subsetted row and confirm that `A` and
 
 ```r
 (nA <- nrow(A))
-## [1] 6608693
+## [1] 6606171
 (nB <- nrow(B))
-## [1] 6607823
+## [1] 6610345
 
 nA + nB # Equal to nrow(df)
 ## [1] 13216516
@@ -255,7 +261,7 @@ columns(B)
 
 # Define column name list that has every column in `A` and `B`, except "loan_age":
 cols_ <- c("loan_id", "period", "servicer_name", "new_int_rt", "act_endg_upb", "mths_remng", "aj_mths_remng",
-           "dt_matr", "cd_msa", "delq_sts", "flag_mod", "cd_zero_bal", "dt_zero_bal")
+           "dt_matr", "cd_msa", "delq_sts", "flag_mod", "cd_zero_bal", "dt_zero_bal" )
 
 # Define subsetted DF:
 B_ <- select(B, cols_)
@@ -347,8 +353,6 @@ We again append `B_` to `A`, this time using the `rbind.fill` function:
 df3 <- rbind.fill(A, B_)
 ```
 
-
-
 Now, the row count for `df3` is equal to that for `df` _and_ it includes all fourteen (14) columns included in `df`:
 
 
@@ -368,7 +372,7 @@ We know from the missing data tutorial that `df$loan_age` does not contain any `
 ```r
 df3_laEmpty <- where(df3, df3$loan_age == "")
 nrow(df3_laEmpty)
-## [1] 6607823
+## [1] 6610345
 
 # There are no "loan_age" null values since it is string dtype
 df3_laNull <- where(df3, isNull(df3$loan_age))
@@ -383,34 +387,36 @@ Below, we recast `"loan_age"` as integer dtype and check that the number of `"lo
 # Recast
 df3$loan_age <- cast(df3$loan_age, dataType = "integer")
 str(df3)
-## 'DataFrame': 14 variables:
-##  $ act_endg_upb : num NA NA NA NA 74693 74587.91
-##  $ aj_mths_remng: int 359 357 355 355 354 352
+## 'SparkDataFrame': 14 variables:
+##  $ act_endg_upb : num 79331.2 79358.51 79358.51 78365.73 78365.73 78055.22
+##  $ aj_mths_remng: int 286 287 287 277 277 274
 ##  $ cd_msa       : int 0 0 0 0 0 0
 ##  $ cd_zero_bal  : int NA NA NA NA NA NA
-##  $ delq_sts     : chr "0" "0" "0" "0" "0" "0"
-##  $ dt_matr      : chr "01/2030" "01/2030" "01/2030" "01/2030" "01/2030" "01/2030"
+##  $ delq_sts     : chr "5" "8" "9" "2" "4" "4"
+##  $ dt_matr      : chr "02/2030" "02/2030" "02/2030" "02/2030" "02/2030" "02/2030"
 ##  $ dt_zero_bal  : chr "" "" "" "" "" ""
 ##  $ flag_mod     : chr "N" "N" "N" "N" "N" "N"
-##  $ loan_age     : int 0 2 4 5 6 7
-##  $ loan_id      : num 100007365142 100007365142 100007365142 100007365142 100007365142 100007365142
-##  $ mths_remng   : int 360 358 356 355 354 353
-##  $ new_int_rt   : num 8 8 8 8 8 8
-##  $ period       : chr "01/01/2000" "03/01/2000" "05/01/2000" "06/01/2000" "07/01/2000" "08/01/2000"
+##  $ loan_age     : int 67 69 70 73 75 78
+##  $ loan_id      : num 404371459720 404371459720 404371459720 404371459720 404371459720 404371459720
+##  $ mths_remng   : int 293 291 290 287 285 282
+##  $ new_int_rt   : num 7.75 7.75 7.75 7.75 7.75 7.75
+##  $ period       : chr "09/01/2005" "11/01/2005" "12/01/2005" "03/01/2006" "05/01/2006" "08/01/2006"
 ##  $ servicer_name: chr "" "" "" "" "" ""
 
 # Check that values are equal
-df3_laNull_ <- where(df3, isNull(df3$loan_age))
 
-nrow(df3_laEmpty)  # No. of empty strings
-## [1] 6607823
+df3_laNull_ <- where(df3, isNull(df3$loan_age))
+nrow(df3_laEmpty) # No. of empty strings
+## [1] 6610345
+
 nrow(df3_laNull_) # No. of null entries
-## [1] 6607823
+## [1] 6610345
+
 nB                # No. of rows in DF `B`
-## [1] 6607823
+## [1] 6610345
 ```
 
 
 Documentation for rbind.intersection can be found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/R/rbind-intersection.R), and [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/R/rbind-fill.R) for rbind.fill.
 
-__End of tutorial__ - Next up is [Insert next tutorial]
+__End of tutorial__ - Next up is [Data Visualizations in SparkR](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/visualizations.md#data-visualizations-in-sparkr)

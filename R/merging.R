@@ -1,129 +1,184 @@
-library(SparkR)
+###############################
+## Merging SparkR DataFrames ##
+###############################
 
-# Initiate SparkContext:
-
-sc <- sparkR.init(sparkEnvir=list(spark.executor.memory="2g", 
-                                  spark.driver.memory="1g",
-                                  spark.driver.maxResultSize="1g")
-                  ,sparkPackages="com.databricks:spark-csv_2.11:1.4.0") # Load CSV Spark Package
-
-# AWS EMR is using Spark 2.11 so we need the associated version of spark-csv: http://spark-packages.org/package/databricks/spark-csv
-# Define Spark executor memory, as well as driver memory and maxResultSize according to cluster configuration
-
-# Initiate SparkRSQL:
-
-sqlContext <- sparkRSQL.init(sc)
-
-### Specify null values when loading data:
-
-df <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header="false", inferSchema="true", nullValue="")
-cache(df)
+## Sarah Armstrong, Urban Institute  
+## July 7, 2016  
+## Last Updated: August 18, 2016
 
 
-### Join two DataFrames based on the given join expression:
+## Objective: The following tutorial provides an overview of how to join SparkR DataFrames by column and by row. In particular, we discuss how to:
 
-# Create separate DFs to join:
+## * Merge two DFs by column condition(s) (join by row)
+## * Append rows of data to a DataFrame (join by column)
+##     + When column name lists are equal across DFs
+##     + When column name lists are not equal
 
+## **SparkR/R Operations Discussed**: `join`, `merge`, `sample`, `except`, `intersect`, `rbind`, `rbind.intersect` (defined function), `rbind.fill` (defined function)
+
+
+## Initiate SparkR session:
+
+if (nchar(Sys.getenv("SPARK_HOME")) < 1) {
+  Sys.setenv(SPARK_HOME = "/home/spark")
+}
+library(SparkR, lib.loc = c(file.path(Sys.getenv("SPARK_HOME"), "R", "lib")))
+sparkR.session()
+
+
+#############################################################
+## (1) Join (merge) two DataFrames by column condition(s): ##
+#############################################################
+
+## We begin by subsetting `df` by column, resulting in two (2) DataFrames that are disjoint, except for them both including the loan identification variable, `"loan_id"`:
+
+# Print the column names of df:
 columns(df)
+
+# Specify column lists to fit `a` and `b` on - these are disjoint sets (except for "loan_id"):
 cols_a <- c("loan_id", "period", "servicer_name", "new_int_rt", "act_endg_upb", "loan_age", "mths_remng")
 cols_b <- c("loan_id", "aj_mths_remng", "dt_matr", "cd_msa", "delq_sts", "flag_mod", "cd_zero_bal", "dt_zero_bal")
+
+# Create `a` and `b` DFs with the `select` operation:
 a <- select(df, cols_a)
 b <- select(df, cols_b)
+
+# Print several rows from each subsetted DF:
 str(a)
 str(b)
 
-# The SparkR operation `join` allows us to perform most SQL join types on SparkR DFs. Join types that we are able to specify include:
+## We can use the SparkR operation `join` to merge `a` and `b` by row, returning a DataFrame equivalent to `df`. The `join` operation allows us to perform most SQL join types on SparkR DFs, including:
 
-# "inner" (default): Returns rows where there is a match in both DFs
-# "outer": Returns rows where there is a match in both DFs, as well as rows in both the right and left DF where there was no match
-# "full", "fullouter": Returns rows where there is a match in one of the DFs
-# "left", "leftouter", "left_outer": Returns all rows from the left DF, even if there are no matches in the right DF
-# "right", "rightouter", "right_outer": Returns all rows from the right DF, even if there are no matches in the left DF
-# Cartesian: Returns the Cartesian product of the sets of records from the two or more joined DFs - `join` will return this DF when we _do not_ specify a join type
+## * `"inner"` (default): Returns rows where there is a match in both DFs
+## * `"outer"`: Returns rows where there is a match in both DFs, as well as rows in both the right and left DF where there was no match
+## * `"full"`, `"fullouter"`: Returns rows where there is a match in one of the DFs
+## * `"left"`, `"leftouter"`, `"left_outer"`: Returns all rows from the left DF, even if there are no matches in the right DF
+## * `"right"`, `"rightouter"`, `"right_outer"`: Returns all rows from the right DF, even if there are no matches in the left DF
+## * Cartesian: Returns the Cartesian product of the sets of records from the two or more joined DFs - `join` will return this DF when we _do not_ specify a `joinType` _nor_ a `joinExpr` (discussed below)
 
-# We communicate to SparkR what condition we want to join DFs on with the `joinExpr` specification in `join`. Below, we join the DFs `a` and `b` on the condition that their `"loan_id"` values be equal:
+## We communicate to SparkR what condition we want to join DFs on with the `joinExpr` specification in `join`. Below, we perform an `"inner"` (default) join on the DFs `a` and `b` on the condition that their `"loan_id"` values be equal:
 
-ab1 <- join(a, b, a$loan_id == b$loan_id, "fullouter")
+ab1 <- join(a, b, a$loan_id == b$loan_id)
 str(ab1)
 
-# Note that the resulting DF includes two (2) `"loan_id"` columns. Unfortunately, we cannot specify only one of these columns in SparkR, and the following command drops both `"loan_id"` columns:
+## Note that the resulting DF includes two (2) `"loan_id"` columns. Unfortunately, we cannot direct SparkR to keep only one of these columns when using `join` to merge by row, and the following command (which we introduced in the subsetting tutorial) drops both `"loan_id"` columns:
 
 ab1$loan_id <- NULL
 
-# The `merge` operation, alternatively, allows us to join DFs and also produces two (2) distinct merge columns. We can use this feature to retain the column on which we joined the DFs. Therefore, `join` is a convenient operation, but we should use `merge` if we want the resulting DF to include the merging column. We discuss `merge` in further detail below.
+## We can avoid this by renaming one of the columns before performing `join` and then, utilizing that the columns have distinct names, tell SparkR to drop only one of the columns. For example, we could rename `"loan_id"` in `a` with the expression `a <- withColumnRenamed(a, "loan_id", "loan_id_")`, then drop this column with `ab1$loan_id_ <- NULL` after performing `join` on `a` and `b` to return `ab1`.
 
-# Rather than defining a `joinExpr`, we explictly specify the column(s) that SparkR should `merge` the DFs on with the operation parameters `by` and `by.x`/`by.y` (if we do not specify `by`, SparkR will merge the DFs on the list of common column names shared by the DFs). Rather than specifying a type of join, `merge` determines how SparkR should merge DFs based on boolean values: `all.x` and `all.y` indicate whether all the rows in `x` and `y` should be including in the join, respectively. We can specify `merge` type with the following specifications:
+## The `merge` operation, alternatively, allows us to join DFs and produces two (2) _distinct_ merge columns. We can use this feature to retain the column on which we joined the DFs, but we must still perform a `withColumnRenamed` step if we want our merge column to retain its original column name.
 
-# `all.x = FALSE`, `all.y = FALSE`: Returns an inner join (this is the default and can be achieved by not specifying values for all.x and all.y)
-# `all.x = TRUE`, `all.y = FALSE`: Returns a left outer join
-# `all.x = FALSE`, `all.y = TRUE`: Returns a right outer join
-# `all.x = TRUE`, `all.y = TRUE`: Returns a full outer join
+## Rather than defining a `joinExpr`, we explictly specify the column(s) that SparkR should `merge` the DFs on with the operation parameters `by` and `by.x`/`by.y` (if the merging column is named differently across the DFs). Note that, if we do not specify `by`, SparkR will merge the DFs on the list of common column names shared by the DFs. Rather than specifying a type of join, `merge` determines how SparkR should merge DFs based on boolean values, `all.x` and `all.y`, which indicate which rows in `x` and `y` should be included in the join, respectively. We can specify `merge` type with the following parameter values:
 
-# The following `merge` expression is equivalent to the `join` expression in the preceding example:
+## * `all.x = FALSE`, `all.y = FALSE`: Returns an inner join (this is the default and can be achieved by not specifying values for all.x and all.y)
+## * `all.x = TRUE`, `all.y = FALSE`: Returns a left outer join
+## * `all.x = FALSE`, `all.y = TRUE`: Returns a right outer join
+## * `all.x = TRUE`, `all.y = TRUE`: Returns a full outer join
+
+## The following `merge` expression is equivalent to the `join` expression in the preceding example:
 
 ab2 <- merge(a, b, by = "loan_id")
 str(ab2)
 
-# Note that the two merging columns are distinct, indicated by the `_x` and `_y` assignments. We utilize this distinction in the expressions below to retain a single merging column:
+## Note that the two merging columns are distinct as indicated by the `<column name>_x` and `<column name>_y` name assignments performed by `merge`. We utilize this distinction in the expressions below to retain a single merge column:
 
+# Drop "loan_id" column from `b`:
 ab2$loan_id_y <- NULL
+
+# Rename "loan_id" column from `a`:
 ab2 <- withColumnRenamed(ab2, "loan_id_x", "loan_id")
+
+# Final DF with single "loan_id" column:
 str(ab2)
 
-### Append rows of data to a DataFrame:
+rm(a)
+rm(b)
+rm(ab1)
+rm(ab2)
+rm(cols_a)
+rm(cols_b)
 
-# In order to discuss how to append the rows of one DF to those of another, we must first subset `df` into two (2) distinct DataFrames, `A` and `B`. Below, we define `A` as a random subset of `df` with a row count that is approximately equal to half the size of `nrow(df)`. We use the DF operation `except` to create `B`, which includes every row of `df`, `except` for those included in `A`:
+#############################################
+## (2) Append rows of data to a DataFrame: ##
+#############################################
 
-A <- sample(df, withReplacement = FALSE, fraction = 0.5)
+## In order to discuss how we can append the rows of one DF to those of another in SparkR, we must first subset `df` into two (2) distinct DataFrames, `A` and `B`. Below, we define `A` as a random subset of `df` with a row count that is approximately equal to half the size of `nrow(df)`. We use the DF operation `except` to create `B`, which includes every row of `df`, `except` for those included in `A`:
+
+A <- sample(df, withReplacement = FALSE, fraction = 0.5, seed = 1)
 B <- except(df, A)
 
-# Let's also first examine the row count for each subsetted row and confirm that `A` and `B` are disjoint DataFrames (we can achieve this with the SparkR operation `intersect`, which performs the interaction set operation on two DFs):
+## Let's also examine the row count for each subsetted row and confirm that `A` and `B` do not share common rows. We can check this with the SparkR operation `intersect`, which performs the intersection set operation on two DFs:
 
-nA <- nrow(A)
-nB <- nrow(B)
+(nA <- nrow(A))
+(nB <- nrow(B))
+
 nA + nB # Equal to nrow(df)
-nrow(intersect(A, B))
 
-## Append rows when column names are equal across DFs:
+AintB <- intersect(A, B)
+nrow(AintB)
 
-# If we are certain that the two DFs have equivalent column name lists, then appending the rows of one DF to another is straightforward. Here, we append the rows of `B` to `A` with the `rbind` operation:
+###################################################################
+## (2i) Append rows when column name lists are equal across DFs: ##
+###################################################################
+
+## If we are certain that the two DFs have equivalent column name lists (with respect to both string values and column ordering), then appending the rows of one DF to another is straightforward. Here, we append the rows of `B` to `A` with the `rbind` operation:
 
 df1 <- rbind(A, B)
+
 nrow(df1)
 nrow(df)
 
-# We can see in the results above that `df1` is equivalent to `df`. We could, alternatively, accomplish this with the `unionALL` operation (e.g. `df1 <- unionAll(A, B)`. Note that `unionAll` is not an alias for `rbind` - we can combine any number of DFs with `rbind` while `unionAll` can only consider two (2) DataFrames at a time.
+## We can see in the results above that `df1` is equivalent to `df`. We could, alternatively, accomplish this with the `unionALL` operation (e.g. `df1 <- unionAll(A, B)`. Note that `unionAll` is not an alias for `rbind` - we can combine any number of DFs with `rbind` while `unionAll` can only consider two (2) DataFrames at a time.
 
-## Append rows when DF column name lists are not equal:
+unpersist(df1)
+rm(df1)
 
-# Before we can discuss appending rows when we do not have column name equivalency, we must first create two DataFrames that have different column names. Let's define a new DataFrame, `B_` that includes every column in `A` and `B`, excluding the column `"loan_age"`:
+###############################################################
+## (2i) Append rows when DF column name lists are not equal: ##
+###############################################################
+
+## Before we can discuss appending rows when we do not have column name equivalency, we must first create two DataFrames that have different column names. Let's define a new DataFrame, `B_` that includes every column in `A` and `B`, excluding the column `"loan_age"`:
 
 columns(B)
-# Remove "loan_age"
-cols_ <- c("loan_id", "period", "servicer_name", "new_int_rt", "act_endg_upb", "mths_remng", "aj_mths_remng", "dt_matr", "cd_msa", "delq_sts", "flag_mod", "cd_zero_bal", "dt_zero_bal")
+
+# Define column name list that has every column in `A` and `B`, except "loan_age":
+cols_ <- c("loan_id", "period", "servicer_name", "new_int_rt", "act_endg_upb", "mths_remng", "aj_mths_remng",
+           "dt_matr", "cd_msa", "delq_sts", "flag_mod", "cd_zero_bal", "dt_zero_bal" )
+
+# Define subsetted DF:
 B_ <- select(B, cols_)
 
-# We can try to apply SparkR `rbind` operation to append `B_` to `A`, but the following expression will result in the error: `"Union can only be performed on tables with the same number of columns, but the left table has 14 columns and the right has 13"`.
+unpersist(B)
+rm(B)
+rm(cols_)
 
-```{r, eval=FALSE}
+## We can try to apply SparkR `rbind` operation to append `B_` to `A`, but the expression given below will result in the error: `"Union can only be performed on tables with the same number of columns, but the left table has 14 columns and" "the right has 13"`
+
 df2 <- rbind(A, B_)
-```
 
-# Two strategies to force SparkR to merge (by row) DataFrames with different column name lists are: (1) append by an intersection of the column names for each DF or (2) use `withColumn` to add columns to DF where they are missing and set each entry in the appended rows of these columns equal to `NA`. Below is a function, `rbind.intersect`, that accomplishes the first approach. Notice that we simply take an intesection of the column names and ask SparkR to perform `rbind`, considering only this subset of column names. 
+## Two strategies to force SparkR to merge DataFrames with different column name lists are to:
+
+## 1. Append by an intersection of the two sets of column names, or
+## 2. Use `withColumn` to add columns to DF where they are missing and set each entry in the appended rows of these columns equal to `NA`.
+
+## Below is a function, `rbind.intersect`, that accomplishes the first approach. Notice that, in this function, we simply take an intesection of the column names and ask SparkR to perform `rbind`, considering only this subset of (sorted) column names.
 
 rbind.intersect <- function(x, y) {
   cols <- base::intersect(colnames(x), colnames(y))
-  return(SparkR::rbind(x[, cols], y[, cols]))
+  return(SparkR::rbind(x[, sort(cols)], y[, sort(cols)]))
 }
 
-# Here, we append `B_` to `A` using this function and then examine the dimensions of the resulting DF, `df2`, as well as its column names. We can see that the row count for `df2` is equal to that for `df`, but it does not include the `"loan_age"` column (just as we expected!).
+## Here, we append `B_` to `A` using this function and then examine the dimensions of the resulting DF, `df2`, as well as its column names. We can see that, while the row count for `df2` is equal to that for `df`, the DF does not include the `"loan_age"` column (just as we expected!).
 
 df2 <- rbind.intersect(A, B_)
-ncol(df2)
+dim(df2)
 colnames(df2)
-nrow(df2)
 
-# Accomplishing the second approach is somewhat more involved. The `rbind.fill` function, given below, identifies the outersection of the list of column names for each DataFrame and adds them onto one (1) or both of the DataFrames as needed using `withColumn`:
+unpersist(df2)
+rm(df2)
+
+## Accomplishing the second approach is somewhat more involved. The `rbind.fill` function, given below, identifies the outersection of the list of column names for two (2) DataFrames and adds them onto one (1) or both of the DataFrames as needed using `withColumn`. The function appends these columns as string dtype, and we can later recast columns as needed:
 
 rbind.fill <- function(x, y) {
   
@@ -137,18 +192,18 @@ rbind.fill <- function(x, y) {
   
   if (m2 < m1) {
     for (j in 1:len){
-      y <- withColumn(y, col_outer[j], cast(lit(NULL), "double"))
+      y <- withColumn(y, col_outer[j], cast(lit(""), "string"))
     }
   } else { 
     if (m2 > m1) {
         for (j in 1:len){
-          x <- withColumn(x, col_outer[j], cast(lit(NULL), "double"))
+          x <- withColumn(x, col_outer[j], cast(lit(""), "string"))
         }
       }
     if (m2 == m1 & col_x != col_y) {
       for (j in 1:len){
-        x <- withColumn(x, col_outer[j], cast(lit(NULL), "double"))
-        y <- withColumn(y, col_outer[j], cast(lit(NULL), "double"))
+        x <- withColumn(x, col_outer[j], cast(lit(""), "string"))
+        y <- withColumn(y, col_outer[j], cast(lit(""), "string"))
       }
     } else { }         
   }
@@ -157,14 +212,37 @@ rbind.fill <- function(x, y) {
   return(SparkR::rbind(x_sort, y_sort))
 }
 
-# We again `B_` to `A`, this time using the `rbind.fill` function. The row count for `df3` is equal to that for `df` and it includes all fourteen (14) columns included in `df`:
+## We again append `B_` to `A`, this time using the `rbind.fill` function:
 
 df3 <- rbind.fill(A, B_)
-ncol(df3)
+
+## Now, the row count for `df3` is equal to that for `df` _and_ it includes all fourteen (14) columns included in `df`:
+
+dim(df3)
 colnames(df3)
-nrow(df3)
 
-# We know from the missing data tutorial that `df$loan_age` does not contain any `NA` or `NaN` values. Therefore, by appending `B_` to `A` with the `rbind.fill` function, we should have introduced `nrow(B)`-many null values in `df2` since `"loan_age"` is missing in `B_` and `rbind.fill` forces SparkR to fill the new entries with null values. We can see this below:
+## We know from the missing data tutorial that `df$loan_age` does not contain any `NA` or `NaN` values. By appending `B_` to `A` with the `rbind.fill` function, therefore, we should have inserted exactly `nrow(B)` many empty string entries in `df3`. Note that `"loan_age"` is currently cast as string dtype and, therefore, the column does not contain any null values and we will need to recast the column to a numerical dtype.
 
-nrow(B)
-count(where(df3, isNull(df3$loan_age)))
+df3_laEmpty <- where(df3, df3$loan_age == "")
+nrow(df3_laEmpty)
+
+# There are no "loan_age" null values since it is string dtype
+df3_laNull <- where(df3, isNull(df3$loan_age))
+nrow(df3_laNull)
+
+## Below, we recast `"loan_age"` as integer dtype and check that the number of `"loan_age"` null values in `df3` now matches the number of entry string values in `df3` prior to recasting, as well as the number of rows in `B`:
+
+# Recast
+df3$loan_age <- cast(df3$loan_age, dataType = "integer")
+str(df3)
+
+# Check that values are equal
+
+df3_laNull_ <- where(df3, isNull(df3$loan_age))
+nrow(df3_laEmpty) # No. of empty strings
+
+nrow(df3_laNull_) # No. of null entries
+
+nB                # No. of rows in DF `B`
+
+## Documentation for rbind.intersection can be found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/R/rbind-intersection.R), and [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/R/rbind-fill.R) for rbind.fill.

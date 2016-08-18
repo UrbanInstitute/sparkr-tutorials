@@ -2,8 +2,8 @@
 title: 'Merging SparkR DataFrames'
 author: "Sarah Armstrong, Urban Institute"
 date: "July 12, 2016"
-output: 
-  html_document: 
+output:
+  html_document:
     keep_md: yes
 ---
 
@@ -25,23 +25,32 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ***
 
-:heavy_exclamation_mark: **Warning**: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate your SparkR and SparkR SQL contexts.
+:heavy_exclamation_mark: **Warning**: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate a SparkR session.
 
 ```{r, include=FALSE}
-library(SparkR)
-sc <- sparkR.init(sparkEnvir=list(spark.executor.memory="4g", spark.driver.memory="2g", spark.driver.maxResultSize="2g"), sparkPackages="com.databricks:spark-csv_2.11:1.4.0")
-sqlContext <- sparkRSQL.init(sc)
+if (nchar(Sys.getenv("SPARK_HOME")) < 1) {
+  Sys.setenv(SPARK_HOME = "/home/spark")
+}
+
+library(SparkR, lib.loc = c(file.path(Sys.getenv("SPARK_HOME"), "R", "lib")))
+
+sparkR.session()
 ```
 
-You can confirm that you successfully initiated these contexts by looking at the global environment of RStudio. Only proceed if you can see `sc` and `sqlContext` listed as values in the global environment or RStudio.
+The following error indicates that you have not initiated a SparkR session:
+
+```{r, eval=FALSE}
+Error in getSparkSession() : SparkSession not initialized
+```
+
+If you receive this message, return to the SparkR tutorials [README](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md) for guidance.
 
 ***
 
-**Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the SparkR Basics I tutorial.
+**Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial.
 
-```{r, message=F, warning=F, results='hide'}
-df <- read.df(sqlContext, path = "s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true", 
-              nullValue = "")
+```{r, message=F, warning=F, results='hide', collapse=TRUE}
+df <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true", na.strings = "")
 cache(df)
 ```
 
@@ -80,10 +89,10 @@ We can use the SparkR operation `join` to merge `a` and `b` by row, returning a 
 * `"right"`, `"rightouter"`, `"right_outer"`: Returns all rows from the right DF, even if there are no matches in the left DF
 * Cartesian: Returns the Cartesian product of the sets of records from the two or more joined DFs - `join` will return this DF when we _do not_ specify a `joinType` _nor_ a `joinExpr` (discussed below)
 
-We communicate to SparkR what condition we want to join DFs on with the `joinExpr` specification in `join`. Below, we perform a `"fullouter"` join on the DFs `a` and `b` on the condition that their `"loan_id"` values be equal:
+We communicate to SparkR what condition we want to join DFs on with the `joinExpr` specification in `join`. Below, we perform an `"inner"` (default) join on the DFs `a` and `b` on the condition that their `"loan_id"` values be equal:
 
 ```{r, collapse=TRUE}
-ab1 <- join(a, b, a$loan_id == b$loan_id, "fullouter")
+ab1 <- join(a, b, a$loan_id == b$loan_id)
 str(ab1)
 ```
 
@@ -104,7 +113,7 @@ Rather than defining a `joinExpr`, we explictly specify the column(s) that Spark
 * `all.x = FALSE`, `all.y = FALSE`: Returns an inner join (this is the default and can be achieved by not specifying values for all.x and all.y)
 * `all.x = TRUE`, `all.y = FALSE`: Returns a left outer join
 * `all.x = FALSE`, `all.y = TRUE`: Returns a right outer join
-* `all.x = TRUE`, `all.y = TRUE`: Returns a full outer join (default)
+* `all.x = TRUE`, `all.y = TRUE`: Returns a full outer join
 
 The following `merge` expression is equivalent to the `join` expression in the preceding example:
 
@@ -144,7 +153,7 @@ rm(cols_b)
 In order to discuss how we can append the rows of one DF to those of another in SparkR, we must first subset `df` into two (2) distinct DataFrames, `A` and `B`. Below, we define `A` as a random subset of `df` with a row count that is approximately equal to half the size of `nrow(df)`. We use the DF operation `except` to create `B`, which includes every row of `df`, `except` for those included in `A`:
 
 ```{r, collapse=TRUE}
-A <- sample(df, withReplacement = FALSE, fraction = 0.5)
+A <- sample(df, withReplacement = FALSE, fraction = 0.5, seed = 1)
 B <- except(df, A)
 ```
 
@@ -176,7 +185,6 @@ We can see in the results above that `df1` is equivalent to `df`. We could, alte
 ```{r, include=FALSE}
 unpersist(df1)
 rm(df1)
-rm(nA)
 ```
 
 
@@ -189,7 +197,7 @@ columns(B)
 
 # Define column name list that has every column in `A` and `B`, except "loan_age":
 cols_ <- c("loan_id", "period", "servicer_name", "new_int_rt", "act_endg_upb", "mths_remng", "aj_mths_remng",
-           "dt_matr", "cd_msa", "delq_sts", "flag_mod", "cd_zero_bal", "dt_zero_bal")
+           "dt_matr", "cd_msa", "delq_sts", "flag_mod", "cd_zero_bal", "dt_zero_bal" )
 
 # Define subsetted DF:
 B_ <- select(B, cols_)
@@ -278,15 +286,6 @@ We again append `B_` to `A`, this time using the `rbind.fill` function:
 df3 <- rbind.fill(A, B_)
 ```
 
-```{r, include=FALSE}
-unpersist(df)
-unpersist(A)
-unpersist(B_)
-rm(df)
-rm(A)
-rm(B_)
-```
-
 Now, the row count for `df3` is equal to that for `df` _and_ it includes all fourteen (14) columns included in `df`:
 
 ```{r, collapse=TRUE}
@@ -313,14 +312,16 @@ df3$loan_age <- cast(df3$loan_age, dataType = "integer")
 str(df3)
 
 # Check that values are equal
-df3_laNull_ <- where(df3, isNull(df3$loan_age))
 
+df3_laNull_ <- where(df3, isNull(df3$loan_age))
 nrow(df3_laEmpty) # No. of empty strings
+
 nrow(df3_laNull_) # No. of null entries
+
 nB                # No. of rows in DF `B`
 ```
 
 
 Documentation for rbind.intersection can be found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/R/rbind-intersection.R), and [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/R/rbind-fill.R) for rbind.fill.
 
-__End of tutorial__ - Next up is [Insert next tutorial]
+__End of tutorial__ - Next up is [Data Visualizations in SparkR](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/visualizations.md#data-visualizations-in-sparkr)
