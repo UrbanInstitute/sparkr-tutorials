@@ -4,7 +4,7 @@ July 8, 2016
 
 
 
-**Last Updated**: July 27, 2016
+**Last Updated**: August 18, 2016
 
 
 **Objective**: Summary statistics and aggregations are essential means of summarizing a set of observations. In this tutorial, we discuss how to compute location, statistical dispersion, distribution and dependence measures of numerical variables in SparkR, as well as methods for examining categorical variables. In particular, we consider how to compute the following measurements and aggregations in SparkR:
@@ -36,11 +36,18 @@ _Categorical Data_
 
 ***
 
-:heavy_exclamation_mark: **Warning**: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate your SparkR and SparkR SQL contexts.
+:heavy_exclamation_mark: **Warning**: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate a SparkR session.
 
 
 
-You can confirm that you successfully initiated these contexts by looking at the global environment of RStudio. Only proceed if you can see `sc` and `sqlContext` listed as values in the global environment or RStudio.
+The following error indicates that you have not initiated a SparkR session:
+
+
+```r
+Error in getSparkSession() : SparkSession not initialized
+```
+
+If you receive this message, return to the SparkR tutorials [README](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md) for guidance.
 
 ***
 
@@ -48,15 +55,13 @@ You can confirm that you successfully initiated these contexts by looking at the
 
 
 ```r
-df <- read.df(sqlContext, path = "s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true",
-              nullValue = "")
+df <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true", na.strings = "")
 cache(df)
 ```
 
 _Note_: documentation for the quarterly loan performance data can be found at http://www.fanniemae.com/portal/funding-the-market/data/loan-performance-data.html.
 
 ***
-
 
 
 ## Numerical Data
@@ -68,27 +73,27 @@ The operation `describe` (or its alias `summary`) creates a new DF that consists
 sumstats_mthsremng <- describe(df, "mths_remng")  # Specified list of columns here consists only of "mths_remng"
 
 showDF(sumstats_mthsremng)  # Print the aggregation DF
-## +-------+-----------------+
-## |summary|       mths_remng|
-## +-------+-----------------+
-## |  count|         13208202|
-## |   mean|330.9827155126792|
-## | stddev|35.49705845203245|
-## |    min|              -19|
-## |    max|              482|
-## +-------+-----------------+
+## +-------+------------------+
+## |summary|        mths_remng|
+## +-------+------------------+
+## |  count|          13208202|
+## |   mean| 330.9827155126792|
+## | stddev|35.497058452032526|
+## |    min|               -19|
+## |    max|               482|
+## +-------+------------------+
 
 sumstats_mthsremng.l <- collect(sumstats_mthsremng) # Collect aggregation DF as a local data.frame
 sumstats_mthsremng.l
-##   summary        mths_remng
-## 1   count          13208202
-## 2    mean 330.9827155126792
-## 3  stddev 35.49705845203245
-## 4     min               -19
-## 5     max               482
+##   summary         mths_remng
+## 1   count           13208202
+## 2    mean  330.9827155126792
+## 3  stddev 35.497058452032526
+## 4     min                -19
+## 5     max                482
 ```
 
-Note that measuring all five (5) of these aggregations at once is computationally expensive, particularly if we are interested in only a subset of these measurements. Below, we outline ways to measure these aggregations individually, as well as several other key summary statistics for numerical data.
+Note that measuring all five (5) of these aggregations at once can be computationally expensive with a massive data set, particularly if we are interested in only a subset of these measurements. Below, we outline ways to measure these aggregations individually, as well as several other key summary statistics for numerical data.
 
 ***
 
@@ -153,23 +158,44 @@ Again using `agg`, we compute the variance and standard deviation of `"mths_remn
 ```r
 mr_var <- agg(df, variance = var(df$mths_remng))  # Sample variance
 showDF(mr_var)
-## +------------------+
-## |          variance|
-## +------------------+
-## |1260.0411587470082|
-## +------------------+
+## +-----------------+
+## |         variance|
+## +-----------------+
+## |1260.041158747014|
+## +-----------------+
 
 mr_sd <- agg(df, std_dev = sd(df$mths_remng)) # Sample standard deviation
 showDF(mr_sd)
-## +-----------------+
-## |          std_dev|
-## +-----------------+
-## |35.49705845203245|
-## +-----------------+
+## +------------------+
+## |           std_dev|
+## +------------------+
+## |35.497058452032526|
+## +------------------+
 ```
 
 
-#### Quantiles: [Insert section on measuring (approx. quantiles) with release of SparkR 2.0.0]
+#### Approximate Quantiles:
+
+The operation `approxQuantile` implements a variation of the [Greenwald-Khanna algorithm](http://dx.doi.org/10.1145/375663.375670) that returns approximate quantiles for a DF column specified in the operation by the `col` parameter. If the specified column includes `n` rows, and we specify the desired quantiles with the `probabilities` parameter (up to some acceptable error value set by `relativeError`), then `approxQuantile` will return a list of quantile values with percentile ranks that are acceptably close to the rank values specified in `probabilities` (e.g. if we specify `probabilities = 0.75`, the operation will return a value from the DF column with a percentile rank that is approximately equal to a percentile rank of 75). Specifically, `approxQuantile` determines these values by `floor((probabilities - relativeError) * n) <= rank(x) <= ceiling((probabilities + relativeError) * n)`.
+
+Below, we define a new DF, `df_`, that includes only nonmissing values for `"mths_remng"` and then compute approximate Q1, Q2 and Q3 values for `"mths_remng"`:
+
+
+```r
+df_ <- dropna(df, cols = "mths_remng")
+
+quartiles_mr <- approxQuantile(x = df_, col = "mths_remng", probabilities = c(0.25, 0.5, 0.75), 
+                               relativeError = 0.001)
+quartiles_mr
+## [[1]]
+## [1] 327
+## 
+## [[2]]
+## [1] 343
+## 
+## [[3]]
+## [1] 352
+```
 
 
 ***
@@ -186,11 +212,11 @@ We can measure the magnitude and direction of skew in the distribution of a nume
 ```r
 mr_sk <- agg(df, skewness = skewness(df$mths_remng))
 showDF(mr_sk)
-## +------------------+
-## |          skewness|
-## +------------------+
-## |-2.181758771878954|
-## +------------------+
+## +-------------------+
+## |           skewness|
+## +-------------------+
+## |-2.1817587718788785|
+## +-------------------+
 ```
 
 
@@ -202,11 +228,11 @@ Similarly, we can meaure the magnitude of, and how sharp is, the central peak of
 ```r
 mr_kr <- agg(df, kurtosis = kurtosis(df$mths_remng))
 showDF(mr_kr)
-## +------------------+
-## |          kurtosis|
-## +------------------+
-## |5.2248521022372465|
-## +------------------+
+## +-----------------+
+## |         kurtosis|
+## +-----------------+
+## |5.224852102239884|
+## +-----------------+
 ```
 
 ***
@@ -256,11 +282,11 @@ showDF(zb_f)
 ## +-----------+--------+
 ## |cd_zero_bal|   count|
 ## +-----------+--------+
-## |    Unknown|12797138|
-## |          1|  412432|
 ## |          3|     969|
 ## |          6|    1280|
+## |    Unknown|12797138|
 ## |          9|    4697|
+## |          1|  412432|
 ## +-----------+--------+
 ```
 
@@ -278,11 +304,11 @@ showDF(zb_rf)
 ## +-----------+--------+--------------------+
 ## |cd_zero_bal|   Count|          Percentage|
 ## +-----------+--------+--------------------+
-## |    Unknown|12797138|   96.82686420536244|
-## |          1|  412432|  3.1205803405375514|
 ## |          3|     969|0.007331735534538754|
 ## |          6|    1280| 0.00968485189288917|
+## |    Unknown|12797138|   96.82686420536244|
 ## |          9|    4697| 0.03553886667257846|
+## |          1|  412432|  3.1205803405375514|
 ## +-----------+--------+--------------------+
 ```
 
@@ -299,38 +325,38 @@ conting_sn.zb
 Here, is the contingency table (the output of `crosstab`) in a formatted table:
 
 
-|servicer_name_cd_zero_bal                  |  Unknown|      1|   3|    6|    9|
-|:------------------------------------------|--------:|------:|---:|----:|----:|
-|FLAGSTAR BANK, FSB                         |      106|      4|   0|    0|    0|
-|GMAC MORTGAGE, LLC                         |    15467|   1107|   0|    0|    0|
-|FLAGSTAR CAPITAL MARKETS CORPORATION       |       55|      0|   0|    0|    0|
-|OTHER                                      |    62772|   3518|   6|    4|   10|
-|EVERBANK                                   |      179|      1|   0|    0|    0|
-|JPMORGAN CHASE BANK, NA                    |    51278|   4090|   1|    3|    0|
-|AMTRUST BANK                               |      420|     18|   0|    0|    0|
-|SUNTRUST MORTGAGE INC.                     |     1602|    159|   0|    0|    0|
-|MATRIX FINANCIAL SERVICES CORPORATION      |       22|      0|   0|    0|    0|
-|WELLS FARGO BANK, N.A.                     |     1286|     37|   0|    0|    0|
-|JPMORGAN CHASE BANK, NATIONAL ASSOCIATION  |    43417|   3484|   0|   16|    0|
-|GREEN TREE SERVICING, LLC                  |     1404|      5|   0|    0|    0|
-|DITECH FINANCIAL LLC                       |     1099|      7|   0|    0|    0|
-|IRWIN MORTGAGE, CORPORATION                |       10|      3|   0|    0|    0|
-|CITIMORTGAGE, INC.                         |    24333|   1844|   0|    5|    0|
-|QUICKEN LOANS INC.                         |        4|      0|   0|    0|    0|
-|PHH MORTGAGE CORPORATION                   |     8333|    635|   0|    0|    0|
-|JP MORGAN CHASE BANK, NA                   |      439|      5|   0|    0|    0|
-|OCWEN LOAN SERVICING, LLC                  |        2|      0|   0|    0|    0|
-|FANNIE MAE/SETERUS, INC. AS SUBSERVICER    |      504|      0|   0|    0|    0|
-|BANK OF AMERICA, N.A.                      |    32394|   2309|   0|    1|    0|
-|METLIFE BANK, NA                           |      240|      4|   0|    0|    0|
-|USAA FEDERAL SAVINGS BANK                  |     2972|    301|   0|    0|    0|
-|NATIONSTAR MORTGAGE, LLC                   |      261|      0|   0|    0|    0|
-|FIRST TENNESSEE BANK, NATIONAL ASSOCIATION |    11921|    853|   0|    0|    0|
-|FREEDOM MORTGAGE CORP.                     |        2|      0|   0|    0|    0|
-|Unknown                                    | 12523765| 393278| 962| 1250| 4687|
-|U.S. BANK N.A.                             |     1608|     24|   0|    0|    0|
-|REGIONS BANK                               |     3151|    239|   0|    0|    0|
-|CITIMORTGAGE ASSET MANAGEMENT, INC.        |     7897|    507|   0|    1|    0|
-|PNC BANK, N.A.                             |      195|      0|   0|    0|    0|
+|servicer_name_cd_zero_bal                  |      1|   3|    6|    9|  Unknown|
+|:------------------------------------------|------:|---:|----:|----:|--------:|
+|FLAGSTAR BANK, FSB                         |      4|   0|    0|    0|      106|
+|GMAC MORTGAGE, LLC                         |   1107|   0|    0|    0|    15467|
+|FLAGSTAR CAPITAL MARKETS CORPORATION       |      0|   0|    0|    0|       55|
+|OTHER                                      |   3518|   6|    4|   10|    62772|
+|EVERBANK                                   |      1|   0|    0|    0|      179|
+|JPMORGAN CHASE BANK, NA                    |   4090|   1|    3|    0|    51278|
+|AMTRUST BANK                               |     18|   0|    0|    0|      420|
+|SUNTRUST MORTGAGE INC.                     |    159|   0|    0|    0|     1602|
+|MATRIX FINANCIAL SERVICES CORPORATION      |      0|   0|    0|    0|       22|
+|WELLS FARGO BANK, N.A.                     |     37|   0|    0|    0|     1286|
+|JPMORGAN CHASE BANK, NATIONAL ASSOCIATION  |   3484|   0|   16|    0|    43417|
+|GREEN TREE SERVICING, LLC                  |      5|   0|    0|    0|     1404|
+|DITECH FINANCIAL LLC                       |      7|   0|    0|    0|     1099|
+|IRWIN MORTGAGE, CORPORATION                |      3|   0|    0|    0|       10|
+|CITIMORTGAGE, INC.                         |   1844|   0|    5|    0|    24333|
+|QUICKEN LOANS INC.                         |      0|   0|    0|    0|        4|
+|PHH MORTGAGE CORPORATION                   |    635|   0|    0|    0|     8333|
+|JP MORGAN CHASE BANK, NA                   |      5|   0|    0|    0|      439|
+|OCWEN LOAN SERVICING, LLC                  |      0|   0|    0|    0|        2|
+|FANNIE MAE/SETERUS, INC. AS SUBSERVICER    |      0|   0|    0|    0|      504|
+|BANK OF AMERICA, N.A.                      |   2309|   0|    1|    0|    32394|
+|METLIFE BANK, NA                           |      4|   0|    0|    0|      240|
+|USAA FEDERAL SAVINGS BANK                  |    301|   0|    0|    0|     2972|
+|NATIONSTAR MORTGAGE, LLC                   |      0|   0|    0|    0|      261|
+|FIRST TENNESSEE BANK, NATIONAL ASSOCIATION |    853|   0|    0|    0|    11921|
+|FREEDOM MORTGAGE CORP.                     |      0|   0|    0|    0|        2|
+|Unknown                                    | 393278| 962| 1250| 4687| 12523765|
+|U.S. BANK N.A.                             |     24|   0|    0|    0|     1608|
+|REGIONS BANK                               |    239|   0|    0|    0|     3151|
+|CITIMORTGAGE ASSET MANAGEMENT, INC.        |    507|   0|    1|    0|     7897|
+|PNC BANK, N.A.                             |      0|   0|    0|    0|      195|
 
 __End of tutorial__ - Next up is [Merging SparkR DataFrames](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/merging.md)

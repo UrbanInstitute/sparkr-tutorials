@@ -2,8 +2,8 @@
 title: 'Computing Summary Statistics with SparkR'
 author: "Sarah Armstrong, Urban Institute"
 date: "July 8, 2016"
-output: 
-  html_document: 
+output:
+  html_document:
     keep_md: true
 ---
 
@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 options(knitr.table.format = 'markdown')
 ```
 
-**Last Updated**: July 27, 2016
+**Last Updated**: August 18, 2016
 
 
 **Objective**: Summary statistics and aggregations are essential means of summarizing a set of observations. In this tutorial, we discuss how to compute location, statistical dispersion, distribution and dependence measures of numerical variables in SparkR, as well as methods for examining categorical variables. In particular, we consider how to compute the following measurements and aggregations in SparkR:
@@ -44,30 +44,38 @@ _Categorical Data_
 
 ***
 
-:heavy_exclamation_mark: **Warning**: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate your SparkR and SparkR SQL contexts.
+:heavy_exclamation_mark: **Warning**: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate a SparkR session.
 
 ```{r, include=FALSE}
-library(SparkR)
-sc <- sparkR.init(sparkEnvir=list(spark.executor.memory="2g", spark.driver.memory="1g", spark.driver.maxResultSize="1g"), sparkPackages="com.databricks:spark-csv_2.11:1.4.0")
-sqlContext <- sparkRSQL.init(sc)
+if (nchar(Sys.getenv("SPARK_HOME")) < 1) {
+  Sys.setenv(SPARK_HOME = "/home/spark")
+}
+
+library(SparkR, lib.loc = c(file.path(Sys.getenv("SPARK_HOME"), "R", "lib")))
+
+sparkR.session()
 ```
 
-You can confirm that you successfully initiated these contexts by looking at the global environment of RStudio. Only proceed if you can see `sc` and `sqlContext` listed as values in the global environment or RStudio.
+The following error indicates that you have not initiated a SparkR session:
+
+```{r, eval=FALSE}
+Error in getSparkSession() : SparkSession not initialized
+```
+
+If you receive this message, return to the SparkR tutorials [README](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md) for guidance.
 
 ***
 
 **Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial.
 
 ```{r, message=F, warning=F, results='hide', collapse=TRUE}
-df <- read.df(sqlContext, path = "s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true",
-              nullValue = "")
+df <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true", na.strings = "")
 cache(df)
 ```
 
 _Note_: documentation for the quarterly loan performance data can be found at http://www.fanniemae.com/portal/funding-the-market/data/loan-performance-data.html.
 
 ***
-
 
 
 ## Numerical Data
@@ -83,7 +91,7 @@ sumstats_mthsremng.l <- collect(sumstats_mthsremng) # Collect aggregation DF as 
 sumstats_mthsremng.l
 ```
 
-Note that measuring all five (5) of these aggregations at once is computationally expensive, particularly if we are interested in only a subset of these measurements. Below, we outline ways to measure these aggregations individually, as well as several other key summary statistics for numerical data.
+Note that measuring all five (5) of these aggregations at once can be computationally expensive with a massive data set, particularly if we are interested in only a subset of these measurements. Below, we outline ways to measure these aggregations individually, as well as several other key summary statistics for numerical data.
 
 ***
 
@@ -138,7 +146,19 @@ showDF(mr_sd)
 ```
 
 
-#### Quantiles: [Insert section on measuring (approx. quantiles) with release of SparkR 2.0.0]
+#### Approximate Quantiles:
+
+The operation `approxQuantile` implements a variation of the [Greenwald-Khanna algorithm](http://dx.doi.org/10.1145/375663.375670) that returns approximate quantiles for a DF column specified in the operation by the `col` parameter. If the specified column includes `n` rows, and we specify the desired quantiles with the `probabilities` parameter (up to some acceptable error value set by `relativeError`), then `approxQuantile` will return a list of quantile values with percentile ranks that are acceptably close to the rank values specified in `probabilities` (e.g. if we specify `probabilities = 0.75`, the operation will return a value from the DF column with a percentile rank that is approximately equal to a percentile rank of 75). Specifically, `approxQuantile` determines these values by `floor((probabilities - relativeError) * n) <= rank(x) <= ceiling((probabilities + relativeError) * n)`.
+
+Below, we define a new DF, `df_`, that includes only nonmissing values for `"mths_remng"` and then compute approximate Q1, Q2 and Q3 values for `"mths_remng"`:
+
+```{r, collapse=TRUE}
+df_ <- dropna(df, cols = "mths_remng")
+
+quartiles_mr <- approxQuantile(x = df_, col = "mths_remng", probabilities = c(0.25, 0.5, 0.75), 
+                               relativeError = 0.001)
+quartiles_mr
+```
 
 
 ***

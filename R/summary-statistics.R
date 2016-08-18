@@ -1,87 +1,205 @@
-#########################################################
-### Social Science Module 1: Basic Summary Statistics ###
-#########################################################
+##################################
+## Subsetting SparkR DataFrames ##
+##################################
 
-library(SparkR)
+## Sarah Armstrong, Urban Institute  
+## July 8, 2016  
+## Last Updated: August 18, 2016
 
-## Initiate SparkContext:
 
-sc <- sparkR.init(sparkEnvir=list(spark.executor.memory="2g", 
-                                  spark.driver.memory="1g",
-                                  spark.driver.maxResultSize="1g")
-                  ,sparkPackages="com.databricks:spark-csv_2.11:1.4.0") # Load CSV Spark Package
+## Objective: Summary statistics and aggregations are essential means of summarizing a set of observations. In this tutorial, we discuss how to compute location, statistical dispersion, distribution and dependence measures of numerical variables in SparkR, as well as methods for examining categorical variables. In particular, we consider how to compute the following measurements and aggregations in SparkR:
 
-## AWS EMR is using Spark 2.11 so we need the associated version of spark-csv: http://spark-packages.org/package/databricks/spark-csv
-## Define Spark executor memory, as well as driver memory and maxResultSize according to cluster configuration
+## Numerical Data
 
-## Initiate SparkRSQL:
+## * Measures of location:
+##     + Mean
+##     + Extract summary statistics as local value
+## * Measures of dispersion:
+##     + Range width & limits
+##     + Variance
+##     + Standard deviation
+##     + Quantiles
+## * Measures of distribution shape:
+##     + Skewness
+##     + Kurtosis
+## * Measures of Dependence:
+##     + Covariance
+##     + Correlation
 
-sqlContext <- sparkRSQL.init(sc)
+## Categorical Data
 
-## Read in loan performance example data:
+## * Frequency table
+## * Relative frequency table
+## * Contingency table
 
-df <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header='false', inferSchema='true')
+## SparkR/R Operations Discussed: `describe`, `collect`, `showDF`, `agg`, `mean`, `typeof`, `min`, `max`, `abs`, `var`, `sd`, `skewness`, `kurtosis`, `cov`, `corr`, `count`, `n`, `groupBy`, `nrow`, `crosstab`
+
+
+## Initiate SparkR session:
+
+if (nchar(Sys.getenv("SPARK_HOME")) < 1) {
+  Sys.setenv(SPARK_HOME = "/home/spark")
+}
+library(SparkR, lib.loc = c(file.path(Sys.getenv("SPARK_HOME"), "R", "lib")))
+sparkR.session()
+
+## Read in example HFPC data from AWS S3 as a DataFrame (DF):
+
+df <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
 cache(df)
 
+####################
+## NUMERICAL DATA ##
+####################
+####################
 
+## The operation `describe` (or its alias `summary`) creates a new DF that consists of several key aggregations (count, mean, max, mean, standard deviation) for a specified DF or list of DF columns (note that columns must be of a numerical datatype). We can either (1) use the action operation `showDF` to print this aggregation DF or (2) save it as a local data.frame with `collect`. Here, we perform both of these actions on the aggregation DF `sumstats_mthsremng`, which returns the aggregations listed above for the column `"mths_remng"` in `df`:
 
-## NUMERICAL
-# The operation `describe` creates a new DF that consists of several key aggregations (count, mean, max, mean, standard deviation) for a specified DF or list of DF columns. We can either (1) use the action `showDF` to print the aggregation DF or (2) save the aggregation DF as a local data.frame with `collect`. Below we perform both of these actions on the aggregation DF `sumstats_mthsremng`:
-sumstats_mthsremng <- describe(df, "mths_remng")
-showDF(sumstats_mthsremng) 
-sumstats_mthsremng.l <- collect(sumstats_mthsremng)
+sumstats_mthsremng <- describe(df, "mths_remng")  # Specified list of columns here consists only of "mths_remng"
+
+showDF(sumstats_mthsremng)  # Print the aggregation DF
+
+sumstats_mthsremng.l <- collect(sumstats_mthsremng) # Collect aggregation DF as a local data.frame
 sumstats_mthsremng.l
 
-## Measures of Location
-# Only mean is currently available in SparkR, which we compute using `agg` just as we did in the SparkR Basics II tutorial. Remember that `agg` returns another DF. Therefore, we can either print the DF with `showDF` or we can save the aggregation as a local data.frame. Collecting the DF may be preferred if we want to work with the mean `"mths_remng"` value as a single value in RStudio.
-showDF(agg(df, mean(df$mths_remng)))
-typeof(agg(df, mean(df$mths_remng)))
+## Note that measuring all five (5) of these aggregations at once can be computationally expensive with a massive data set, particularly if we are interested in only a subset of these measurements. Below, we outline ways to measure these aggregations individually, as well as several other key summary statistics for numerical data.
 
-mths_remng.avg <- collect(agg(df, mean(df$mths_remng)))
-(mths_remng.avg <- mths_remng.avg[,1])
-typeof(mths_remng.avg)
+###############################
+## (1) Measures of Location: ##
+###############################
 
-## Measures of dispersion
-# Range width & limits
-mr_range <- agg(df, min(df$mths_remng), max(df$mths_remng), range_width = abs(max(df$mths_remng) - min(df$mths_remng)))
+################
+## (1i) Mean: ##
+################
+
+## The mean is the only measure of central tendency currently supported by SparkR. The operations `mean` and `avg` can be used with the `agg` operation that we discussed in the [SparkR Basics II](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-2.md) tutorial to measure the average of a numerical DF column. Remember that `agg` returns another DF. Therefore, we can either print the DF with `showDF` or we can save the aggregation as a local data.frame. Collecting the DF may be preferred if we want to work with the mean `"mths_remng"` value as a single value in RStudio.
+
+mths_remng.avg <- agg(df, mean = mean(df$mths_remng)) # Create an aggregation DF
+
+# DataFrame
+showDF(mths_remng.avg) # Print this DF
+typeof(mths_remng.avg) # Aggregation DF is of class S4
+
+# data.frame
+mths_remng.avg.l <- collect(mths_remng.avg) # Collect the DF as a local data.frame
+(mths_remng.avg.l <- mths_remng.avg.l[,1])  # Overwrite data.frame with numerical mean value (was entry in d.f)
+typeof(mths_remng.avg.l)  # Object is now of a numerical dtype
+
+#################################
+## (2) Measures of dispersion: ##
+#################################
+
+################################
+## (2i) Range width & limits: ##
+################################
+
+## We can also use `agg` to create a DF that lists the minimum and maximum values within a numerical DF column (i.e. the limits of the range of values in the column) and the width of the range. Here, we create compute these values for `"mths_remng"` and print the resulting DF with `showDF`:
+
+mr_range <- agg(df, minimum = min(df$mths_remng), maximum = max(df$mths_remng), 
+                range_width = abs(max(df$mths_remng) - min(df$mths_remng)))
 showDF(mr_range)
-# Variance: Here we compute sample variance (which we could also compute with `variance` or `var_samp`) or we could compute population variance with `var_pop`:
-mr_var <- agg(df, mr_var = var(df$mths_remng))
-showDF(mr_var)
-# Standard Deviation Here we compute sample standard deviation (which we could also compute with `stddev` or `stddev_samp`) or we could compute population variance with `stddev_pop`:
-mr_sd <- agg(df, mr_sd = sd(df$mths_remng))
-showDF(mr_sd)
-# Quantiles
-# [Insert: section on `approxQuantile` transformation that is included in Spark 2.0.0 release.]
 
-## Measures of shape of the distribution
-# Direction of variance (Skewness), or 3rd moment
-mr_sk <- agg(df, mr_sk = skewness(df$mths_remng))
+##########################################
+## (2ii) Variance & standard deviation: ##
+##########################################
+
+## Again using `agg`, we compute the variance and standard deviation of `"mths_remng"` with the expressions below. Note that, here, we are computing sample variance and standard deviation (which we could also measure with their respective aliases, `variance` and `stddev`). To measure population variance and standard deviation, we would use `var_pop` and `stddev_pop`, respectively.
+
+mr_var <- agg(df, variance = var(df$mths_remng))  # Sample variance
+showDF(mr_var)
+
+mr_sd <- agg(df, std_dev = sd(df$mths_remng)) # Sample standard deviation
+showDF(mr_sd)
+
+###################################
+## (2iii) Approximate Quantiles: ##
+###################################
+
+## The operation `approxQuantile` implements a variation of the [Greenwald-Khanna algorithm](http://dx.doi.org/10.1145/375663.375670) that returns approximate quantiles for a DF column specified in the operation by the `col` parameter. If the specified column includes `n` rows, and we specify the desired quantiles with the `probabilities` parameter (up to some acceptable error value set by `relativeError`), then `approxQuantile` will return a list of quantile values with percentile ranks that are acceptably close to the rank values specified in `probabilities` (e.g. if we specify `probabilities = 0.75`, the operation will return a value from the DF column with a percentile rank that is approximately equal to a percentile rank of 75). Specifically, `approxQuantile` determines these values by `floor((probabilities - relativeError) * n) <= rank(x) <= ceiling((probabilities + relativeError) * n)`.
+
+## Below, we define a new DF, `df_`, that includes only nonmissing values for `"mths_remng"` and then compute approximate Q1, Q2 and Q3 values for `"mths_remng"`:
+
+df_ <- dropna(df, cols = "mths_remng")
+
+quartiles_mr <- approxQuantile(x = df_, col = "mths_remng", probabilities = c(0.25, 0.5, 0.75), 
+                               relativeError = 0.001)
+quartiles_mr
+
+#########################################
+## (3) Measures of distribution shape: ##
+#########################################
+
+####################
+## (3i) Skewness: ##
+####################
+
+## We can measure the magnitude and direction of skew in the distribution of a numerical DF column by using the operation `skewness` with `agg`, just as we did to measure the `mean`, `variance` and `stddev` of a numerical variable. Below, we measure the `skewness` of `"mths_remng"`:
+
+mr_sk <- agg(df, skewness = skewness(df$mths_remng))
 showDF(mr_sk)
-# Tailedness of Probability Distribution (Kurtosis), or 4th moment
-mr_kr <- agg(df, mr_kr = kurtosis(df$mths_remng))
+
+#####################
+## (3ii) Kurtosis: ##
+#####################
+
+## Similarly, we can meaure the magnitude of, and how sharp is, the central peak of the distribution of a numerical variable, i.e. the "peakedness" of the distribution, (relative to a standard bell curve) with the `kurtosis` operation. Here, we measure the `kurtosis` of `"mths_remng"`:
+
+mr_kr <- agg(df, kurtosis = kurtosis(df$mths_remng))
 showDF(mr_kr)
 
-## Measures of Dependence
-# The actions `cov` and `corr` return the sample covariance and correlation measures of dependency between two DF columns, respectively. Currently, Pearson is the only supported method for calculating correlation. Here we compute the covariance and correlation of `"loan_age"` and `"mths_remng"`. We can also save these values for later use. Note that, in doing so, we are not required to first collect since `cov` and `corr` return values, rather than DFs:
-cov(df, "loan_age", "mths_remng")
-corr(df, "loan_age", "mths_remng", method = "pearson")
+#################################
+## (4) Measures of dependence: ##
+#################################
 
+####################################
+## (4i) Covariance & correlation: ##
+####################################
 
-## String/categorical: We can compute descriptive statistics for categorical data using the `groupBy` operation that we used in the Basics II tutorial to compute aggregations of numerical data over groups, as well as several operations built into SparkR.
+## The actions `cov` and `corr` return the sample covariance and correlation measures of dependency between two DF columns, respectively. Currently, Pearson is the only supported method for calculating correlation. Here we compute the covariance and correlation of `"loan_age"` and `"mths_remng"`. Note that, in saving the covariance and correlation measures, we are not required to first `collect` locally since `cov` and `corr` return values, rather than DFs:
 
-# Recast cd_zero_bal as a categorical variable & replace `NA` values with `"NA"` string entries so that they can be included in the tables below: Define what cd_zero_bal is here
+cov_la.mr <- cov(df, "loan_age", "mths_remng")
+corr_la.mr <- corr(df, "loan_age", "mths_remng", method = "pearson")
+cov_la.mr
+corr_la.mr
+
+typeof(cov_la.mr)
+typeof(corr_la.mr)
+
+######################
+## CATEGORICAL DATA ##
+######################
+
+## We can compute descriptive statistics for categorical data using (1) the `groupBy` operation that we discussed in the [SparkR Basics II](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-2.md) tutorial and (2) operations native to SparkR for this purpose.
+
 df$cd_zero_bal <- ifelse(isNull(df$cd_zero_bal), "Unknown", df$cd_zero_bal)
 df$servicer_name <- ifelse(df$servicer_name == "", "Unknown", df$servicer_name)
 
-# Frequency table: Return a frequency table, listing the number of observations for each distinct value of `"cd_zero_bal"`:
+##########################
+## (1) Frequency table: ##
+##########################
+
+## To create a frequency table for a categorical variable in SparkR, i.e. list the number of observations for each distinct value in a column of strings, we can simply use the `count` transformation with grouped data. Group the data by the categorical variable for which we want to return a frequency table. Here, we create a frequency table for using this approach `"cd_zero_bal"`:
+
 zb_f <- count(groupBy(df, "cd_zero_bal"))
 showDF(zb_f)
-# We could also embed a grouping into an `agg` operation as we saw in the Basics II tutorial, i.e. `agg(groupBy(df, df$cd_zero_bal), count = n(df$cd_zero_bal))`.
-# Relative frequency table:
+
+## We could also embed a grouping into an `agg` operation as we saw in the [SparkR Basics II](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-2.md) tutorial to achieve the same frequency table DF, i.e. we could evaluate the expression `agg(groupBy(df, df$cd_zero_bal), count = n(df$cd_zero_bal))`.
+
+###################################
+## (2) Relative frequency table: ##
+###################################
+
+## We could similarly create a DF that consists of a relative frequency table. Here, we reproduce the frequency table from the preceding section, but now including the relative frequency for each distinct string value, labeled `"Percentage"`:
+
 n <- nrow(df)
 zb_rf <- agg(groupBy(df, df$cd_zero_bal), Count = n(df$cd_zero_bal), Percentage = n(df$cd_zero_bal) * (100/n))
 showDF(zb_rf)
-# Finally, we can make a contingency table with the operation `crosstab`, which returns a data.frame that represents the contingency table between two categorical variables. Here, we create a contingency table for `"servicer_name"` and `"cd_zero_bal"`:
-crosstab(df, "servicer_name", "cd_zero_bal")
 
+############################
+## (3) Contingency table: ##
+############################
+
+## Finally, we can create a contingency table with the operation `crosstab`, which returns a data.frame that consists of a contingency table between two categorical DF columns. Here, we create and print a contingency table for `"servicer_name"` and `"cd_zero_bal"`:
+
+conting_sn.zb <- crosstab(df, "servicer_name", "cd_zero_bal")
+conting_sn.zb
