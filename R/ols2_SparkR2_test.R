@@ -125,3 +125,20 @@ summary(glm.poisson)
 summary(glm.quasi)
 summary(glm.quasibin)
 summary(glm.quasipoiss)
+
+## Diamonds data
+
+dat <- read.df("s3://sparkr-tutorials/diamonds.csv", header = "true", delimiter = ",", source = "csv", inferSchema = "true", na.strings = "")
+cache(dat)
+
+glm.gauss <- spark.glm(dat, act_endg_upb ~ new_int_rt + loan_age + mths_remng + matr_yr + zero_bal_yr, family = "gaussian")
+
+ct1 <- crosstab(dat, "clarity", "color")
+ct2 <- crosstab(dat, "clarity", "cut")
+ct3 <- crosstab(dat, "color", "cut")
+
+glm1 <- spark.glm(dat, price ~ carat + clarity, family = "gaussian")
+op1 <- summary(glm1)
+
+glm2 <- spark.glm(dat, price ~ carat + cut, family = "gaussian")
+op2 <- summary(glm2)
