@@ -11,6 +11,8 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+**Last Updated**: August 19, 2016 - ggplot2.SparkR package functions do not function; package needs updating
+
 
 **Objective**: In this tutorial, we illustrate various plot types that can be created in SparkR and discuss different strategies for obtaining these plots. We discuss the SparkR ggplot2 package that is in development and provide examples of plots that can be created using this package, as well as how SparkR users may develop their own functions to build visualizations. We provide examples of the following plot types:
 
@@ -24,28 +26,37 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ***
 
-:heavy_exclamation_mark: **Warning**: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate your SparkR and SparkR SQL contexts.
+:heavy_exclamation_mark: **Warning**: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate a SparkR session.
 
 ```{r, include=FALSE}
 library(devtools)
-library(SparkR)
+
+if (nchar(Sys.getenv("SPARK_HOME")) < 1) {
+  Sys.setenv(SPARK_HOME = "/home/spark")
+}
+library(SparkR, lib.loc = c(file.path(Sys.getenv("SPARK_HOME"), "R", "lib")))
+
 devtools::install_github("SKKU-SKT/ggplot2.SparkR")
 library(ggplot2.SparkR)
-library(ggplot2)
 
-sc <- sparkR.init(sparkEnvir=list(spark.executor.memory="2g", spark.driver.memory="1g", spark.driver.maxResultSize="1g"), sparkPackages="com.databricks:spark-csv_2.11:1.4.0")
-sqlContext <- sparkRSQL.init(sc)
+sparkR.session()
 ```
 
-You can confirm that you successfully initiated these contexts by looking at the global environment of RStudio. Only proceed if you can see `sc` and `sqlContext` listed as values in the global environment or RStudio.
+The following error indicates that you have not initiated a SparkR session:
+
+```{r, eval=FALSE}
+Error in getSparkSession() : SparkSession not initialized
+```
+
+If you receive this message, return to the SparkR tutorials [README](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md) for guidance.
 
 ***
 
 **Read in initial data as DataFrame (DF)**: Throughout this tutorial, we will use the diamonds data that is included in the `ggplot2` package and is frequently used in `ggplot2` examples. The data consists of prices and quality information about 54,000 diamonds. The data contains the four C’s of diamond quality, carat, cut, colour and clarity; and five physical measurements, depth, table, x, y and z.
 
 ```{r, message=F, warning=F, results='hide'}
-df <- read.df(sqlContext, path = "s3://ui-spark-data/diamonds.csv", header = "true", delimiter = ",",
-              source = "com.databricks.spark.csv", inferSchema = "true", nullValue = "")
+df <- read.df("s3://ui-spark-data/diamonds.csv", header = "true", delimiter = ",",
+              source = "csv", inferSchema = "true", na.strings = "")
 cache(df)
 ```
 
