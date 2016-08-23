@@ -1,139 +1,207 @@
-############################
-## Time Series I Tutorial ##
-############################
+############################################################################
+## Time Series I: Working with the Date Datatype & Resampling a DataFrame ##
+############################################################################
 
-### In this tutorial, we discuss how to perform several essential time series operations with SparkR. In particular, we discuss:
-
-# Identify and parse date dtype DF columns
-# Extract and modify components of a date dtype column
-# Resample a time series DF to a particular unit of time frequency
-# Compute relative dates based on a specified increment of time
-
-library(SparkR)
-# Initiate SparkContext:
-sc <- sparkR.init(sparkEnvir=list(spark.executor.memory="2g", 
-                                  spark.driver.memory="1g",
-                                  spark.driver.maxResultSize="1g")
-                  ,sparkPackages="com.databricks:spark-csv_2.11:1.4.0") # Load CSV Spark Package
-
-# AWS EMR is using Spark 2.11 so we need the associated version of spark-csv: http://spark-packages.org/package/databricks/spark-csv
-# Define Spark executor memory, as well as driver memory and maxResultSize according to cluster configuration
-# Initiate SparkRSQL:
-sqlContext <- sparkRSQL.init(sc)
+## Sarah Armstrong, Urban Institute  
+## July 8, 2016 
+## Last Updated: August 23, 2016
 
 
-### Load data:
+## Objective: In this tutorial, we discuss how to perform several essential time series operations with SparkR. In particular, we discuss how to:
 
-df <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header="false", inferSchema="true", nullValue="")
+## * Identify and parse date datatype (dtype) DF columns,
+## * Compute relative dates based on a specified increment of time,
+## * Extract and modify components of a date dtype column and
+## * Resample a time series DF to a particular unit of time frequency
+
+## SparkR/R Operations Discussed: `unix_timestamp`, `cast`, `withColumn`, `to_date`, `last_day`, `next_day`, `add_months`, `date_add`, `date_sub`, `weekofyear`, `dayofyear`, `dayofmonth`, `datediff`, `months_between`, `year`, `month`, `hour`, `minute`, `second`, `agg`, `groupBy`, `mean`
+
+## Initiate SparkR session:
+
+if (nchar(Sys.getenv("SPARK_HOME")) < 1) {
+  Sys.setenv(SPARK_HOME = "/home/spark")
+}
+library(SparkR, lib.loc = c(file.path(Sys.getenv("SPARK_HOME"), "R", "lib")))
+sparkR.session()
+
+## Read in example HFPC data from AWS S3 as a DataFrame (DF):
+
+df <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
 cache(df)
 
+########################################################
+## (1) Converting a DataFrame column to 'date' dtype: ##
+########################################################
 
-### Identify and parse date dtype DF columns:
+## As we saw in previous tutorials, there are several columns in our dataset that list dates which are helpful in determining loan performance. We will specifically consider the following columns throughout this tutorial:
 
-# View dtype of each column - Note that columns with date values are currently strings
+## * `"period"` (Monthly Reporting Period): The month and year that pertain to the servicer’s cut-off period for mortgage loan information
+## * `"dt_matr"`(Maturity Date): The month and year in which a mortgage loan is scheduled to be paid in full as defined in the mortgage loan documents 
+## * `"dt_zero_bal"`(Zero Balance Effective Date): Date on which the mortgage loan balance was reduced to zero
+
+## Let's begin by reviewing the dytypes that `read.df` infers our date columns as. Note that each of our three (3) date columns were read in as strings:
+
 str(df)
 
-# Create "period", "matr_dt" and "dt_zero_bal" date dtype variable and create separate date level columns:
-# "yyyy-mm-dd"
+## While we could parse the date strings into separate year, month and day integer dtype columns, converting the columns to date dtype allows us to utilize the datetime functions available in SparkR.
+
+## We can convert `"period"`, `"matr_dt"` and `"dt_zero_bal"` to date dtype with the following expressions:
 
 # `period`
-period_uts <- unix_timestamp(df$period, 'MM/dd/yyyy')	# Gets current Unix timestamp in seconds
-period_ts <- cast(period_uts, 'timestamp')	# Casts Unix timestamp `period_uts` as timestamp
-period_dt <- cast(period_ts, 'date')	# Casts timestamp `period_ts` as date dtype
-df <- withColumn(df, 'period_dt', period_dt)	# Add date dtype column `period_dt` to `df`
+period_uts <- unix_timestamp(df$period, 'MM/dd/yyyy')	# 1. Gets current Unix timestamp in seconds
+period_ts <- cast(period_uts, 'timestamp')	# 2. Casts Unix timestamp `period_uts` as timestamp
+period_dt <- cast(period_ts, 'date')	# 3. Casts timestamp `period_ts` as date dtype
+df <- withColumn(df, 'p_dt', period_dt)	# 4. Add date dtype column `period_dt` to `df`
+
 # `dt_matr`
 matr_uts <- unix_timestamp(df$dt_matr, 'MM/yyyy')
 matr_ts <- cast(matr_uts, 'timestamp')
 matr_dt <- cast(matr_ts, 'date')
-df <- withColumn(df, 'matr_dt', matr_dt)
+df <- withColumn(df, 'mtr_dt', matr_dt)
+
 # `dt_zero_bal`
 zero_bal_uts <- unix_timestamp(df$dt_zero_bal, 'MM/yyyy')
 zero_bal_ts <- cast(zero_bal_uts, 'timestamp')
 zero_bal_dt <- cast(zero_bal_ts, 'date')
-df <- withColumn(df, 'zero_bal_dt', zero_bal_dt)
+df <- withColumn(df, 'zb_dt', zero_bal_dt)
+
+## Note that the string entries of these date DF columns are written in the formats `'MM/dd/yyyy'` and `'MM/yyyy'`. While SparkR is able to easily read a date string when it is in the default format, `'yyyy-mm-dd'`, additional steps are required for string to date conversions when the DF column entries are in a format other than the default. In order to create `"p_dt"` from `"period"`, for example, we must:
+
+## 1. Define the Unix timestamp for the date string, specifying the date format that the string assumes (here, we specify `'MM/dd/yyyy'`),
+## 2. Use the `cast` operation to convert the Unix timestamp of the string to `'timestamp'` dtype,
+## 3. Similarly recast the `'timestamp'` form to `'date'` dtype and
+## 4. Append the new date dtype `"p_dt"` column to `df` using the `withColumn` operation.
+
+## We similarly create date dtype columns using `"dt_matr"` and `"dt_zero_bal"`. If the date string entries of these columns were in the default format, converting to date dtype would straightforward. If `"period"` was in the format `'yyyy-mm-dd'`, for example, we would be able to append `df` with a date dtype column using a simple `withColumn`/`cast` expression: `df <- withColumn(df, 'p_dt', cast(df$period, 'date'))`. We could also directly convert `"period"` to date dtype using the `to_date` operation: `df$period <- to_date(df$period)`.
+
+## If we are lucky enough that our date entires are in the default format, then dtype conversion is simple and we should use either the `withColumn`/`cast` or `to_date` expressions given above. Otherwise, the longer conversion process is required. Note that, if we are maintaining our own dataset that we will use SparkR to analyze, adopting the default date format at the start will make working with date values during analysis much easier. 
+
+## Now that we've appended our date dtype columns to `df`, let's again look at the DF and compare the date dtype values with their associated date string values:
 
 str(df)
-# Note that the `"zero_bal_dt"` entries corresponding to the missing date entries in `"dt_zero_bal"`, which were empty strings, are now nulls.
 
+## Note that the `"zb_dt"` entries corresponding to the missing date entries in `"dt_zero_bal"`, which were empty strings, are now nulls.
 
-### Compute relative dates and measures based on a specified unit of time
+################################################################################
+## (2) Compute relative dates and measures based on a specified unit of time: ##
+################################################################################
 
-cols_dt <- c("period_dt", "matr_dt")
+## As we mentioned earlier, converting date strings to date dtype allows us to utilize SparkR datetime operations. In this section, we'll discuss several SparkR operations that return:
+
+## * Date dtype columns, which list dates relative to a preexisting date column in the DF, and
+## * Integer or numerical dtype columns, which list measures of time relative to a preexisting date column.
+
+## For convenience, we will review these operations using the `df_dt` DF, which includes only the date columns `"p_dt"` and `"mtr_dt"`, which we created in the preceding section:
+
+cols_dt <- c("p_dt", "mtr_dt")
 df_dt <- select(df, cols_dt)
 
-## Relative dates: `last_day`, `next_day`, `add_months`,  `date_add`, `date_sub`
+##########################
+## (2i) Relative dates: ##
+##########################
 
-# Given a date column, returns the last day of the month which the given date belongs to. For example, input "2015-07-27" returns "2015-07-31" since July 31 is the last day of the month in July 2015.
-df_dt <- withColumn(df_dt, 'p_ld', last_day(df_dt$period_dt))
-# Given a date column, returns the first date which is later than the value of the date column that is on the specified day of the week.
-df_dt <- withColumn(df_dt, 'p_nd', next_day(df_dt$period_dt, "sunday"))
-# Returns the date that is numMonths after startDate.
-df_dt <- withColumn(df_dt, 'p_addm', add_months(df_dt$period_dt, 1))
-# Returns the date that is 'days' days after 'start'
-df_dt <- withColumn(df_dt, 'p_dtadd', date_add(df_dt$period_dt, 1))
-# Returns the date that is 'days' days before 'start'
-df_dt <- withColumn(df_dt, 'p_dtsub', date_sub(df_dt$period_dt, 1))
+## SparkR datetime operations that return a new date dtype column include:
 
+## * `last_day`: Returns the _last_ day of the month which the given date belongs to (e.g. inputting "2013-07-27" returns "2013-07-31")
+## * `next_day`: Returns the _first_ date which is later than the value of the date column that is on the specified day of the week
+## * `add_months`: Returns the date that is `'numMonths'` _after_ `'startDate'`
+## * `date_add`: Returns the date that is `'days'` days _after_ `'start'`
+## * `date_sub`: Returns the date that is `'days'` days _before_ `'start'`
 
-## Relative measures of time: `weekofyear`, `dayofyear`, `dayofmonth`, `datediff`, `months_between`
-# Extracts the week number as an integer from a given date/timestamp/string.
-df_dt <- withColumn(df_dt, 'p_woy', weekofyear(df_dt$period_dt))
-# Extracts the day of the year as an integer from a given date/timestamp/string.
-df_dt <- withColumn(df_dt, 'p_doy', dayofyear(df_dt$period_dt))
-# Extracts the day of the month as an integer from a given date/timestamp/string.
-df_dt <- withColumn(df_dt, 'p_dom', dayofmonth(df_dt$period_dt))
-# Returns number of months between dates 'date1' and 'date2'.
-df_dt <- withColumn(df_dt, 'p_mbtw', months_between(df_dt$matr_dt, df_dt$period_dt))
-# Returns the number of days from 'start' to 'end'.
-df_dt <- withColumn(df_dt, 'p_dbtw', datediff(df_dt$matr_dt, df_dt$period_dt))
+## Below, we create relative date columns (defining `"p_dt"` as the input date) using each of these operations and `withColumn`:
 
+df_dt1 <- withColumn(df_dt, 'p_ld', last_day(df_dt$p_dt))
+df_dt1 <- withColumn(df_dt1, 'p_nd', next_day(df_dt$p_dt, "Sunday"))
+df_dt1 <- withColumn(df_dt1, 'p_addm', add_months(df_dt$p_dt, 1)) # 'startDate'="pdt", 'numMonths'=1
+df_dt1 <- withColumn(df_dt1, 'p_dtadd', date_add(df_dt$p_dt, 1)) # 'start'="pdt", 'days'=1
+df_dt1 <- withColumn(df_dt1, 'p_dtsub', date_sub(df_dt$p_dt, 1)) # 'start'="pdt", 'days'=1
+str(df_dt1)
 
-str(df_dt)
+######################################
+## (2ii) Relative measures of time: ##
+######################################
 
+## SparkR datetime operations that return integer or numerical dtype columns include:
 
+## * `weekofyear`: Extracts the week number as an integer from a given date
+## * `dayofyear`: Extracts the day of the year as an integer from a given date
+## * `dayofmonth`: Extracts the day of the month as an integer from a given date
+## * `datediff`: Returns number of months between dates 'date1' and 'date2'
+## * `months_between`: Returns the number of days from 'start' to 'end'
 
-### Extract components of a date dtype column:
+## Here, we use `"p_dt"` and `"mtr_dt"` as inputs in the above operations. We again use `withColumn` do append the new columns to a DF:
 
-## Extract components of date dtype column:
+df_dt2 <- withColumn(df_dt, 'p_woy', weekofyear(df_dt$p_dt))
+df_dt2 <- withColumn(df_dt2, 'p_doy', dayofyear(df_dt$p_dt))
+df_dt2 <- withColumn(df_dt2, 'p_dom', dayofmonth(df_dt$p_dt))
+df_dt2 <- withColumn(df_dt2, 'mbtw_p.mtr', months_between(df_dt$mtr_dt, df_dt$p_dt)) # 'date1'=p_dt, 'date2'=mtr_dt
+df_dt2 <- withColumn(df_dt2, 'dbtw_p.mtr', datediff(df_dt$mtr_dt, df_dt$p_dt)) # 'start'=p_dt, 'end'=mtr_dt
+str(df_dt2)
+
+## Note that operations that consider two different dates are sensitive to how we specify column ordering in the operation expression. For example, if we incorrectly define `"p_dt"` as `date2` and `"mtr_dt"` as `date1`, `"mbtw_p.mtr"` will consist of negative values. Similarly, `datediff` will return negative values if `start` and `end` are misspecified.
+
+######################################################################
+## (3) Extract components of a date dtype column as integer values: ##
+######################################################################
+
+## There are also datetime operations supported by SparkR that allow us to extract individual components of a date dtype column and return these as integers. Below, we use the `year` and `month` operations to create integer dtype columns for each of our date columns. Similar functions include `hour`, `minute` and `second`.
+
 # Year and month values for `"period_dt"`
-df <- withColumn(df, 'period_yr', year(period_dt))
-df <- withColumn(df, "period_m", month(period_dt))
+df <- withColumn(df, 'p_yr', year(df$p_dt))
+df <- withColumn(df, "p_m", month(df$p_dt))
+
 # Year value for `"matr_dt"`
-df <- withColumn(df, 'matr_yr', year(matr_dt))
-df <- withColumn(df, "matr_m", month(matr_dt))
+df <- withColumn(df, 'mtr_yr', year(df$mtr_dt))
+df <- withColumn(df, "mtr_m", month(df$mtr_dt))
+
 # Year value for `"zero_bal_dt"`
-df <- withColumn(df, 'zero_bal_yr', year(zero_bal_dt))
-df <- withColumn(df, "zero_bal_m", month(zero_bal_dt))
-# Extract date components: `year`, `month`, `hour`, `minute`, `second` (as info is needed)
-# See new date dtype columns in `df`:
+df <- withColumn(df, 'zb_yr', year(df$zb_dt))
+df <- withColumn(df, "zb_m", month(df$zb_dt))
+
+## We can see that each of the above expressions returns a column of integer values representing the requested date value:
+
 str(df)
 
+## Note that the `NA` entries of `"zb_dt"` result in `NA` values for `"zb_yr"` and `"zb_m"`.
 
+###########################################################################
+## (4) Resample a time series DF to a particular unit of time frequency: ##
+###########################################################################
 
+## When working with time series data, we are frequently required to resample data to a different time frequency. Combing the `agg` and `groupBy` operations, as we saw in the [SparkR Basics II](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-2.md) tutorial, is a convenient strategy for accomplishing this in SparkR. We create a new DF, `dat`, that only includes columns of numerical, integer and date dtype to use in our resampling examples:
 
+rm(df_dt)
+rm(df_dt1)
+rm(df_dt2)
 
-
-
-
-### Resample a time series DF to a particular unit of time frequency
-
-# Create new DF with only columns of numerical and date dtype
-cols <- c("period_yr", "period_m", "matr_yr", "matr_m", "zero_bal_yr", "zero_bal_m", "new_int_rt", "act_endg_upb", "loan_age", "mths_remng", "aj_mths_remng")
+cols <- c("p_yr", "p_m", "mtr_yr", "mtr_m", "zb_yr", "zb_m", "new_int_rt", "act_endg_upb", "loan_age", "mths_remng", "aj_mths_remng")
 dat <- select(df, cols)
+
 unpersist(df)
 cache(dat)
+
 head(dat)
 
-## Note that, in our loan-level data, each row represents a unique loan (each made distinct by the `"loan_id"` column in `df`) and its corresponding characteristics such as `"loan_age"` and `"mths_remng"`. Note that `dat` is simply a subsetted DF of `df` and, therefore, also refers to loan-level data. We can resample the data over the distinct values of any of the columns in `dat`, but an intuitive approach is to resample the loan-level data as aggregates of the DF columns for a unit of time. Below, we aggregate the columns of `dat` (taking the mean of the column entries) by `"period_yr"`, and then by `"period_yr"` and `"period_m"`:
-dat1 <- agg(groupBy(dat, dat$period_yr), m.period_m = mean(dat$period_m), m.matr_yr = mean(dat$matr_yr), m.zero_bal_yr = mean(dat$zero_bal_yr), m.new_int_rt = mean(dat$new_int_rt), m.act_endg_upb = mean(dat$act_endg_upb), m.loan_age = mean(dat$loan_age), m.mths_remng = mean(dat$mths_remng), m.aj_mths_remng = mean(dat$aj_mths_remng))
+## Note that, in our loan-level data, each row represents a unique loan (each made distinct by the `"loan_id"` column in `df`) and its corresponding characteristics such as `"loan_age"` and `"mths_remng"`. Note that `dat` is simply a subset `df` and, therefore, also refers to loan-level data.
+
+## While we can resample the data over distinct values of any of the columns in `dat`, we will resample the loan-level data as aggregations of the DF columns by units of time since we are working with time series data. Below, we aggregate the columns of `dat` (taking the mean of the column entries) by `"p_yr"`, and then by `"p_yr"` and `"p_m"`:
+
+# Resample by "period_yr"
+dat1 <- agg(groupBy(dat, dat$p_yr), p_m = mean(dat$p_m), mtr_yr = mean(dat$mtr_yr), zb_yr = mean(dat$zb_yr), 
+            new_int_rt = mean(dat$new_int_rt), act_endg_upb = mean(dat$act_endg_upb), loan_age = mean(dat$loan_age), 
+            mths_remng = mean(dat$mths_remng), aj_mths_remng = mean(dat$aj_mths_remng))
 head(dat1)
 
-dat2 <- agg(groupBy(dat, dat$period_yr, dat$period_m), m.matr_yr = mean(dat$matr_yr), m.zero_bal_yr = mean(dat$zero_bal_yr), m.new_int_rt = mean(dat$new_int_rt), 
-            m.act_endg_upb = mean(dat$act_endg_upb), m.loan_age = mean(dat$loan_age), m.mths_remng = mean(dat$mths_remng), m.aj_mths_remng = mean(dat$aj_mths_remng))
-head(arrange(dat2, dat2$period_yr, dat2$period_m), 15)	# Arrange the first 15 rows of `dat2` by ascending `period_yr` and `period_m` values
+# Resample by "period_yr" and "period_m"
+dat2 <- agg(groupBy(dat, dat$p_yr, dat$p_m), mtr_yr = mean(dat$mtr_yr), zb_yr = mean(dat$zb_yr), 
+            new_int_rt = mean(dat$new_int_rt), act_endg_upb = mean(dat$act_endg_upb), loan_age = mean(dat$loan_age), 
+            mths_remng = mean(dat$mths_remng), aj_mths_remng = mean(dat$aj_mths_remng))
+head(arrange(dat2, dat2$p_yr, dat2$p_m), 15)	# Arrange the first 15 rows of `dat2` by ascending `period_yr` and `period_m` values
 
-## We are using the `agg` and `groupBy` operations that we discussed in the SparkR Basics II tutorial to resample the data: in practice, we resample a DF in SparkR, by computing aggregations over grouped data. Note that we specify the list of DF columns that we want to resample on by including it in `groupBy`. In the preceding example, we aggregated by taking the mean of each column. However, we could use any of the aggregation functions that `agg` is able to interpret (discussed in SparkR Basics II tutorial) that is inline with the resampling that we are trying to achieve.
+## Note that we specify the list of DF columns that we want to resample on by including it in `groupBy`. Here, we aggregated by taking the mean of each column. However, we could use any of the aggregation functions that `agg` is able to interpret (listed in [SparkR Basics II](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-2.md) tutorial) and that is inline with the resampling that we are trying to achieve.
 
+## We could resample to any unit of time that we can extract from a date column, e.g. `year`, `month`, `day`, `hour`, `minute`, `second`. Furthermore, could have skipped the step of creating separate year- and month-level date columns - instead, we could have embedded the datetime functions directly in the `agg` expression. The following expression creates a DF that is equivalent to `dat1` in the preceding example:
 
-
-
+df2 <- agg(groupBy(df, year(df$p_dt)), p_m = mean(month(df$p_dt)), mtr_yr = mean(year(df$mtr_dt)), 
+           zb_yr = mean(month(df$mtr_dt)), new_int_rt = mean(df$new_int_rt), act_endg_upb = mean(df$act_endg_upb), 
+           loan_age = mean(df$loan_age), mths_remng = mean(df$mths_remng), aj_mths_remng = mean(df$aj_mths_remng))

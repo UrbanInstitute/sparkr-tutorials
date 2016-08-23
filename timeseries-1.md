@@ -4,6 +4,8 @@ July 12, 2016
 
 
 
+**Last Updated**: August 23, 2016
+
 
 **Objective**: In this tutorial, we discuss how to perform several essential time series operations with SparkR. In particular, we discuss how to:
 
@@ -16,11 +18,18 @@ July 12, 2016
 
 ***
 
-:heavy_exclamation_mark: **Warning**: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate your SparkR and SparkR SQL contexts.
+:heavy_exclamation_mark: **Warning**: Before beginning this tutorial, please visit the SparkR Tutorials README file (found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md)) in order to load the SparkR library and subsequently initiate a SparkR session.
 
 
 
-You can confirm that you successfully initiated these contexts by looking at the global environment of RStudio. Only proceed if you can see `sc` and `sqlContext` listed as values in the global environment or RStudio.
+The following error indicates that you have not initiated a SparkR session:
+
+
+```r
+Error in getSparkSession() : SparkSession not initialized
+```
+
+If you receive this message, return to the SparkR tutorials [README](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/README.md) for guidance.
 
 ***
 
@@ -28,7 +37,7 @@ You can confirm that you successfully initiated these contexts by looking at the
 
 
 ```r
-df <- read.df(sqlContext, "s3://sparkr-tutorials/hfpc_ex", header='false', inferSchema='true')
+df <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true", na.strings = "")
 cache(df)
 ```
 
@@ -46,29 +55,29 @@ As we saw in previous tutorials, there are several columns in our dataset that l
 * `"dt_matr"`(Maturity Date): The month and year in which a mortgage loan is scheduled to be paid in full as defined in the mortgage loan documents 
 * `"dt_zero_bal"`(Zero Balance Effective Date): Date on which the mortgage loan balance was reduced to zero
 
-Let's begin by reviewing the format and dtype that `read.df` infers our date columns as. Note that each of our three (3) date columns were read in as strings:
+Let's begin by reviewing the dytypes that `read.df` infers our date columns as. Note that each of our three (3) date columns were read in as strings:
 
 
 ```r
 str(df)
-## 'DataFrame': 14 variables:
-##  $ loan_id      : num 100007365142 100007365142 100007365142 100007365142 100007365142 100007365142
-##  $ period       : chr "01/01/2000" "02/01/2000" "03/01/2000" "04/01/2000" "05/01/2000" "06/01/2000"
+## 'SparkDataFrame': 14 variables:
+##  $ loan_id      : num 404371459720 404371459720 404371459720 404371459720 404371459720 404371459720
+##  $ period       : chr "09/01/2005" "10/01/2005" "11/01/2005" "12/01/2005" "01/01/2006" "02/01/2006"
 ##  $ servicer_name: chr "" "" "" "" "" ""
-##  $ new_int_rt   : num 8 8 8 8 8 8
-##  $ act_endg_upb : num NA NA NA NA NA NA
-##  $ loan_age     : int 0 1 2 3 4 5
-##  $ mths_remng   : int 360 359 358 357 356 355
-##  $ aj_mths_remng: int 359 358 357 356 355 355
-##  $ dt_matr      : chr "01/2030" "01/2030" "01/2030" "01/2030" "01/2030" "01/2030"
+##  $ new_int_rt   : num 7.75 7.75 7.75 7.75 7.75 7.75
+##  $ act_endg_upb : num 79331.2 79039.52 79358.51 79358.51 78365.73 78365.73
+##  $ loan_age     : int 67 68 69 70 71 72
+##  $ mths_remng   : int 293 292 291 290 289 288
+##  $ aj_mths_remng: int 286 283 287 287 277 277
+##  $ dt_matr      : chr "02/2030" "02/2030" "02/2030" "02/2030" "02/2030" "02/2030"
 ##  $ cd_msa       : int 0 0 0 0 0 0
-##  $ delq_sts     : chr "0" "0" "0" "0" "0" "0"
+##  $ delq_sts     : chr "5" "3" "8" "9" "0" "1"
 ##  $ flag_mod     : chr "N" "N" "N" "N" "N" "N"
 ##  $ cd_zero_bal  : int NA NA NA NA NA NA
 ##  $ dt_zero_bal  : chr "" "" "" "" "" ""
 ```
 
-While we could parse the date strings into separate year, month and day integer dtype columns, converting the columns to date dtype allows us to utilize the datetime functions available in SparkR, as well as employ the time window API in SparkR SQL, which we will discuss in a subsequent time series tutorial.
+While we could parse the date strings into separate year, month and day integer dtype columns, converting the columns to date dtype allows us to utilize the datetime functions available in SparkR.
 
 
 We can convert `"period"`, `"matr_dt"` and `"dt_zero_bal"` to date dtype with the following expressions:
@@ -112,23 +121,23 @@ Now that we've appended our date dtype columns to `df`, let's again look at the 
 
 ```r
 str(df)
-## 'DataFrame': 17 variables:
-##  $ loan_id      : num 100007365142 100007365142 100007365142 100007365142 100007365142 100007365142
-##  $ period       : chr "01/01/2000" "02/01/2000" "03/01/2000" "04/01/2000" "05/01/2000" "06/01/2000"
+## 'SparkDataFrame': 17 variables:
+##  $ loan_id      : num 404371459720 404371459720 404371459720 404371459720 404371459720 404371459720
+##  $ period       : chr "09/01/2005" "10/01/2005" "11/01/2005" "12/01/2005" "01/01/2006" "02/01/2006"
 ##  $ servicer_name: chr "" "" "" "" "" ""
-##  $ new_int_rt   : num 8 8 8 8 8 8
-##  $ act_endg_upb : num NA NA NA NA NA NA
-##  $ loan_age     : int 0 1 2 3 4 5
-##  $ mths_remng   : int 360 359 358 357 356 355
-##  $ aj_mths_remng: int 359 358 357 356 355 355
-##  $ dt_matr      : chr "01/2030" "01/2030" "01/2030" "01/2030" "01/2030" "01/2030"
+##  $ new_int_rt   : num 7.75 7.75 7.75 7.75 7.75 7.75
+##  $ act_endg_upb : num 79331.2 79039.52 79358.51 79358.51 78365.73 78365.73
+##  $ loan_age     : int 67 68 69 70 71 72
+##  $ mths_remng   : int 293 292 291 290 289 288
+##  $ aj_mths_remng: int 286 283 287 287 277 277
+##  $ dt_matr      : chr "02/2030" "02/2030" "02/2030" "02/2030" "02/2030" "02/2030"
 ##  $ cd_msa       : int 0 0 0 0 0 0
-##  $ delq_sts     : chr "0" "0" "0" "0" "0" "0"
+##  $ delq_sts     : chr "5" "3" "8" "9" "0" "1"
 ##  $ flag_mod     : chr "N" "N" "N" "N" "N" "N"
 ##  $ cd_zero_bal  : int NA NA NA NA NA NA
 ##  $ dt_zero_bal  : chr "" "" "" "" "" ""
-##  $ p_dt         : Date 2000-01-01 2000-02-01 2000-03-01 2000-04-01 2000-05-01 2000-06-01
-##  $ mtr_dt       : Date 2030-01-01 2030-01-01 2030-01-01 2030-01-01 2030-01-01 2030-01-01
+##  $ p_dt         : Date 2005-09-01 2005-10-01 2005-11-01 2005-12-01 2006-01-01 2006-02-01
+##  $ mtr_dt       : Date 2030-02-01 2030-02-01 2030-02-01 2030-02-01 2030-02-01 2030-02-01
 ##  $ zb_dt        : Date NA NA NA NA NA NA
 ```
 
@@ -139,10 +148,10 @@ Note that the `"zb_dt"` entries corresponding to the missing date entries in `"d
 
 ### Compute relative dates and measures based on a specified unit of time:
 
-As we mentioned earlier, converting date strings to date dtype allows us to utilize SparkR datetime operations. In this section, we'll discuss several SparkR operations that return
+As we mentioned earlier, converting date strings to date dtype allows us to utilize SparkR datetime operations. In this section, we'll discuss several SparkR operations that return:
 
-* Date dtype columns that list dates relative to a specified date DF column
-* Integer or numerical dtype columns that list measures of time relative to a specified date DF column
+* Date dtype columns, which list dates relative to a preexisting date column in the DF, and
+* Integer or numerical dtype columns, which list measures of time relative to a preexisting date column.
 
 For convenience, we will review these operations using the `df_dt` DF, which includes only the date columns `"p_dt"` and `"mtr_dt"`, which we created in the preceding section:
 
@@ -155,13 +164,13 @@ df_dt <- select(df, cols_dt)
 
 #### Relative dates:
 
-SparkR operations that return relative date DF columns include:
+SparkR datetime operations that return a new date dtype column include:
 
-* `last_day`: Returns the last day of the month which the given date belongs to (e.g. inputting "2013-07-27" returns "2013-07-31")
-* `next_day`: Returns the first date which is later than the value of the date column that is on the specified day of the week
-* `add_months`: Returns the date that is `'numMonths'` after `'startDate'`
-* `date_add`: Returns the date that is `'days'` days after `'start'`
-* `date_sub`: Returns the date that is `'days'` days before `'start'`
+* `last_day`: Returns the _last_ day of the month which the given date belongs to (e.g. inputting "2013-07-27" returns "2013-07-31")
+* `next_day`: Returns the _first_ date which is later than the value of the date column that is on the specified day of the week
+* `add_months`: Returns the date that is `'numMonths'` _after_ `'startDate'`
+* `date_add`: Returns the date that is `'days'` days _after_ `'start'`
+* `date_sub`: Returns the date that is `'days'` days _before_ `'start'`
 
 Below, we create relative date columns (defining `"p_dt"` as the input date) using each of these operations and `withColumn`:
 
@@ -173,19 +182,19 @@ df_dt1 <- withColumn(df_dt1, 'p_addm', add_months(df_dt$p_dt, 1)) # 'startDate'=
 df_dt1 <- withColumn(df_dt1, 'p_dtadd', date_add(df_dt$p_dt, 1)) # 'start'="pdt", 'days'=1
 df_dt1 <- withColumn(df_dt1, 'p_dtsub', date_sub(df_dt$p_dt, 1)) # 'start'="pdt", 'days'=1
 str(df_dt1)
-## 'DataFrame': 7 variables:
-##  $ p_dt   : Date 2000-01-01 2000-02-01 2000-03-01 2000-04-01 2000-05-01 2000-06-01
-##  $ mtr_dt : Date 2030-01-01 2030-01-01 2030-01-01 2030-01-01 2030-01-01 2030-01-01
-##  $ p_ld   : Date 2000-01-31 2000-02-29 2000-03-31 2000-04-30 2000-05-31 2000-06-30
-##  $ p_nd   : Date 2000-01-02 2000-02-06 2000-03-05 2000-04-02 2000-05-07 2000-06-04
-##  $ p_addm : Date 2000-02-01 2000-03-01 2000-04-01 2000-05-01 2000-06-01 2000-07-01
-##  $ p_dtadd: Date 2000-01-02 2000-02-02 2000-03-02 2000-04-02 2000-05-02 2000-06-02
-##  $ p_dtsub: Date 1999-12-31 2000-01-31 2000-02-29 2000-03-31 2000-04-30 2000-05-31
+## 'SparkDataFrame': 7 variables:
+##  $ p_dt   : Date 2005-09-01 2005-10-01 2005-11-01 2005-12-01 2006-01-01 2006-02-01
+##  $ mtr_dt : Date 2030-02-01 2030-02-01 2030-02-01 2030-02-01 2030-02-01 2030-02-01
+##  $ p_ld   : Date 2005-09-30 2005-10-31 2005-11-30 2005-12-31 2006-01-31 2006-02-28
+##  $ p_nd   : Date 2005-09-04 2005-10-02 2005-11-06 2005-12-04 2006-01-08 2006-02-05
+##  $ p_addm : Date 2005-10-01 2005-11-01 2005-12-01 2006-01-01 2006-02-01 2006-03-01
+##  $ p_dtadd: Date 2005-09-02 2005-10-02 2005-11-02 2005-12-02 2006-01-02 2006-02-02
+##  $ p_dtsub: Date 2005-08-31 2005-09-30 2005-10-31 2005-11-30 2005-12-31 2006-01-31
 ```
 
 #### Relative measures of time:
 
-SparkR operations that return DF columns which list relative measures of time include:
+SparkR datetime operations that return integer or numerical dtype columns include:
 
 * `weekofyear`: Extracts the week number as an integer from a given date
 * `dayofyear`: Extracts the day of the year as an integer from a given date
@@ -203,14 +212,14 @@ df_dt2 <- withColumn(df_dt2, 'p_dom', dayofmonth(df_dt$p_dt))
 df_dt2 <- withColumn(df_dt2, 'mbtw_p.mtr', months_between(df_dt$mtr_dt, df_dt$p_dt)) # 'date1'=p_dt, 'date2'=mtr_dt
 df_dt2 <- withColumn(df_dt2, 'dbtw_p.mtr', datediff(df_dt$mtr_dt, df_dt$p_dt)) # 'start'=p_dt, 'end'=mtr_dt
 str(df_dt2)
-## 'DataFrame': 7 variables:
-##  $ p_dt      : Date 2000-01-01 2000-02-01 2000-03-01 2000-04-01 2000-05-01 2000-06-01
-##  $ mtr_dt    : Date 2030-01-01 2030-01-01 2030-01-01 2030-01-01 2030-01-01 2030-01-01
-##  $ p_woy     : int 52 5 9 13 18 22
-##  $ p_doy     : int 1 32 61 92 122 153
+## 'SparkDataFrame': 7 variables:
+##  $ p_dt      : Date 2005-09-01 2005-10-01 2005-11-01 2005-12-01 2006-01-01 2006-02-01
+##  $ mtr_dt    : Date 2030-02-01 2030-02-01 2030-02-01 2030-02-01 2030-02-01 2030-02-01
+##  $ p_woy     : int 35 39 44 48 52 5
+##  $ p_doy     : int 244 274 305 335 1 32
 ##  $ p_dom     : int 1 1 1 1 1 1
-##  $ mbtw_p.mtr: num 360 359 358 357 356 355
-##  $ dbtw_p.mtr: int 10958 10927 10898 10867 10837 10806
+##  $ mbtw_p.mtr: num 293 292 291 290 289 288
+##  $ dbtw_p.mtr: int 8919 8889 8858 8828 8797 8766
 ```
 
 Note that operations that consider two different dates are sensitive to how we specify column ordering in the operation expression. For example, if we incorrectly define `"p_dt"` as `date2` and `"mtr_dt"` as `date1`, `"mbtw_p.mtr"` will consist of negative values. Similarly, `datediff` will return negative values if `start` and `end` are misspecified.
@@ -218,9 +227,9 @@ Note that operations that consider two different dates are sensitive to how we s
 ***
 
 
-### Extract components of a date dtype column:
+### Extract components of a date dtype column as integer values:
 
-There are also datetime functions supported by SparkR that allow us to extract individual components of a date dtype column and return these as integers. Below, we use the `year` and `month` operations to create integer dtype columns for each of our date columns. Similar functions include `hour`, `minute` and `second`.
+There are also datetime operations supported by SparkR that allow us to extract individual components of a date dtype column and return these as integers. Below, we use the `year` and `month` operations to create integer dtype columns for each of our date columns. Similar functions include `hour`, `minute` and `second`.
 
 
 ```r
@@ -242,28 +251,28 @@ We can see that each of the above expressions returns a column of integer values
 
 ```r
 str(df)
-## 'DataFrame': 23 variables:
-##  $ loan_id      : num 100007365142 100007365142 100007365142 100007365142 100007365142 100007365142
-##  $ period       : chr "01/01/2000" "02/01/2000" "03/01/2000" "04/01/2000" "05/01/2000" "06/01/2000"
+## 'SparkDataFrame': 23 variables:
+##  $ loan_id      : num 404371459720 404371459720 404371459720 404371459720 404371459720 404371459720
+##  $ period       : chr "09/01/2005" "10/01/2005" "11/01/2005" "12/01/2005" "01/01/2006" "02/01/2006"
 ##  $ servicer_name: chr "" "" "" "" "" ""
-##  $ new_int_rt   : num 8 8 8 8 8 8
-##  $ act_endg_upb : num NA NA NA NA NA NA
-##  $ loan_age     : int 0 1 2 3 4 5
-##  $ mths_remng   : int 360 359 358 357 356 355
-##  $ aj_mths_remng: int 359 358 357 356 355 355
-##  $ dt_matr      : chr "01/2030" "01/2030" "01/2030" "01/2030" "01/2030" "01/2030"
+##  $ new_int_rt   : num 7.75 7.75 7.75 7.75 7.75 7.75
+##  $ act_endg_upb : num 79331.2 79039.52 79358.51 79358.51 78365.73 78365.73
+##  $ loan_age     : int 67 68 69 70 71 72
+##  $ mths_remng   : int 293 292 291 290 289 288
+##  $ aj_mths_remng: int 286 283 287 287 277 277
+##  $ dt_matr      : chr "02/2030" "02/2030" "02/2030" "02/2030" "02/2030" "02/2030"
 ##  $ cd_msa       : int 0 0 0 0 0 0
-##  $ delq_sts     : chr "0" "0" "0" "0" "0" "0"
+##  $ delq_sts     : chr "5" "3" "8" "9" "0" "1"
 ##  $ flag_mod     : chr "N" "N" "N" "N" "N" "N"
 ##  $ cd_zero_bal  : int NA NA NA NA NA NA
 ##  $ dt_zero_bal  : chr "" "" "" "" "" ""
-##  $ p_dt         : Date 2000-01-01 2000-02-01 2000-03-01 2000-04-01 2000-05-01 2000-06-01
-##  $ mtr_dt       : Date 2030-01-01 2030-01-01 2030-01-01 2030-01-01 2030-01-01 2030-01-01
+##  $ p_dt         : Date 2005-09-01 2005-10-01 2005-11-01 2005-12-01 2006-01-01 2006-02-01
+##  $ mtr_dt       : Date 2030-02-01 2030-02-01 2030-02-01 2030-02-01 2030-02-01 2030-02-01
 ##  $ zb_dt        : Date NA NA NA NA NA NA
-##  $ p_yr         : int 2000 2000 2000 2000 2000 2000
-##  $ p_m          : int 1 2 3 4 5 6
+##  $ p_yr         : int 2005 2005 2005 2005 2006 2006
+##  $ p_m          : int 9 10 11 12 1 2
 ##  $ mtr_yr       : int 2030 2030 2030 2030 2030 2030
-##  $ mtr_m        : int 1 1 1 1 1 1
+##  $ mtr_m        : int 2 2 2 2 2 2
 ##  $ zb_yr        : int NA NA NA NA NA NA
 ##  $ zb_m         : int NA NA NA NA NA NA
 ```
@@ -285,28 +294,31 @@ cols <- c("p_yr", "p_m", "mtr_yr", "mtr_m", "zb_yr", "zb_m", "new_int_rt", "act_
 dat <- select(df, cols)
 
 unpersist(df)
-## DataFrame[loan_id:bigint, period:string, servicer_name:string, new_int_rt:double, act_endg_upb:double, loan_age:int, mths_remng:int, aj_mths_remng:int, dt_matr:string, cd_msa:int, delq_sts:string, flag_mod:string, cd_zero_bal:int, dt_zero_bal:string, p_dt:date, mtr_dt:date, zb_dt:date, p_yr:int, p_m:int, mtr_yr:int, mtr_m:int, zb_yr:int, zb_m:int]
+## SparkDataFrame[loan_id:bigint, period:string, servicer_name:string, new_int_rt:double, act_endg_upb:double, loan_age:int, mths_remng:int, aj_mths_remng:int, dt_matr:string, cd_msa:int, delq_sts:string, flag_mod:string, cd_zero_bal:int, dt_zero_bal:string, p_dt:date, mtr_dt:date, zb_dt:date, p_yr:int, p_m:int, mtr_yr:int, mtr_m:int, zb_yr:int, zb_m:int]
 cache(dat)
-## DataFrame[p_yr:int, p_m:int, mtr_yr:int, mtr_m:int, zb_yr:int, zb_m:int, new_int_rt:double, act_endg_upb:double, loan_age:int, mths_remng:int, aj_mths_remng:int]
+## SparkDataFrame[p_yr:int, p_m:int, mtr_yr:int, mtr_m:int, zb_yr:int, zb_m:int, new_int_rt:double, act_endg_upb:double, loan_age:int, mths_remng:int, aj_mths_remng:int]
 
 head(dat)
 ##   p_yr p_m mtr_yr mtr_m zb_yr zb_m new_int_rt act_endg_upb loan_age
-## 1 2000   1   2030     1    NA   NA          8           NA        0
-## 2 2000   2   2030     1    NA   NA          8           NA        1
-## 3 2000   3   2030     1    NA   NA          8           NA        2
-## 4 2000   4   2030     1    NA   NA          8           NA        3
-## 5 2000   5   2030     1    NA   NA          8           NA        4
-## 6 2000   6   2030     1    NA   NA          8           NA        5
+## 1 2005   9   2030     2    NA   NA       7.75     79331.20       67
+## 2 2005  10   2030     2    NA   NA       7.75     79039.52       68
+## 3 2005  11   2030     2    NA   NA       7.75     79358.51       69
+## 4 2005  12   2030     2    NA   NA       7.75     79358.51       70
+## 5 2006   1   2030     2    NA   NA       7.75     78365.73       71
+## 6 2006   2   2030     2    NA   NA       7.75     78365.73       72
 ##   mths_remng aj_mths_remng
-## 1        360           359
-## 2        359           358
-## 3        358           357
-## 4        357           356
-## 5        356           355
-## 6        355           355
+## 1        293           286
+## 2        292           283
+## 3        291           287
+## 4        290           287
+## 5        289           277
+## 6        288           277
 ```
 
-Note that, in our loan-level data, each row represents a unique loan (each made distinct by the `"loan_id"` column in `df`) and its corresponding characteristics such as `"loan_age"` and `"mths_remng"`. Note that `dat` is simply a subsetted DF of `df` and, therefore, also refers to loan-level data. While we can resample the data over distinct values of any of the columns in `dat`, we will resample the loan-level data as aggregations of the DF columns by units of time since we are working with time series data. Below, we aggregate the columns of `dat` (taking the mean of the column entries) by `"p_yr"`, and then by `"p_yr"` and `"p_m"`:
+Note that, in our loan-level data, each row represents a unique loan (each made distinct by the `"loan_id"` column in `df`) and its corresponding characteristics such as `"loan_age"` and `"mths_remng"`. Note that `dat` is simply a subset `df` and, therefore, also refers to loan-level data.
+
+
+While we can resample the data over distinct values of any of the columns in `dat`, we will resample the loan-level data as aggregations of the DF columns by units of time since we are working with time series data. Below, we aggregate the columns of `dat` (taking the mean of the column entries) by `"p_yr"`, and then by `"p_yr"` and `"p_m"`:
 
 
 ```r
@@ -316,19 +328,19 @@ dat1 <- agg(groupBy(dat, dat$p_yr), p_m = mean(dat$p_m), mtr_yr = mean(dat$mtr_y
             mths_remng = mean(dat$mths_remng), aj_mths_remng = mean(dat$aj_mths_remng))
 head(dat1)
 ##   p_yr      p_m   mtr_yr zb_yr new_int_rt act_endg_upb  loan_age
-## 1 2000 7.589687 2029.872  2000   8.184620    124417.36  4.852425
-## 2 2001 5.959435 2029.886  2001   8.178165    119181.03 14.978654
-## 3 2002 5.892121 2029.866  2002   8.125896    106678.68 27.143671
-## 4 2003 5.657919 2029.868  2003   8.125598     94280.04 38.963491
-## 5 2004 6.024530 2029.878  2004   8.094487     84831.20 51.341908
-## 6 2005 6.161613 2029.889  2005   8.061325     79880.03 63.497287
+## 1 2003 5.657919 2029.868  2003   8.125598     94280.04  38.96349
+## 2 2007 6.331132 2029.896  2007   8.018627     74187.41  87.72043
+## 3 2015 6.384612 2031.515  2015   7.698075     56032.86 183.71976
+## 4 2006 6.286337 2029.891  2006   8.036243     76587.82  75.65202
+## 5 2013 6.321650 2030.708  2013   7.774505     60515.30 159.66712
+## 6 2014 6.378560 2031.137  2014   7.724981     58198.56 171.71124
 ##   mths_remng aj_mths_remng
-## 1   355.0996      350.8954
-## 2   344.9771      323.5532
-## 3   332.8287      305.9929
-## 4   321.0887      288.5209
-## 5   308.8654      283.2608
-## 6   296.8613      272.9676
+## 1   321.0887      288.5209
+## 2   272.8004      249.4306
+## 3   196.3005      152.5630
+## 4   284.7847      261.8801
+## 5   210.6265      175.3911
+## 6   203.7472      164.0347
 
 # Resample by "period_yr" and "period_m"
 dat2 <- agg(groupBy(dat, dat$p_yr, dat$p_m), mtr_yr = mean(dat$mtr_yr), zb_yr = mean(dat$zb_yr), 
