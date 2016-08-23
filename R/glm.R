@@ -129,17 +129,50 @@ qqres_plot.SparkR <- function(df, residuals, qn = 100, error){
 p1 <- qqres_plot.SparkR(df = df, residuals = "res", qn = 100, error = 0.0001)
 p1 + ggtitle("This is a title")
 
-### Fit lm with base R
+### Fit (Gaussian/identity) glm with base R & compare with spark.glm output
 
 lm2 <- glm(lprice ~ cbrt_carat + x + clarity, data = dat, family = gaussian)
 output2 <- summary(lm2)
 coeffs2 <- output2$coefficients
 
-lm3 <- lm(lprice ~ cbrt_carat + x + clarity, data = dat)
-output3 <- summary(lm3)
-coeffs3 <- output3$coefficients
+# lm3 <- lm(lprice ~ cbrt_carat + x + clarity, data = dat)
 
+# Compare outputs
 output1
 output2
-output3
 
+### Distribution families and link functions available in SparkR
+
+# Create binary response variable:
+lprice_avg <- collect(agg(df, avg = avg(df$lprice)))[[1]]
+df <- mutate(df, lprice_high = ifelse(df$lprice > lprice_avg, lit(1), lit(0)))
+
+# binomial(link = "logit")
+glm.logit <- spark.glm(df, lprice_high ~ cbrt_carat + x + clarity, family = "binomial")
+
+# Gamma(link = "inverse")
+glm.gamma <- spark.glm(df, price ~ cbrt_carat + x + clarity, family = "Gamma") ## Error
+
+# inverse.gaussian(link = "1/mu^2")
+glm.invgauss <- spark.glm(df, price ~ cbrt_carat + x + clarity, family = "inverse.gaussian") ## Error
+
+# poisson(link = "log")
+glm.poisson <- spark.glm(df, price ~ cbrt_carat + x + clarity, family = "poisson")
+
+# quasi(link = "identity", variance = "constant")
+glm.quasi <- spark.glm(df, price ~ cbrt_carat + x + clarity, family = "quasi") ## Error
+
+# quasibinomial(link = "logit")
+glm.quasibin <- spark.glm(df, lprice_high ~ cbrt_carat + x + clarity, family = "quasibinomial") ## Error
+
+# quasipoisson(link = "log")
+glm.quasipoiss <- spark.glm(df, price ~ cbrt_carat + x + clarity, family = "quasipoisson") ## Error
+
+
+summary(glm.logit)
+summary(glm.invgamma)
+summary(glm.invgauss)
+summary(glm.poisson)
+summary(glm.quasi)
+summary(glm.quasibin)
+summary(glm.quasipoiss)
