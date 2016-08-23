@@ -1,3 +1,17 @@
+# Confirm that SPARK_HOME is set in environment: set SPARK_HOME to be equal to "/home/spark"
+# if the size of the elements of SPARK_HOME are less than 1:
+if (nchar(Sys.getenv("SPARK_HOME")) < 1) {
+  Sys.setenv(SPARK_HOME = "/home/spark")
+}
+
+# Load the SparkR package
+library(SparkR, lib.loc = c(file.path(Sys.getenv("SPARK_HOME"), "R", "lib")))
+
+# Call the SparkR session
+sparkR.session()
+
+
+
 library(ggplot2)
 
 df <- read.df("s3://sparkr-tutorials/diamonds.csv", header = "true", delimiter = ",", source = "csv", inferSchema = "true", na.strings = "")
@@ -78,12 +92,42 @@ aRsq2 <- Rsq2 - (1 - Rsq2)*((p - 1)/(N - p))
 Rsq2
 aRsq2
 
+### Linear Regression Diagnostics
+
 # Fitted v. Residual Values plot
 
 p5 <- geom_bivar_histogram.SparkR(df = df, x = "y_hat", y = "res", nbins = 250)
 p5 + scale_colour_brewer(palette = "Blues", type = "seq") + xlab("Fitted Value") + ylab("Residual") + 
   ggtitle("Fitted v. Residual Values")
 
+# Q-Q plot of the residuals
+
+qqres_plot.SparkR <- function(df, residuals, qn = 100, error){
+  
+  resdf <- select(df, residuals)
+  
+  n <- nrow(resdf)
+  mean.res <- collect(agg(resdf, avg(resdf[[residuals]])))[[1]]
+  var.res <- collect(agg(resdf, var(resdf[[residuals]])))[[1]]
+  sd.res <- collect(agg(resdf, stddev(resdf[[residuals]])))[[1]]
+  min.res <- collect(agg(resdf, min(resdf[[residuals]])))[[1]]
+  max.res <- collect(agg(resdf, max(resdf[[residuals]])))[[1]]
+  
+  probs <- seq(0, 1, length = qn)
+  
+  norm_quantiles <- qnorm(probs, mean = mean.res, sd = sd.res)
+  res_quantiles <- unlist(approxQuantile(resdf, col = residuals, probabilities = probs, relativeError = error))
+  
+  dat <- data.frame(sort(norm_quantiles), sort(res_quantiles))
+  
+  p <- ggplot(dat, aes(norm_quantiles, res_quantiles))
+  
+  p + geom_point(color = "#FF3333") + geom_abline(intercept = 0, slope = 1) + xlab("Theoretical Quantiles") + ylab("Sample Quantiles") + geom_hline(aes(yintercept = min(dat$sort.res_quantiles.), linetype = "Residual Extremum Values"), show.legend = TRUE) + geom_hline(yintercept = max(dat$sort.res_quantiles.), linetype = "dotted") + scale_linetype_manual(values = c(name = "none", "Residual Extremum Values" = "dotted")) + guides(linetype = guide_legend("")) + theme(legend.position = "bottom")
+  
+}
+
+p1 <- qqres_plot.SparkR(df = df, residuals = "res", qn = 100, error = 0.0001)
+p1 + ggtitle("This is a title")
 
 ### Fit lm with base R
 
