@@ -50,6 +50,11 @@ p4 + scale_colour_brewer(palette = "Blues", type = "seq") + xlab("cbrt(carat)") 
   ggtitle("cbrt(carat) v. log(price)")
 
 
+p5 <- geom_bivar_histogram.SparkR(df = df, x = "x", y = "lprice", nbins = 250)
+p5 + scale_colour_brewer(palette = "Blues", type = "seq") + xlab("x") + ylab("log(price)") + 
+  ggtitle("x v. log(price)")
+
+
 # Collect `df` as local data.frame to perform base R linear regression
 dat <- collect(df)
 head(dat)
@@ -92,12 +97,53 @@ aRsq2 <- Rsq2 - (1 - Rsq2)*((p - 1)/(N - p))
 Rsq2
 aRsq2
 
+
+### Fit (Gaussian/identity) glm with base R & compare with spark.glm output
+
+lm2 <- glm(lprice ~ cbrt_carat + x + clarity, data = dat, family = gaussian)
+output2 <- summary(lm2)
+coeffs2 <- output2$coefficients
+
+# lm3 <- lm(lprice ~ cbrt_carat + x + clarity, data = dat)
+
+# Compare outputs
+output1
+output2
+
+
+### Distribution families and link functions available in SparkR
+
+# "gaussian" -> "identity", "log", "inverse"
+# "binomial" -> "logit", "probit", "cloglog"
+# "poisson" -> "log", "identity", "sqrt"
+# "gamma" -> "inverse", "identity", "log"
+
+# Create binary response variable:
+lprice_avg <- collect(agg(df, avg = avg(df$lprice)))[[1]]
+df <- mutate(df, lprice_high = ifelse(df$lprice > lprice_avg, lit(1), lit(0)))
+
+
+# binomial(link = "logit")
+glm.logit <- spark.glm(df, lprice_high ~ cbrt_carat + x + clarity, family = "binomial")
+
+# Gamma(link = "inverse")
+glm.gamma <- spark.glm(df, lprice ~ cbrt_carat + x + clarity, family = "Gamma")
+
+# poisson(link = "log")
+glm.poisson <- spark.glm(df, price ~ cbrt_carat + x + clarity, family = "poisson")
+
+
+summary(glm.logit)
+summary(glm.gamma)
+summary(glm.poisson)
+
+
 ### Linear Regression Diagnostics
 
 # Fitted v. Residual Values plot
 
-p5 <- geom_bivar_histogram.SparkR(df = df, x = "y_hat", y = "res", nbins = 250)
-p5 + scale_colour_brewer(palette = "Blues", type = "seq") + xlab("Fitted Value") + ylab("Residual") + 
+p6 <- geom_bivar_histogram.SparkR(df = df, x = "y_hat", y = "res", nbins = 250)
+p6 + scale_colour_brewer(palette = "Blues", type = "seq") + xlab("Fitted Value") + ylab("Residual") + 
   ggtitle("Fitted v. Residual Values")
 
 # Q-Q plot of the residuals
@@ -126,53 +172,6 @@ qqres_plot.SparkR <- function(df, residuals, qn = 100, error){
   
 }
 
-p1 <- qqres_plot.SparkR(df = df, residuals = "res", qn = 100, error = 0.0001)
-p1 + ggtitle("This is a title")
+p7 <- qqres_plot.SparkR(df = df, residuals = "res", qn = 100, error = 0.0001)
+p7 + ggtitle("This is a title")
 
-### Fit (Gaussian/identity) glm with base R & compare with spark.glm output
-
-lm2 <- glm(lprice ~ cbrt_carat + x + clarity, data = dat, family = gaussian)
-output2 <- summary(lm2)
-coeffs2 <- output2$coefficients
-
-# lm3 <- lm(lprice ~ cbrt_carat + x + clarity, data = dat)
-
-# Compare outputs
-output1
-output2
-
-### Distribution families and link functions available in SparkR
-
-# Create binary response variable:
-lprice_avg <- collect(agg(df, avg = avg(df$lprice)))[[1]]
-df <- mutate(df, lprice_high = ifelse(df$lprice > lprice_avg, lit(1), lit(0)))
-
-# binomial(link = "logit")
-glm.logit <- spark.glm(df, lprice_high ~ cbrt_carat + x + clarity, family = "binomial")
-
-# Gamma(link = "inverse")
-glm.gamma <- spark.glm(df, price ~ cbrt_carat + x + clarity, family = "Gamma") ## Error
-
-# inverse.gaussian(link = "1/mu^2")
-glm.invgauss <- spark.glm(df, price ~ cbrt_carat + x + clarity, family = "inverse.gaussian") ## Error
-
-# poisson(link = "log")
-glm.poisson <- spark.glm(df, price ~ cbrt_carat + x + clarity, family = "poisson")
-
-# quasi(link = "identity", variance = "constant")
-glm.quasi <- spark.glm(df, price ~ cbrt_carat + x + clarity, family = "quasi") ## Error
-
-# quasibinomial(link = "logit")
-glm.quasibin <- spark.glm(df, lprice_high ~ cbrt_carat + x + clarity, family = "quasibinomial") ## Error
-
-# quasipoisson(link = "log")
-glm.quasipoiss <- spark.glm(df, price ~ cbrt_carat + x + clarity, family = "quasipoisson") ## Error
-
-
-summary(glm.logit)
-summary(glm.invgamma)
-summary(glm.invgauss)
-summary(glm.poisson)
-summary(glm.quasi)
-summary(glm.quasibin)
-summary(glm.quasipoiss)
