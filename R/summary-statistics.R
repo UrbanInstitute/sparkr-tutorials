@@ -115,7 +115,9 @@ showDF(mr_sd)
 ## (2iii) Approximate Quantiles: ##
 ###################################
 
-## The operation `approxQuantile` implements a variation of the [Greenwald-Khanna algorithm](http://dx.doi.org/10.1145/375663.375670) that returns approximate quantiles for a DF column specified in the operation by the `col` parameter. If the specified column includes `n` rows, and we specify the desired quantiles with the `probabilities` parameter (up to some acceptable error value set by `relativeError`), then `approxQuantile` will return a list of quantile values with percentile ranks that are acceptably close to the rank values specified in `probabilities` (e.g. if we specify `probabilities = 0.75`, the operation will return a value from the DF column with a percentile rank that is approximately equal to a percentile rank of 75). Specifically, `approxQuantile` determines these values by `floor((probabilities - relativeError) * n) <= rank(x) <= ceiling((probabilities + relativeError) * n)`.
+## The operation `approxQuantile` returns approximate quantiles for a DF column. We specify the quantiles to be approximated by the operation as a vector set equal to the `probabilities` parameter, and the acceptable level of error by the `relativeError` paramter.
+
+## If the column includes `n` rows, then `approxQuantile` will return a list of quantile values with rank values that are acceptably close to those exact values specified by `probabilities`. In particular, the operation assigns approximate rank values such that the computed rank, (`probabilities * n`), falls within the inequality `floor((probabilities - relativeError) * n) <= rank(x) <= ceiling((probabilities + relativeError) * n)`.
 
 ## Below, we define a new DF, `df_`, that includes only nonmissing values for `"mths_remng"` and then compute approximate Q1, Q2 and Q3 values for `"mths_remng"`:
 
@@ -124,6 +126,7 @@ df_ <- dropna(df, cols = "mths_remng")
 quartiles_mr <- approxQuantile(x = df_, col = "mths_remng", probabilities = c(0.25, 0.5, 0.75), 
                                relativeError = 0.001)
 quartiles_mr
+
 
 #########################################
 ## (3) Measures of distribution shape: ##
