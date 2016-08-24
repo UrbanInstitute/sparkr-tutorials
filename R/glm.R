@@ -142,15 +142,15 @@ summary(glm.poisson)
 
 # Fitted v. Residual Values plot
 
-#  Detect non-linearity, unequal error variances, and outliers
+# Detect non-linearity, heteroskedasticity, and outliers
 
 p6 <- geom_bivar_histogram.SparkR(df = df, x = "y_hat", y = "res", nbins = 250)
 p6 + scale_colour_brewer(palette = "Blues", type = "seq") + xlab("Fitted Value") + ylab("Residual") + 
   ggtitle("Fitted v. Residual Values")
 
-# Q-Q plot of the residuals
+# Q-Q plot of the standardized residuals
 
-# Detect non-normality of the residuals
+# Detect non-normality of the standardized residuals and identify outliers
 
 qqnorm.SparkR <- function(df, residuals, qn = 100, error){
   
@@ -175,4 +175,5 @@ qqnorm.SparkR <- function(df, residuals, qn = 100, error){
 
 p7 <- qqnorm.SparkR(df = df, residuals = "res", qn = 100, error = 0.0001)
 p7 + ggtitle("This is a title")
+
 
