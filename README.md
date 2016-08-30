@@ -36,7 +36,7 @@ Users can end a SparkR session with the following expression:
 sparkR.session.stop()
 ```
 
-**Note**: the data visualization tutorial, linked to below, is currently not updated for Spark 2.0.0, but does still function with Spark 1.9.6.
+**Note**: the data visualization tutorial, linked to below, is currently not updated for SparkR 2.0, but does still function with SparkR 1.6.
 
 ## Table of Contents:
 
