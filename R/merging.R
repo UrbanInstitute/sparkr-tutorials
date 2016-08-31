@@ -25,6 +25,11 @@ if (nchar(Sys.getenv("SPARK_HOME")) < 1) {
 library(SparkR, lib.loc = c(file.path(Sys.getenv("SPARK_HOME"), "R", "lib")))
 sparkR.session()
 
+## Read in initial data as DataFrame (DF):
+
+df <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true", na.strings = "")
+cache(df)
+
 
 #############################################################
 ## (1) Join (merge) two DataFrames by column condition(s): ##
