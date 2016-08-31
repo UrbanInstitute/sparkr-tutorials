@@ -46,7 +46,7 @@ _Note_: documentation for the quarterly loan performance data can be found at ht
 ***
 
 
-### Join (merge) two DataFrames by column condition(s):
+### Join (merge) two DataFrames by column condition(s)
 
 We begin by subsetting `df` by column, resulting in two (2) DataFrames that are disjoint, except for them both including the loan identification variable, `"loan_id"`:
 
@@ -201,7 +201,7 @@ str(ab2)
 ***
 
 
-### Append rows of data to a DataFrame:
+### Append rows of data to a DataFrame
 
 In order to discuss how we can append the rows of one DF to those of another in SparkR, we must first subset `df` into two (2) distinct DataFrames, `A` and `B`. Below, we define `A` as a random subset of `df` with a row count that is approximately equal to half the size of `nrow(df)`. We use the DF operation `except` to create `B`, which includes every row of `df`, `except` for those included in `A`:
 
@@ -228,7 +228,7 @@ nrow(AintB)
 ## [1] 0
 ```
 
-#### Append rows when column name lists are equal across DFs:
+#### Append rows when column name lists are equal across DFs
 
 If we are certain that the two DFs have equivalent column name lists (with respect to both string values and column ordering), then appending the rows of one DF to another is straightforward. Here, we append the rows of `B` to `A` with the `rbind` operation:
 
@@ -247,7 +247,7 @@ We can see in the results above that `df1` is equivalent to `df`. We could, alte
 
 
 
-#### Append rows when DF column name lists are not equal:
+#### Append rows when DF column name lists are not equal
 
 Before we can discuss appending rows when we do not have column name equivalency, we must first create two DataFrames that have different column names. Let's define a new DataFrame, `B_` that includes every column in `A` and `B`, excluding the column `"loan_age"`:
 
@@ -417,6 +417,6 @@ nB                # No. of rows in DF `B`
 ```
 
 
-Documentation for rbind.intersection can be found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/R/rbind-intersection.R), and [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/R/rbind-fill.R) for rbind.fill.
+Documentation for `rbind.intersection` can be found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/R/rbind-intersection.R), and [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/R/rbind-fill.R) for `rbind.fill`.
 
 __End of tutorial__ - Next up is [Data Visualizations in SparkR](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/visualizations.md#data-visualizations-in-sparkr)

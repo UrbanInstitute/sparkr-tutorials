@@ -40,7 +40,7 @@ If you receive this message, return to the SparkR tutorials [README](https://git
 
 ***
   
-### Specify null values when loading data in as a SparkR DataFrame (DF):
+### Specify null values when loading data in as a SparkR DataFrame (DF)
   
 Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial. Note that we now include the `na.strings` option in the `read.df` transformation below. By setting `na.strings` equal to an empty string in `read.df`, we direct SparkR to interpret empty entries in the dataset as being equal to nulls in `df`. Therefore, any DF entries matching this string (here, set to equal an empty entry) will be set equal to a null value in `df`.
 
@@ -82,10 +82,10 @@ _Note_: documentation for the quarterly loan performance data can be found at ht
 ***
   
   
-### Conditional expressions on empty DF entries:
+### Conditional expressions on empty DF entries
   
   
-#### Null and NaN indicator operations:
+#### Null and NaN indicator operations
   
 We saw in the subsetting tutorial how to subset a DF by some conditional statement. We can extend this reasoning in order to identify missing data in a DF and to explore the distribution of missing data within a DF. SparkR operations indicating null and NaN entries in a DF are `isNull`, `isNaN` and `isNotNull`, and these can be used in conditional statements to locate or to remove DF rows with null and NaN entries.
 
@@ -110,7 +110,7 @@ count(df_mrNaN)
 ```
 
 
-#### Empty string entries:
+#### Empty string entries
 
 If we want to count the number of rows with missing entries for `"servicer_name"` (string dtype) we can simply use the equality logical condition (==) to direct SparkR to `count` the number of rows `where` the entries in the `"servicer_name"` column are equal to an empty string:
   
@@ -122,7 +122,7 @@ count(df_snEmpty)
 ```
 
 
-#### Distribution of missing data across grouped data:
+#### Distribution of missing data across grouped data
 
 We can also condition on missing data when aggregating over grouped data in order to see how missing data is distributed over a categorical variable within our data. In order to view the distribution of `"mths_remng"` observations with null values over distinct entries of `"servicer_name"`, we (1) group the entries of the DF `df_mrNull` that we created in the preceding example over `"servicer_name"` entries, (2) create the DF `mrNull_by_sn` which consists of the number of observations in `df_mrNull` by `"servicer_name"` entries and (3) collect `mrNull_by_sn` into a nicely formatted table as a local data.frame:
   
@@ -151,10 +151,10 @@ Note that the resulting data.frame lists only nine (9) distinct string values fo
 ***
   
   
-### Drop rows with missing data:
+### Drop rows with missing data
   
   
-#### Null value entries:
+#### Null value entries
   
 The SparkR operation `dropna` (or its alias `na.omit`) creates a new DF that omits rows with null value entries. We can configure `dropna` in a number of ways, including whether we want to omit rows with nulls in a specified list of DF columns or across all columns within a DF.
 
@@ -212,7 +212,7 @@ n - n_12
 ```
 
 
-#### Empty string entries:
+#### Empty string entries
 
 If we want to create a new DF that does not include any row with missing entries for a column of string dtype, we could also use `filter` to accomplish this. In order to remove observations with a missing `"servicer_name"` value, we simply filter `df` on the condition that `"servicer_name"` does not equal an empty string entry:
   
@@ -226,10 +226,10 @@ nrow(df_snNoEmpty)
 ***
   
   
-### Fill missing data entries:
+### Fill missing data entries
   
   
-#### Null value entries:
+#### Null value entries
   
 The `fillna` operation allows us to replace null entries with some specified value. In order to replace null entries in every numerical and integer column in `df` with a value, we simply evaluate the expression `fillna(df, <value>)`. We replace every null entry in `df` with the value 12345 below:
 
@@ -314,7 +314,7 @@ rm(df_)
 ```
 
 
-#### Empty string entries:
+#### Empty string entries
 
 Finally, we can replace the empty entries in string dtype columns with the `ifelse` operation, which follows the syntax `ifelse(<test>, <if true>, <if false>)`. Here, we replace the empty entries in `"servicer_name"` with the string `"Unknown"`:
   

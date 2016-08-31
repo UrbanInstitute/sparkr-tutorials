@@ -98,7 +98,7 @@ Note that measuring all five (5) of these aggregations at once can be computatio
 ***
 
 
-### Measures of Location:
+### Measures of Location
 
 
 #### Mean
@@ -130,10 +130,10 @@ typeof(mths_remng.avg.l)  # Object is now of a numerical dtype
 ***
 
 
-### Measures of dispersion:
+### Measures of dispersion
 
 
-#### Range width & limits:
+#### Range width & limits
 
 We can also use `agg` to create a DF that lists the minimum and maximum values within a numerical DF column (i.e. the limits of the range of values in the column) and the width of the range. Here, we create compute these values for `"mths_remng"` and print the resulting DF with `showDF`:
 
@@ -150,7 +150,7 @@ showDF(mr_range)
 ```
 
 
-#### Variance & standard deviation:
+#### Variance & standard deviation
 
 Again using `agg`, we compute the variance and standard deviation of `"mths_remng"` with the expressions below. Note that, here, we are computing sample variance and standard deviation (which we could also measure with their respective aliases, `variance` and `stddev`). To measure population variance and standard deviation, we would use `var_pop` and `stddev_pop`, respectively.
 
@@ -174,7 +174,7 @@ showDF(mr_sd)
 ```
 
 
-#### Approximate Quantiles:
+#### Approximate Quantiles
 
 The operation `approxQuantile` returns approximate quantiles for a DF column. We specify the quantiles to be approximated by the operation as a vector set equal to the `probabilities` parameter, and the acceptable level of error by the `relativeError` paramter.
 
@@ -207,10 +207,10 @@ quartiles_mr
 ***
 
 
-### Measures of distribution shape:
+### Measures of distribution shape
 
 
-#### Skewness:
+#### Skewness
 
 We can measure the magnitude and direction of skew in the distribution of a numerical DF column by using the operation `skewness` with `agg`, just as we did to measure the `mean`, `variance` and `stddev` of a numerical variable. Below, we measure the `skewness` of `"mths_remng"`:
 
@@ -226,7 +226,7 @@ showDF(mr_sk)
 ```
 
 
-#### Kurtosis:
+#### Kurtosis
 
 Similarly, we can meaure the magnitude of, and how sharp is, the central peak of the distribution of a numerical variable, i.e. the "peakedness" of the distribution, (relative to a standard bell curve) with the `kurtosis` operation. Here, we measure the `kurtosis` of `"mths_remng"`:
 
@@ -244,9 +244,9 @@ showDF(mr_kr)
 ***
 
 
-### Measures of dependence:
+### Measures of dependence
 
-#### Covariance & correlation:
+#### Covariance & correlation
 
 The actions `cov` and `corr` return the sample covariance and correlation measures of dependency between two DF columns, respectively. Currently, Pearson is the only supported method for calculating correlation. Here we compute the covariance and correlation of `"loan_age"` and `"mths_remng"`. Note that, in saving the covariance and correlation measures, we are not required to first `collect` locally since `cov` and `corr` return values, rather than DFs:
 
@@ -277,7 +277,7 @@ We can compute descriptive statistics for categorical data using (1) the `groupB
 
 
 
-#### Frequency table:
+#### Frequency table
 
 To create a frequency table for a categorical variable in SparkR, i.e. list the number of observations for each distinct value in a column of strings, we can simply use the `count` transformation with grouped data. Group the data by the categorical variable for which we want to return a frequency table. Here, we create a frequency table for using this approach `"cd_zero_bal"`:
 
@@ -318,7 +318,7 @@ showDF(zb_rf)
 ## +-----------+--------+--------------------+
 ```
 
-#### Contingency table:
+#### Contingency table
 
 Finally, we can create a contingency table with the operation `crosstab`, which returns a data.frame that consists of a contingency table between two categorical DF columns. Here, we create and print a contingency table for `"servicer_name"` and `"cd_zero_bal"`:
 

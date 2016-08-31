@@ -57,7 +57,7 @@ If you receive this message, return to the SparkR tutorials [README](https://git
 ***
 
 
-### Load a csv file into SparkR:
+### Load a csv file into SparkR
 
 Use the operation `read.df` to load in quarterly Fannie Mae single-family loan performance data from the AWS S3 folder `"s3://sparkr-tutorials/"` as a Spark DataFrame (DF). Below, we load a single quarter (2000, Q1) into SparkR, and save it as the DF `perf`:
 
@@ -86,7 +86,7 @@ We can save the dimensions of the 'perf' DF through the following operations. No
 ***
 
 
-### Update a DataFrame with new rows of data:
+### Update a DataFrame with new rows of data
 
 Since we'll want to analyze loan performance data beyond 2000 Q1, we append the `perf` DF below with the data from subsequent quarters of the same single-family loan performance dataset. Here, we're only appending one subsequent quarter (2000 Q2) to the DF so that our analysis in these tutorials runs quickly, but the following code can be easily adapted by specifying the `a` and `b` values to reflect the quarters that we want to append to our DF. Note that the for-loop below also uses the `read.df` operation, specified here just as when we loaded the initial .csv file as a DF:
 
@@ -115,7 +115,7 @@ The result of the for-loop is an appended `perf` DF that consists of the same co
 ***
 
 
-### Rename DataFrame column(s):
+### Rename DataFrame column(s)
 
 The `select` operation performs a by column subset of an existing DF. The columns to be returned in the new DF are specified as a list of column name strings in the `select` operation. Here, we create a new DF called `perf_lim` that includes only the first 14 columns in the `perf` DF, i.e. the DF `perf_lim` is a subset of `perf`:
 
@@ -164,7 +164,7 @@ str(perf_lim)
 ***
 
 
-### Understanding data-types & schema:
+### Understanding data-types & schema
 
 We can see in the output for the command `head(perf_lim, num = 5)` that we have what appears to be several different data types (dtypes) in our DF. There are three (3) different ways to explicitly view dtype in SparkR - the operations `dtypes`, `schema` and `printSchema`. As stated above, Spark relies on a "schema" to determine what dtype to assign to each column in a DF (which is easy to remember since the English schema comes from the Greek word for shape or plan!). We can print a visual representation of the schema for a DF with the operations `schema` and `printSchema` while the `dtypes` operation prints a list of DF column names and their corresponding dtypes:
 
@@ -174,7 +174,7 @@ schema(perf_lim)  # Prints the schema of the DF
 printSchema(perf_lim) # Prints the schema of the DF in a concise tree format
 ```
 
-#### Specifying schema in `read.df` operation & defining a custom schema:
+#### Specifying schema in `read.df` operation & defining a custom schema
 
 Remember that, when we read in our DF from the S3-hosted .csv file, we included the condition `inferSchema = "true"`. This is just one of three (3) ways to communicate to Spark how the dtypes of the DF columns should be assigned. By specifying `inferSchema = "true"` in `read.df`, we allow Spark to infer the dtype of each column in the DF. Conversely, we could specify our own schema and pass this into the load call, forcing Spark to adopt our dtype specifications for each column. Each of these approaches have their pros and cons, which determine when it is appropriate to prefer one over the other:
 
@@ -218,7 +218,7 @@ printSchema(perf_lim)
 ***
 
 
-### Export DF as data file to S3:
+### Export DF as data file to S3
 
 Throughout this tutorial, we've built the Spark DataFrame `perf_lim` of quarterly loan performance data, which we'll use in several subsequent tutorials. In order to use this DF later on, we must first export it to a location that can handle large data sizes and in a data structure that works with the SparkR environment. We'll save this example data to an AWS S3 folder (`"sparkr-tutorials"`) from which we'll access other example datasets. Below, we save `perf_lim` as a collection of parquet type files into the folder `"hfpc_ex"` using the `write.df` operation:
 

@@ -51,7 +51,7 @@ _Note_: documentation for the quarterly loan performance data can be found at ht
 ***
 
 
-### Aggregating:
+### Aggregating
 
 Computing aggregations across a dataset is a basic goal when working with tabular data and, because our data is distributed across nodes, we must explicitly direct SparkR to perform an aggregation if we want to compute and return a summary statistic. Both the `agg` and `summarize` operations achieve this by computing aggregations of DF entries based on a specified list of columns. For example, we can return the mean loan age for all rows in the DF `df` with:
 
@@ -81,7 +81,7 @@ We can compute a number of aggregations by specifying them in `agg` or `summariz
 ***
 
 
-### Grouping:
+### Grouping
 
 If we want to compute aggregations across the elements of a dataset that share a common identifier, we can achieve this embedding the `groupBy` operation in `agg` or `summarize`. For example, the following `agg` operation returns the mean loan age and the number of observations for each distinct `"servicer_name"` in the DataFrame `df`:
 
@@ -104,7 +104,7 @@ head(df2)
 ***
 
 
-### Arranging (Ordering) rows in a DataFrame:
+### Arranging (Ordering) rows in a DataFrame
 
 The operations `arrange` and `orderBy` allow us to sort a DF by a specified list of columns. If we want to sort the DataFrame that we just specified, `df2`, we can arrange the rows of `df2` by `"loan_age_avg"` or `"count"`. Note that the default for `arrange` is to order the row values as ascending:
 
@@ -161,7 +161,7 @@ head(df2_a4)
 ***
 
 
-### Append a column to a DataFrame:
+### Append a column to a DataFrame
 
 There are various reasons why we might want to introduce a new column to a DataFrame. A simple example is creating a new variable using our data. In the SparkR environment, this could be acheived by appending an existing DF using the `withColumn` operation.
 
@@ -227,15 +227,11 @@ head(df4)
 
 When using either `withColumn` or `withColumnRenamed`, we could simply replace our initial DF. For example, we could rename `"servicer_name"` by simply changing the name of the DF that we save to, i.e. `df <- withColumnRenamed(df, "servicer_name", "servicer")`. Note: do this _only_ if you do not need to retain your initial DF.
 
-***
-
-
-### User-defined Functions (UDFs): In progress
 
 ***
 
 
-### Types of SparkR operations:
+### Types of SparkR operations
 
 Throughout this tutorial, as well as in the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial, you may have noticed that some operations result in a new DataFrame (e.g. `agg`) and some return an output (e.g. `head`). SparkR operations can be classified as either:
 
@@ -250,7 +246,7 @@ This lazy evaluation strategy (1) reduces the number of processes SparkR is requ
 ***
 
 
-### DataFrame Persistence:
+### DataFrame Persistence
 
 Note that, in this tutorial, we have been saving transformations (e.g. `withColumn`) in the format `dfi` since, as we discussed in the preceding section, SparkR saves a transformation as a SparkR DataFrame, which is distinct from an R data.frame. We store the instructions communicated by a transformation as a DataFrame. An R data.frame, conversely, is an actual data structure defined by a list of vectors.
 
@@ -314,13 +310,13 @@ Let's compare the time elapsed in evaluating the following expressions with and 
 .df <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
 system.time(ncol(.df))
 ##    user  system elapsed 
-##   0.020   0.000   0.023
+##   0.020   0.000   0.021
 system.time(nrow(.df))
 ##    user  system elapsed 
-##   0.004   0.000   0.264
+##   0.004   0.000   0.200
 system.time(head(agg(groupBy(.df, .df$servicer_name), loan_age_avg = avg(.df$loan_age))))
 ##    user  system elapsed 
-##    0.02    0.00    1.87
+##   0.012   0.000   3.922
 rm(.df)
 
 # Cached
@@ -329,13 +325,13 @@ cache(.df)
 ## SparkDataFrame[loan_id:bigint, period:string, servicer_name:string, new_int_rt:double, act_endg_upb:double, loan_age:int, mths_remng:int, aj_mths_remng:int, dt_matr:string, cd_msa:int, delq_sts:string, flag_mod:string, cd_zero_bal:int, dt_zero_bal:string]
 system.time(ncol(.df))
 ##    user  system elapsed 
-##   0.020   0.004   0.026
+##   0.024   0.000   0.026
 system.time(nrow(.df))
 ##    user  system elapsed 
-##   0.008   0.000   0.150
+##   0.008   0.000   0.145
 system.time(head(agg(groupBy(.df, .df$servicer_name), loan_age_avg = avg(.df$loan_age))))
 ##    user  system elapsed 
-##   0.020   0.000   1.625
+##   0.008   0.000   1.545
 unpersist(.df)
 ## SparkDataFrame[loan_id:bigint, period:string, servicer_name:string, new_int_rt:double, act_endg_upb:double, loan_age:int, mths_remng:int, aj_mths_remng:int, dt_matr:string, cd_msa:int, delq_sts:string, flag_mod:string, cd_zero_bal:int, dt_zero_bal:string]
 rm(.df)
@@ -346,7 +342,7 @@ The first thing you may notice is that the evaluation time for `ncol(.df)` is ap
 ***
 
 
-### Converting a SparkR DataFrame to a local R data.frame:
+### Converting a SparkR DataFrame to a local R data.frame
 
 If we wanted to work the first five (5) rows of 'df' as a local R data.frame, we could use the `take` operation as follows:
 

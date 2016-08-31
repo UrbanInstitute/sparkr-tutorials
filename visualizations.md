@@ -66,7 +66,7 @@ _Note_: Documentation for `ggplot2.SparkR` can be found [here](http://skku-skt.g
 ***
 
 
-### Bar graph:
+### Bar graph
 
 Just as we would when using `ggplot2`, the following expression plots a basic bar graph that gives frequency counts across the different levels of `"cut"` quality in the data:
 
@@ -94,7 +94,7 @@ p2 + geom_bar(position = "fill")
 ***
 
 
-### Histogram:
+### Histogram
 
 Just as we would when using `ggplot2`, the following expression plots a histogram that gives frequency counts across binned `"price"` values in the data:
 
@@ -155,7 +155,7 @@ p3 + geom_freqpoly(bins = 100)
 ***
 
 
-### Boxplot:
+### Boxplot
 
 Finally, we can create boxplots just as we would in `ggplot2`. The following expression gives a boxplot of `"price"` values across levels of `"clarity"`:
 
@@ -204,7 +204,7 @@ Below, we list several functions and plot types supported by `ggplot2` that are 
 ***
 
 
-### Bivariate histogram:
+### Bivariate histogram
 
 In the previous examples, we relied on the `ggplot2.SparkR` package to build plots from DataFrames using syntax identical to that which we would use in a normal application of `ggplot2` on R data.frames. Given the current limitations of the extension package, we may need to develop our own function if we are interested in building a plot type that is not currently supported by `ggplot2.SparkR`. Here, we provide an example of a function that returns a bivariate histogram of two numerical DataFrame columns.
 

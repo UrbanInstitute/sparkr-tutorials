@@ -46,7 +46,7 @@ _Note_: documentation for the quarterly loan performance data can be found at ht
 ***
 
 
-### Converting a DataFrame column to 'date' dtype:
+### Converting a DataFrame column to 'date' dtype
 
 
 As we saw in previous tutorials, there are several columns in our dataset that list dates which are helpful in determining loan performance. We will specifically consider the following columns throughout this tutorial:
@@ -146,7 +146,7 @@ Note that the `"zb_dt"` entries corresponding to the missing date entries in `"d
 ***
 
 
-### Compute relative dates and measures based on a specified unit of time:
+### Compute relative dates and measures based on a specified unit of time
 
 As we mentioned earlier, converting date strings to date dtype allows us to utilize SparkR datetime operations. In this section, we'll discuss several SparkR operations that return:
 
@@ -162,7 +162,7 @@ df_dt <- select(df, cols_dt)
 ```
 
 
-#### Relative dates:
+#### Relative dates
 
 SparkR datetime operations that return a new date dtype column include:
 
@@ -192,7 +192,7 @@ str(df_dt1)
 ##  $ p_dtsub: Date 2005-08-31 2005-09-30 2005-10-31 2005-11-30 2005-12-31 2006-01-31
 ```
 
-#### Relative measures of time:
+#### Relative measures of time
 
 SparkR datetime operations that return integer or numerical dtype columns include:
 
@@ -227,7 +227,7 @@ Note that operations that consider two different dates are sensitive to how we s
 ***
 
 
-### Extract components of a date dtype column as integer values:
+### Extract components of a date dtype column as integer values
 
 There are also datetime operations supported by SparkR that allow us to extract individual components of a date dtype column and return these as integers. Below, we use the `year` and `month` operations to create integer dtype columns for each of our date columns. Similar functions include `hour`, `minute` and `second`.
 

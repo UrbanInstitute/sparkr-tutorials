@@ -249,9 +249,9 @@ Below, we take a random sample of `df` without replacement that is, in size, app
 df_samp1 <- sample(df, withReplacement = FALSE, fraction = 0.01)  # Without set seed
 df_samp2 <- sample(df, withReplacement = FALSE, fraction = 0.01)
 count(df_samp1)
-## [1] 132133
+## [1] 132479
 count(df_samp2)
-## [1] 132392
+## [1] 132507
 # The row counts are different and, obviously, the DFs are not equivalent
 
 df_samp3 <- sample(df, withReplacement = FALSE, fraction = 0.01, seed = 0)  # With set seed
