@@ -4,7 +4,9 @@ Description: Code snippets and tutorials for working with SparkR.
 
 ## Spark Social Science Manual
 
-The tutorials included in this repository are geared towards social scientists and policy researchers that want to undertake research using "big data" sets. A manual to accompany these tutorials can be found [here](https://bookdown.org/SarahArmstrong/spark-social-science-manual/intro.html). The objective of the manual is to provide social scientists with a brief overview of the distributed computing solution developed by The Urban Institute's Research Programming Team, and of the changes in how researchers manage and analyze data required by this computing environment.
+The tutorials included in this repository are geared towards social scientists and policy researchers that want to undertake research using "big data" sets. A manual to accompany these tutorials is linked below. The objective of the manual is to provide social scientists with a brief overview of the distributed computing solution developed by The Urban Institute's Research Programming Team, and of the changes in how researchers manage and analyze data required by this computing environment.
+
+[Spark Social Science Manual](https://bookdown.org/SarahArmstrong/spark-social-science-manual/intro.html)
 
 ## Getting Started with SparkR Tutorials
 
