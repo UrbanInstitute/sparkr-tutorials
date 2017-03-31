@@ -24,7 +24,7 @@ if (nchar(Sys.getenv("SPARK_HOME")) < 1) {
 }
 
 # Load the SparkR library
-library(SparkR, lib.loc = c(file.path(Sys.getenv("SPARK_HOME"), "R", "lib")))
+library(SparkR)
 
 # Initiate a SparkR session
 sparkR.session()
