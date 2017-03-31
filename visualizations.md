@@ -307,4 +307,4 @@ p6 + scale_colour_brewer(palette = "Blues", type = "seq") + ggtitle("This is a t
 ![](visualizations_files/figure-html/unnamed-chunk-17-1.png)<!-- -->
 
 
-__End of tutorial__ - Next up is [Insert next tutorial]
+__End of tutorial__ - Next up is [Interacting with databases using SparkR](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/databases-with-jdbc.md)
