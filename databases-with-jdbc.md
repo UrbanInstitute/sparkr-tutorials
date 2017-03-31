@@ -272,7 +272,7 @@ showDF(dat)
 In this final example, we combine the grouped count of distinct values with a predicate pushdown, which a is performed after the Spark-run SQL code in the `tablename` argument.
 
 
-```
+```r
 dat <- read.jdbc(url=your_url
                       , source="jdbc"
                       , driver="com.mysql.jdbc.Driver"
@@ -282,7 +282,6 @@ dat <- read.jdbc(url=your_url
                                     FROM ADRF_sample
                                     Group By year) AS tmp"
                       , predicates=list("year > 2009")
-
                       , user="your_username"
                       , password="your_password")
 
