@@ -177,7 +177,7 @@ showDF(dat)
 +----+--------+------------+------------+------------+-------------+------------+
 only showing top 20 rows
 ```
-Similarly, we can use and and or together:
+Similarly, we can use and and or together, still within one string:
 
 ```r
 dat <- read.jdbc(url= your_url
@@ -198,22 +198,105 @@ showDF(dat_agg)
 
 #### Selecting columns within the `tablename` argument 
 
-Spark requires an odd syntax to perform a query that uses a MySQL `SELECT` statement (that is, columnar sub-selection from a single table). Within the `tableName` argument, we need to write our `SELECT` statement, wrapped in parenthesis as though to create a temporary table (called `tmp` below). Below, I use `SELECT` to query only the `year` and `income` columns from the table.
+Spark also requires an odd syntax to perform a query that uses a MySQL `SELECT` statement (that is, columnar sub-selection from a single table). It's also important to realize that aside from predicates, there is no SQL pushdown in Spark. So the columnar subset below is executed by Spark, not the MySQL database. This is also true of grouping and counts - these are being executed by Spark even if they are written in MySQL syntax in the `tableName` argument.
+
+Still, it is useful to only select the columns that are loaded and kept in memory. Within the `tableName` argument, we need to write our `SELECT` statement, wrapped in parenthesis as though to create a temporary table (called `tmp` below). Below, I use `SELECT` to query only the `year` and `income` columns from the database table.
 
 ```r
-dat2 <- read.jdbc(url= your_url
+dat <- read.jdbc(url= your_url
                  , source="jdbc"
                  , driver="com.mysql.jdbc.Driver"
                  , tableName="(SELECT year, income FROM your_table) AS tmp"
+                 , predicates=list("income > 75 and year in (2006,2007,2008)")
                  , user="your_username"
                  , password="your_password")
-showDF(dat2)
+showDF(dat)
++----+------------+
+|year|      income|
++----+------------+
+|2006|81.539676474|
+|2006|79.425502893|
+|2006|77.907884875|
+|2006|76.968667714|
+|2006|82.328751909|
+|2006|85.049615361|
+|2006|77.098087098|
+|2006|88.048909729|
+|2006|103.32390074|
+|2006|86.501705619|
+|2006|80.658281707|
+|2006|80.377880832|
+|2006|101.61763674|
+|2006|77.542530379|
+|2006|105.51947439|
+|2006|75.146105191|
+|2006|79.149761428|
+|2006|81.250834725|
+|2006|99.575200728|
+|2006|110.37491099|
++----+------------+
+only showing top 20 rows
 ```
 
+Similarly we can use normal MySQL syntax to group by year and count the distinct values of a column, however again Spark does not support SQL pushdown in this context, and is thus performing the aggregation itself.
+
+```r
+dat <- read.jdbc(url=your_url
+                      , source="jdbc"
+                      , driver="com.mysql.jdbc.Driver"
+                      , tableName="(SELECT 
+                                      COUNT(DISTINCT cbsa2013) as cbsa_count
+                                      , year as year 
+                                    FROM ADRF_sample
+                                    Group By year) AS tmp"
+                      , user="your_username"
+                      , password="your_password")
+
+showDF(dat)
++----------+----+
+|cbsa_count|year|
++----------+----+
+|       917|2005|
+|       917|2006|
+|       917|2007|
+|       917|2008|
+|       917|2009|
+|       917|2010|
+|       917|2011|
+|       917|2012|
+|       917|2013|
+|       917|2014|
++----------+----+
+```
+
+In this final example, we combine the grouped count of distinct values with a predicate pushdown, which a is performed after the Spark-run SQL code in the `tablename` argument.
 
 
+```
+dat <- read.jdbc(url=your_url
+                      , source="jdbc"
+                      , driver="com.mysql.jdbc.Driver"
+                      , tableName="(SELECT 
+                                      COUNT(DISTINCT cbsa2013) as cbsa_count
+                                      , year as year 
+                                    FROM ADRF_sample
+                                    Group By year) AS tmp"
+                      , predicates=list("year > 2009")
 
+                      , user="your_username"
+                      , password="your_password")
 
+showDF(dat)
++----------+----+
+|cbsa_count|year|
++----------+----+
+|       917|2010|
+|       917|2011|
+|       917|2012|
+|       917|2013|
+|       917|2014|
++----------+----+
+```r
 
 
 __End of tutorial__
