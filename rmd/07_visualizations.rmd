@@ -11,7 +11,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-**Last Updated**: August 19, 2016 - ggplot2.SparkR package functions do not function; package needs updating
+**Last Updated**: May 23, 2017 - Some ggplot2.SparkR package functions do not function; package needs updating.
 
 
 **Objective**: In this tutorial, we illustrate various plot types that can be created in SparkR and discuss different strategies for obtaining these plots. We discuss the SparkR ggplot2 package that is in development and provide examples of plots that can be created using this package, as well as how SparkR users may develop their own functions to build visualizations. We provide examples of the following plot types:

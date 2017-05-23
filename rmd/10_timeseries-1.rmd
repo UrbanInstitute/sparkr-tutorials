@@ -11,7 +11,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-**Last Updated**: August 23, 2016
+**Last Updated**: May 23, 2017
 
 
 **Objective**: In this tutorial, we discuss how to perform several essential time series operations with SparkR. In particular, we discuss how to:

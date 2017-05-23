@@ -2,6 +2,7 @@
 Sarah Armstrong, Urban Institute  
 August 30, 2016  
 
+**Last Updated**: May 23, 2017
 
 
 **Objective**: In this tutorial, we provide examples of steps that researchers may take to fit generalized linear models (GLMs) using SparkR. In particular, the tutorial discusses how to:
@@ -46,9 +47,12 @@ If you receive this message, return to the SparkR tutorials [README](https://git
 
 
 ```r
-df <- read.df("s3://ui-spark-social-science-public/data/diamonds.csv", header = "true", delimiter = ",",
-              source = "csv", inferSchema = "true", na.strings = "")
-
+df <- read.df("s3://ui-spark-social-science-public/data/diamonds.csv", 
+              header = "true", 
+              delimiter = ",",
+              source = "csv", 
+              inferSchema = "true", 
+              na.strings = "")
 cache(df)
 ```
 

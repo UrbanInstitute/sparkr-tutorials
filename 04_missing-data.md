@@ -4,7 +4,7 @@ July 8, 2016
   
 
 
-**Last Updated**: August 17, 2016
+**Last Updated**: May 23, 2017
 
 
 **Objective**: In this tutorial, we discuss general strategies for dealing with missing data in the SparkR environment. While we do not consider conceptually how and why we might impute missing values in a dataset, we do discuss logistically how we could drop rows with missing data and impute missing data with replacement values. We specifically consider the following during this tutorial:
@@ -46,7 +46,10 @@ Throughout this tutorial, we will use the loan performance example dataset that 
 
 
 ```r
-df <- read.df("s3://ui-spark-social-science-public/data/hfpc_ex", header = "false", inferSchema = "true", na.strings = "")
+df <- read.df("s3://ui-spark-social-science-public/data/hfpc_ex", 
+				header = "false", 
+				inferSchema = "true", 
+				na.strings = "")
 cache(df)
 ```
 

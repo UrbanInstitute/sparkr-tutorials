@@ -4,7 +4,7 @@ July 8, 2016
 
 
 
-**Last Updated**: August 18, 2016
+**Last Updated**: May 23, 2017
 
 
 **Objective**: Summary statistics and aggregations are essential means of summarizing a set of observations. In this tutorial, we discuss how to compute location, statistical dispersion, distribution and dependence measures of numerical variables in SparkR, as well as methods for examining categorical variables. In particular, we consider how to compute the following measurements and aggregations in SparkR:
@@ -55,7 +55,10 @@ If you receive this message, return to the SparkR tutorials [README](https://git
 
 
 ```r
-df <- read.df("s3://ui-spark-social-science-public/data/hfpc_ex", header = "false", inferSchema = "true", na.strings = "")
+df <- read.df("s3://ui-spark-social-science-public/data/hfpc_ex", 
+                header = "false", 
+                inferSchema = "true", 
+                na.strings = "")
 cache(df)
 ```
 

@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 options(knitr.table.format = 'markdown')
 ```
 
-**Last Updated**: August 17, 2016
+**Last Updated**: May 23, 2017
 
 
 **Objective**: In this tutorial, we discuss general strategies for dealing with missing data in the SparkR environment. While we do not consider conceptually how and why we might impute missing values in a dataset, we do discuss logistically how we could drop rows with missing data and impute missing data with replacement values. We specifically consider the following during this tutorial:

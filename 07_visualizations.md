@@ -3,6 +3,7 @@ Sarah Armstrong, Urban Institute
 July 27, 2016  
 
 
+**Last Updated**: May 23, 2017 - Some ggplot2.SparkR package functions do not function; package needs updating
 
 
 **Objective**: In this tutorial, we illustrate various plot types that can be created in SparkR and discuss different strategies for obtaining these plots. We discuss the SparkR ggplot2 package that is in development and provide examples of plots that can be created using this package, as well as how SparkR users may develop their own functions to build visualizations. We provide examples of the following plot types:
@@ -29,8 +30,12 @@ You can confirm that you successfully initiated these contexts by looking at the
 
 
 ```r
-df <- read.df(sqlContext, path = "s3://ui-spark-social-science-public/data/diamonds.csv", header = "true", delimiter = ",",
-              source = "com.databricks.spark.csv", inferSchema = "true", nullValue = "")
+df <- read.df("s3://ui-spark-social-science-public/data/diamonds.csv", 
+              header = "true", 
+              delimiter = ",",
+              source = "csv", 
+              inferSchema = "true", 
+              na.strings = "")
 cache(df)
 ```
 

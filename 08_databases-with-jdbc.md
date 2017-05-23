@@ -1,7 +1,8 @@
 # Database Connectivity - JDBC
 Alex C. Engler, Urban Institute  
 
-**Last Updated**: March 31, 2017
+
+**Last Updated**: May 23, 2017
 
 
 **Objective**: Understand the basic process of reading from a databse with SparkR.

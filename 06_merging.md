@@ -4,7 +4,7 @@ July 12, 2016
 
 
 
-**Last Updated**: July 28, 2016
+**Last Updated**: May 23, 2017
 
 
 **Objective**: The following tutorial provides an overview of how to join SparkR DataFrames by column and by row. In particular, we discuss how to:
@@ -37,7 +37,10 @@ If you receive this message, return to the SparkR tutorials [README](https://git
 
 
 ```r
-df <- read.df("s3://ui-spark-social-science-public/data/hfpc_ex", header = "false", inferSchema = "true", na.strings = "")
+df <- read.df("s3://ui-spark-social-science-public/data/hfpc_ex", 
+                header = "false", 
+                inferSchema = "true", 
+                na.strings = "")
 cache(df)
 ```
 

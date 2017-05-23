@@ -11,7 +11,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-**Last Updated**: July 28, 2016
+**Last Updated**: May 23, 2017
 
 
 **Objective**: The following tutorial provides an overview of how to join SparkR DataFrames by column and by row. In particular, we discuss how to:

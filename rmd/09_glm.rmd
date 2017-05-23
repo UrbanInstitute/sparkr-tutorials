@@ -12,6 +12,8 @@ knitr::opts_chunk$set(echo = TRUE)
 options(knitr.table.format = 'markdown')
 ```
 
+**Last Updated**: May 23, 2017
+
 **Objective**: In this tutorial, we provide examples of steps that researchers may take to fit generalized linear models (GLMs) using SparkR. In particular, the tutorial discusses how to:
 
 * Examine the data prior to model fitting & perform data transformations

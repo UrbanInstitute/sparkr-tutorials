@@ -4,7 +4,7 @@ July 1, 2016
 
 
 
-**Last Updated**: August 17, 2016
+**Last Updated**: May 23, 2017
 
 
 **Objective**: Now that we understand what a SparkR DataFrame (DF) really is (remember, it's not actually data!) and can write expressions using essential DataFrame operations, such as `agg`, we are ready to start subsetting DFs using more advanced transformation operations. This tutorial discusses various ways of subsetting DFs, as well as how to work with a randomly sampled subset as a local data.frame in RStudio:
@@ -40,7 +40,9 @@ If you receive this message, return to the SparkR tutorials [README](https://git
 
 
 ```r
-df <- read.df("s3://ui-spark-social-science-public/data/hfpc_ex", header = "false", inferSchema = "true")
+df <- read.df("s3://ui-spark-social-science-public/data/hfpc_ex", 
+				header = "false", 
+				inferSchema = "true")
 cache(df)
 ```
 
@@ -286,7 +288,9 @@ If we want to export the sampled DF from RStudio as a single .csv file that we c
 
 ```r
 df_samp4_1 <- repartition(df_samp4, numPartitions = 1)
-write.df(df_samp4_1, path = "s3://ui-spark-social-science-public/data/hfpc_samp.csv", source = "csv", mode = "overwrite")
+write.df(df_samp4_1, path = "s3://ui-spark-social-science-public/data/hfpc_samp.csv", 
+							source = "csv",
+							mode = "overwrite")
 ```
 
 :heavy_exclamation_mark: __Warning__: We cannot collect a DF as a data.frame, nor can we repartition it to a single node, unless the DF is sufficiently small in size since it must fit onto a _single_ node!

@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 options(knitr.table.format = 'markdown')
 ```
 
-**Last Updated**: August 18, 2016
+**Last Updated**: May 23, 2017
 
 
 **Objective**: Summary statistics and aggregations are essential means of summarizing a set of observations. In this tutorial, we discuss how to compute location, statistical dispersion, distribution and dependence measures of numerical variables in SparkR, as well as methods for examining categorical variables. In particular, we consider how to compute the following measurements and aggregations in SparkR:
