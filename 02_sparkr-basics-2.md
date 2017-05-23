@@ -397,4 +397,4 @@ typeof(loan_age_avg)
 Notice that we can direct SparkR to do this through either set of expressions above, with the process being written explicitly or implicitly. If we had not already defind `df1`, we could have directed SparkR to compute this value in a single line with the expression `loan_age_avg <- collect(agg(df, loan_age_avg = avg(df$loan_age)))[[1]]`.
 
 
-__End of tutorial__ - Next up is [Subsetting SparkR DataFrames](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/subsetting.md)
+__End of tutorial__ - Next up is [Subsetting SparkR DataFrames](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/03_subsetting.md)

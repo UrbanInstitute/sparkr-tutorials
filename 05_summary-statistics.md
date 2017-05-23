@@ -365,4 +365,4 @@ Here, is the contingency table (the output of `crosstab`) in a formatted table:
 |CITIMORTGAGE ASSET MANAGEMENT, INC.        |    507|   0|    1|    0|     7897|
 |PNC BANK, N.A.                             |      0|   0|    0|    0|      195|
 
-__End of tutorial__ - Next up is [Merging SparkR DataFrames](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/merging.md)
+__End of tutorial__ - Next up is [Merging SparkR DataFrames](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/06_merging.md)

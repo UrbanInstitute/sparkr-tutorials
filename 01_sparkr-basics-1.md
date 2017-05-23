@@ -421,6 +421,6 @@ colnames(dat2)
 ## [11] "_c10" "_c11" "_c12" "_c13"
 ```
 
-__End of tutorial__ - Next up is [SparkR Basics II](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-2.md)
+__End of tutorial__ - Next up is [SparkR Basics II](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/02_sparkr-basics-2.md)
 
 

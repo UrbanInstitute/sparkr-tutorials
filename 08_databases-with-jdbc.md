@@ -298,4 +298,4 @@ showDF(dat)
 ```
 
 
-__End of tutorial__
+__End of tutorial__ - Next up is [Fitting Generalized Linear Models in SparkR](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/09_glm.md)

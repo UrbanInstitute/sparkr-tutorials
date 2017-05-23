@@ -356,4 +356,4 @@ str(df)
 ```
 
 
-__End of tutorial__ - Next up is [Computing Summary Statistics with SparkR](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/summary-statistics.md)
+__End of tutorial__ - Next up is [Computing Summary Statistics with SparkR](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/05_summary-statistics.md)

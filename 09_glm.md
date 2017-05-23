@@ -650,4 +650,4 @@ p7 + ggtitle("Q-Q Normality Plot")
 
 While the Q-Q plot suggests that the residuals may be approximately, the wide range of the residual quantile values at the tails of the residual distribution both (1) flattens the plot (obscuring whether or not the residual distribution is approximately normal) and (2) indicates likely outliers in the data.
 
-__End of tutorial__ - Next up is [Insert next tutorial]
+__End of tutorial__ - Next up is [Time Series I in SparkR](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/10_timeseries-1.md)

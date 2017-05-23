@@ -419,4 +419,4 @@ nB                # No. of rows in DF `B`
 
 Documentation for `rbind.intersection` can be found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/R/rbind-intersection.R), and [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/R/rbind-fill.R) for `rbind.fill`.
 
-__End of tutorial__ - Next up is [Data Visualizations in SparkR](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/visualizations.md#data-visualizations-in-sparkr)
+__End of tutorial__ - Next up is [Data Visualizations in SparkR](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/07_visualizations.md)
