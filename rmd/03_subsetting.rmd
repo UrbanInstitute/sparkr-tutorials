@@ -50,10 +50,13 @@ If you receive this message, return to the SparkR tutorials [README](https://git
 
 ***
 
-**Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial. Note that we are __persisting__ the DataFrame since we will use it throughout this tutorial.
+**Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/01_sparkr-basics-1.md) tutorial. Note that we are __persisting__ the DataFrame since we will use it throughout this tutorial.
 
 ```{r, message=F, warning=F, results='hide'}
-df <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
+df <- read.df("s3://ui-spark-social-science-public/data/hfpc_ex",
+              header = "false", 
+              inferSchema = "true",
+              na.strings = "")
 cache(df)
 ```
 
@@ -212,14 +215,15 @@ Note that this data.frame is _not_ local to _your_ personal computer, but rather
 
 #### Export DF sample as a single .csv file to S3:
 
-If we want to export the sampled DF from RStudio as a single .csv file that we can work with in any environment, we must first coalesce the rows of `df_samp4` to a single node in our cluster using the `repartition` operation. Then, we can use the `write.df` operation as we did in the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial:
+If we want to export the sampled DF from RStudio as a single .csv file that we can work with in any environment, we must first coalesce the rows of `df_samp4` to a single node in our cluster using the `repartition` operation. Then, we can use the `write.df` operation as we did in the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/01_sparkr-basics-1.md) tutorial:
 
 ```{r, eval=FALSE, collapse=TRUE}
 df_samp4_1 <- repartition(df_samp4, numPartitions = 1)
-write.df(df_samp4_1, path = "s3://sparkr-tutorials/hfpc_samp.csv", source = "csv", 
+write.df(df_samp4_1, path = "s3://ui-spark-social-science-public/data/hfpc_samp.csv", 
+         source = "csv", 
          mode = "overwrite")
 ```
 
 :heavy_exclamation_mark: __Warning__: We cannot collect a DF as a data.frame, nor can we repartition it to a single node, unless the DF is sufficiently small in size since it must fit onto a _single_ node!
 
-__End of tutorial__ - Next up is [Dealing with Missing Data in SparkR](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/missing-data.md)
+__End of tutorial__ - Next up is [Dealing with Missing Data in SparkR](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/04_missing-data.md)

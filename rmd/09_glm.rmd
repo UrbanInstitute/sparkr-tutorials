@@ -62,8 +62,12 @@ If you receive this message, return to the SparkR tutorials [README](https://git
 **Read in initial data as DataFrame (DF)**: Throughout this tutorial, we will use the diamonds data that is included in the `ggplot2` package.
 
 ```{r, message=F, warning=F, results='hide', collapse=TRUE}
-df <- read.df("s3://ui-spark-data/diamonds.csv", header = "true", delimiter = ",",
-              source = "csv", inferSchema = "true", na.strings = "")
+df <- read.df("s3://ui-spark-social-science-public/data/diamonds.csv", 
+              header = "true", 
+              delimiter = ",",
+              source = "csv", 
+              inferSchema = "true", 
+              na.strings = "")
 
 cache(df)
 ```
@@ -113,7 +117,7 @@ p2 <- ggplot(hstats2, aes(x = centroids, y = counts)) + geom_path() + xlab(x) + 
 p2
 ```
 
-We will now examine the relationship between our numerical predictor variables (`"carat"` and `"x"`) and the response (`"lprice"`). If our data was able to fit onto a single node, we would use scatterplots to visually examine how two numerical variables correlate. Here, we will instead use the `geom_bivar_histogram.SparkR` function that we first discussed in the [Data Visualizations](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/visualizations.md#bivariate-histogram) tutorial. Documentation for the bivariate histogram function can be found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/R/geom_bivar_histogram_SparkR.R). The function is given below:
+We will now examine the relationship between our numerical predictor variables (`"carat"` and `"x"`) and the response (`"lprice"`). If our data was able to fit onto a single node, we would use scatterplots to visually examine how two numerical variables correlate. Here, we will instead use the `geom_bivar_histogram.SparkR` function that we first discussed in the [Data Visualizations](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/07_visualizations.md#bivariate-histogram) tutorial. Documentation for the bivariate histogram function can be found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/R/geom_bivar_histogram_SparkR.R). The function is given below:
 
 ```{r, collapse=TRUE}
 geom_bivar_histogram.SparkR <- function(df, x, y, nbins){
@@ -451,4 +455,4 @@ p7 + ggtitle("Q-Q Normality Plot")
 
 While the Q-Q plot suggests that the residuals may be approximately, the wide range of the residual quantile values at the tails of the residual distribution both (1) flattens the plot (obscuring whether or not the residual distribution is approximately normal) and (2) indicates likely outliers in the data.
 
-__End of tutorial__ - Next up is [Insert next tutorial]
+__End of tutorial__ - Next up is [Time Series I in SparkR](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/10_timeseries-1.md)

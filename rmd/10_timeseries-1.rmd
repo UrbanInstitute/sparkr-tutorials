@@ -47,10 +47,13 @@ If you receive this message, return to the SparkR tutorials [README](https://git
 
 ***
 
-**Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial.
+**Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/01_sparkr-basics-1.md) tutorial.
 
 ```{r, message=F, warning=F, results='hide', collapse=TRUE}
-df <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true", na.strings = "")
+df <- read.df("s3://ui-spark-social-science-public/data/hfpc_ex", 
+              header = "false", 
+              inferSchema = "true", 
+              na.strings = "")
 cache(df)
 ```
 
@@ -216,7 +219,7 @@ Note that the `NA` entries of `"zb_dt"` result in `NA` values for `"zb_yr"` and 
 
 ### Resample a time series DF to a particular unit of time frequency
 
-When working with time series data, we are frequently required to resample data to a different time frequency. Combing the `agg` and `groupBy` operations, as we saw in the [SparkR Basics II](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-2.md) tutorial, is a convenient strategy for accomplishing this in SparkR. We create a new DF, `dat`, that only includes columns of numerical, integer and date dtype to use in our resampling examples:
+When working with time series data, we are frequently required to resample data to a different time frequency. Combing the `agg` and `groupBy` operations, as we saw in the [SparkR Basics II](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/02_sparkr-basics-2.md) tutorial, is a convenient strategy for accomplishing this in SparkR. We create a new DF, `dat`, that only includes columns of numerical, integer and date dtype to use in our resampling examples:
 
 ```{r, include=FALSE}
 rm(df_dt)
@@ -253,7 +256,7 @@ dat2 <- agg(groupBy(dat, dat$p_yr, dat$p_m), mtr_yr = mean(dat$mtr_yr), zb_yr = 
 head(arrange(dat2, dat2$p_yr, dat2$p_m), 15)	# Arrange the first 15 rows of `dat2` by ascending `period_yr` and `period_m` values
 ```
 
-Note that we specify the list of DF columns that we want to resample on by including it in `groupBy`. Here, we aggregated by taking the mean of each column. However, we could use any of the aggregation functions that `agg` is able to interpret (listed in [SparkR Basics II](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-2.md) tutorial) and that is inline with the resampling that we are trying to achieve.
+Note that we specify the list of DF columns that we want to resample on by including it in `groupBy`. Here, we aggregated by taking the mean of each column. However, we could use any of the aggregation functions that `agg` is able to interpret (listed in [SparkR Basics II](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/02_sparkr-basics-2.md) tutorial) and that is inline with the resampling that we are trying to achieve.
 
 
 We could resample to any unit of time that we can extract from a date column, e.g. `year`, `month`, `day`, `hour`, `minute`, `second`. Furthermore, could have skipped the step of creating separate year- and month-level date columns - instead, we could have embedded the datetime functions directly in the `agg` expression. The following expression creates a DF that is equivalent to `dat1` in the preceding example:

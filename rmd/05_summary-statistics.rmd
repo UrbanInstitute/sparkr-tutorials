@@ -66,10 +66,13 @@ If you receive this message, return to the SparkR tutorials [README](https://git
 
 ***
 
-**Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial.
+**Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/01_sparkr-basics-1.md) tutorial.
 
 ```{r, message=F, warning=F, results='hide', collapse=TRUE}
-df <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true", na.strings = "")
+df <- read.df("s3://ui-spark-social-science-public/data/hfpc_ex", 
+              header = "false", 
+              inferSchema = "true", 
+              na.strings = "")
 cache(df)
 ```
 
@@ -101,7 +104,7 @@ Note that measuring all five (5) of these aggregations at once can be computatio
 
 #### Mean
 
-The mean is the only measure of central tendency currently supported by SparkR. The operations `mean` and `avg` can be used with the `agg` operation that we discussed in the [SparkR Basics II](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-2.md) tutorial to measure the average of a numerical DF column. Remember that `agg` returns another DF. Therefore, we can either print the DF with `showDF` or we can save the aggregation as a local data.frame. Collecting the DF may be preferred if we want to work with the mean `"mths_remng"` value as a single value in RStudio.
+The mean is the only measure of central tendency currently supported by SparkR. The operations `mean` and `avg` can be used with the `agg` operation that we discussed in the [SparkR Basics II](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/02_sparkr-basics-2.md) tutorial to measure the average of a numerical DF column. Remember that `agg` returns another DF. Therefore, we can either print the DF with `showDF` or we can save the aggregation as a local data.frame. Collecting the DF may be preferred if we want to work with the mean `"mths_remng"` value as a single value in RStudio.
 
 ```{r, collapse=TRUE}
 mths_remng.avg <- agg(df, mean = mean(df$mths_remng)) # Create an aggregation DF
@@ -218,7 +221,7 @@ typeof(corr_la.mr)
 ## Categorical Data
 
 
-We can compute descriptive statistics for categorical data using (1) the `groupBy` operation that we discussed in the [SparkR Basics II](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-2.md) tutorial and (2) operations native to SparkR for this purpose.
+We can compute descriptive statistics for categorical data using (1) the `groupBy` operation that we discussed in the [SparkR Basics II](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/02_sparkr-basics-2.md) tutorial and (2) operations native to SparkR for this purpose.
 
 ```{r, include=FALSE}
 df$cd_zero_bal <- ifelse(isNull(df$cd_zero_bal), "Unknown", df$cd_zero_bal)
@@ -235,7 +238,7 @@ zb_f <- count(groupBy(df, "cd_zero_bal"))
 showDF(zb_f)
 ```
 
-We could also embed a grouping into an `agg` operation as we saw in the [SparkR Basics II](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-2.md) tutorial to achieve the same frequency table DF, i.e. we could evaluate the expression `agg(groupBy(df, df$cd_zero_bal), count = n(df$cd_zero_bal))`.
+We could also embed a grouping into an `agg` operation as we saw in the [SparkR Basics II](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/02_sparkr-basics-2.md) tutorial to achieve the same frequency table DF, i.e. we could evaluate the expression `agg(groupBy(df, df$cd_zero_bal), count = n(df$cd_zero_bal))`.
 
 #### Relative frequency table
 
@@ -264,4 +267,4 @@ library(knitr)
 kable(conting_sn.zb)
 ```
 
-__End of tutorial__ - Next up is [Merging SparkR DataFrames](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/merging.md)
+__End of tutorial__ - Next up is [Merging SparkR DataFrames](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/06_merging.md)

@@ -47,10 +47,13 @@ If you receive this message, return to the SparkR tutorials [README](https://git
 
 ***
 
-**Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial.
+**Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/01_sparkr-basics-1.md) tutorial.
 
 ```{r, message=F, warning=F, results='hide', collapse=TRUE}
-df <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true", na.strings = "")
+df <- read.df("s3://ui-spark-social-science-public/data/hfpc_ex", 
+              header = "false", 
+              inferSchema = "true", 
+              na.strings = "")
 cache(df)
 ```
 
@@ -324,4 +327,4 @@ nB                # No. of rows in DF `B`
 
 Documentation for `rbind.intersection` can be found [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/R/rbind-intersection.R), and [here](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/R/rbind-fill.R) for `rbind.fill`.
 
-__End of tutorial__ - Next up is [Data Visualizations in SparkR](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/visualizations.md#data-visualizations-in-sparkr)
+__End of tutorial__ - Next up is [Data Visualizations in SparkR](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/07_visualizations.md)

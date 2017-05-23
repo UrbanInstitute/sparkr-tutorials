@@ -59,12 +59,15 @@ If you receive this message, return to the SparkR tutorials [README](https://git
 
 ### Load a csv file into SparkR
 
-Use the operation `read.df` to load in quarterly Fannie Mae single-family loan performance data from the AWS S3 folder `"s3://sparkr-tutorials/"` as a Spark DataFrame (DF). Below, we load a single quarter (2000, Q1) into SparkR, and save it as the DF `perf`:
+Use the operation `read.df` to load in quarterly Fannie Mae single-family loan performance data from the AWS S3 folder `"s3://ui-spark-social-science-public/data/"` as a Spark DataFrame (DF). Below, we load a single quarter (2000, Q1) into SparkR, and save it as the DF `perf`:
 
 ```{r, message=F, warning=F, results='hide'}
-perf <- read.df("s3://sparkr-tutorials/Performance_2000Q1.txt", header = "false", delimiter = "|", source = "csv",
-                inferSchema = "true", na.strings = "")
-
+perf <- read.df("s3://ui-spark-social-science-public/data/Performance_2000Q1.txt", 
+                header = "false", 
+                delimiter = "|", 
+                source = "csv",
+                inferSchema = "true", 
+                na.strings = "")
 ```
 ```{r, include=FALSE}
 cache(perf)
@@ -97,9 +100,13 @@ b <- 2
 for(q in a:b){
   
   filename <- paste0("Performance_2000Q", q)
-  filepath <- paste0("s3://sparkr-tutorials/", filename, ".txt")
-  .perf <- read.df(filepath, header = "false", delimiter = "|", 
-                   source = "csv", inferSchema = "true", na.strings = "")
+  filepath <- paste0("s3://ui-spark-social-science-public/data/", filename, ".txt")
+  .perf <- read.df(filepath, 
+                   header = "false", 
+                   delimiter = "|", 
+                   source = "csv", 
+                   inferSchema = "true", 
+                   na.strings = "")
   
   perf <- rbind(perf, .perf)
 }
@@ -223,7 +230,9 @@ printSchema(perf_lim)
 Throughout this tutorial, we've built the Spark DataFrame `perf_lim` of quarterly loan performance data, which we'll use in several subsequent tutorials. In order to use this DF later on, we must first export it to a location that can handle large data sizes and in a data structure that works with the SparkR environment. We'll save this example data to an AWS S3 folder (`"sparkr-tutorials"`) from which we'll access other example datasets. Below, we save `perf_lim` as a collection of parquet type files into the folder `"hfpc_ex"` using the `write.df` operation:
 
 ```{r, results='hide'}
-write.df(perf_lim, path = "s3://sparkr-tutorials/hfpc_ex", source = "parquet", mode = "overwrite")
+write.df(perf_lim, path = "s3://ui-spark-social-science-public/data/hfpc_ex", 
+         source = "parquet", 
+         mode = "overwrite")
 ```
 
 When working with the DF `perf_lim` in the analysis above, we were really accessing data that was partitioned across our cluster. In order to export this partitioned data, we export each partition from its node (computer) and then collect them into the folder `"hfpc_ex"`. This "file" of indiviudal, partitioned files should be treated like an indiviudal file when organizing an S3 folder, i.e. __do not__ attempt to save other DataFrames or files to this file. SparkR saves the DF in this partitioned structure to accomodate massive data.
@@ -235,7 +244,9 @@ Consider the conditions required for us to be able to save a DataFrame as a sing
 The partitioned nature of `"hfpc_ex"` does not affect our ability to load it back into SparkR and perform further analysis. Below, we use the `read.df` to read in the partitioned parquet file from S3 as the DF `dat`:
 
 ```{r, results='hide'}
-dat <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
+dat <- read.df("s3://ui-spark-social-science-public/data/hfpc_ex", 
+               header = "false", 
+               inferSchema = "true")
 ```
 
 Below, we confirm that the dimensions and column names of `dat` and `perf_lim` are equal. When comparing DFs, each with a large number of columns, the following if-else statement can be adapted to check equal dimensions and column names across DFs:
@@ -253,7 +264,9 @@ if (dim1[1]!=dim2[1] | dim1[2]!=dim2[2]) {
 We can also save the DF as a folder of partitioned .csv files with syntax similar to that which we used to export the DF as partitioned parquet files. Note, however, that this does not retain the column names like saving as partitioned parquet files does. The `write.df` expression for exporting the DF as a folder of partitioned .csv files is given below:
 
 ```{r, collapse=TRUE, results='hide'}
-write.df(perf_lim, path = "s3://sparkr-tutorials/hfpc_ex_csv", source = "csv", mode = "overwrite")
+write.df(perf_lim, path = "s3://ui-spark-social-science-public/data/hfpc_ex_csv", 
+         source = "csv", 
+         mode = "overwrite")
 ```
 ```{r, include=FALSE}
 unpersist(perf_lim)
@@ -263,7 +276,7 @@ unpersist(dat)
 We can read in the .csv files as a DF with the following expression:
 
 ```{r, results='hide'}
-dat2 <- read.df("s3://sparkr-tutorials/hfpc_ex_csv", source = "csv", inferSchema = "true")
+dat2 <- read.df("s3://ui-spark-social-science-public/data/hfpc_ex_csv", source = "csv", inferSchema = "true")
 ```
 ```{r, include=FALSE}
 cache(dat2)
@@ -281,7 +294,7 @@ for(i in 1:14){
 colnames(dat2)
 ```
 
-__End of tutorial__ - Next up is [SparkR Basics II](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-2.md)
+__End of tutorial__ - Next up is [SparkR Basics II](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/02_sparkr-basics-2.md)
 
 ```{r, include=FALSE}
 unpersist(dat2)

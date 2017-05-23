@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 **Last Updated**: August 17, 2016
 
 
-**Objective**: The SparkR DataFrame (DF) API supports a number of operations to do structured data processing. These operations range from the simple tasks that we used in the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial (e.g. counting the number of rows in a DF using `nrow`) to more complex tasks like computing aggregate data. This tutorial discusses the key DF operations for processing tabular data in the SparkR environment, the different types of DF operations and how to perform these operations efficiently. In particular, this tutorial discusses:
+**Objective**: The SparkR DataFrame (DF) API supports a number of operations to do structured data processing. These operations range from the simple tasks that we used in the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/01_sparkr-basics-1.md) tutorial (e.g. counting the number of rows in a DF using `nrow`) to more complex tasks like computing aggregate data. This tutorial discusses the key DF operations for processing tabular data in the SparkR environment, the different types of DF operations and how to perform these operations efficiently. In particular, this tutorial discusses:
 
 * Computing aggregations for a specified list of columns across an entire DF
 * Computing aggregations for a specified list of columns across entries of a DF that share a common identifier
@@ -51,10 +51,12 @@ If you receive this message, return to the SparkR tutorials [README](https://git
 
 ***
 
-**Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial.
+**Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/01_sparkr-basics-1.md) tutorial.
 
 ```{r, message=F, warning=F, results='hide'}
-df <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
+df <- read.df("s3://ui-spark-social-science-public/data/hfpc_ex", 
+              header = "false", 
+              inferSchema = "true")
 ```
 
 ```{r, include=FALSE}
@@ -149,7 +151,7 @@ head(df3)
 
 Note that `df3` contains every column originally included in `df`, as well as the column `"loan_age_yrs"`.
 
-We can also rename a DF column using the `withColumnRenamed` operation as we discussed in the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial. The following expression returns a DF that is equivalent to `df`, except for the fact that we have renamed `"servicer_name"` to `"servicer"`.
+We can also rename a DF column using the `withColumnRenamed` operation as we discussed in the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/01_sparkr-basics-1.md) tutorial. The following expression returns a DF that is equivalent to `df`, except for the fact that we have renamed `"servicer_name"` to `"servicer"`.
 
 ```{r, collapse=TRUE}
 df4 <- withColumnRenamed(df, "servicer_name", "servicer")
@@ -164,7 +166,7 @@ When using either `withColumn` or `withColumnRenamed`, we could simply replace o
 
 ### Types of SparkR operations
 
-Throughout this tutorial, as well as in the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial, you may have noticed that some operations result in a new DataFrame (e.g. `agg`) and some return an output (e.g. `head`). SparkR operations can be classified as either:
+Throughout this tutorial, as well as in the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/01_sparkr-basics-1.md) tutorial, you may have noticed that some operations result in a new DataFrame (e.g. `agg`) and some return an output (e.g. `head`). SparkR operations can be classified as either:
 
 * __transformations__: those operations that return a new SparkR DataFrame; or,
 * __actions__: those operations that return an output.
@@ -206,7 +208,9 @@ By caching a given DataFrame, we can ensure that future actions on that DF (or t
 Now that we have some understanding of how DataFrame persistence works in SparkR, let's see how this operation affects the processes in the preceding example. By including `cache` with our expressions as
 
 ```{r, eval=FALSE, collapse=TRUE}
-df_ <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
+df_ <- read.df("s3://ui-spark-social-science-public/data/hfpc_ex", 
+               header = "false", 
+               inferSchema = "true")
 cache(df_)
 head(df_, num = 5)
 head(df_, num = 10)
@@ -234,14 +238,14 @@ Let's compare the time elapsed in evaluating the following expressions with and 
 
 ```{r, collapse=TRUE}
 # Uncached
-.df <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
+.df <- read.df("s3://ui-spark-social-science-public/data/hfpc_ex", header = "false", inferSchema = "true")
 system.time(ncol(.df))
 system.time(nrow(.df))
 system.time(head(agg(groupBy(.df, .df$servicer_name), loan_age_avg = avg(.df$loan_age))))
 rm(.df)
 
 # Cached
-.df <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
+.df <- read.df("s3://ui-spark-social-science-public/data/hfpc_ex", header = "false", inferSchema = "true")
 cache(.df)
 system.time(ncol(.df))
 system.time(nrow(.df))
@@ -286,4 +290,4 @@ typeof(loan_age_avg)
 Notice that we can direct SparkR to do this through either set of expressions above, with the process being written explicitly or implicitly. If we had not already defind `df1`, we could have directed SparkR to compute this value in a single line with the expression `loan_age_avg <- collect(agg(df, loan_age_avg = avg(df$loan_age)))[[1]]`.
 
 
-__End of tutorial__ - Next up is [Subsetting SparkR DataFrames](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/subsetting.md)
+__End of tutorial__ - Next up is [Subsetting SparkR DataFrames](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/03_subsetting.md)
