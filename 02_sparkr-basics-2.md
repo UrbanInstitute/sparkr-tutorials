@@ -7,7 +7,7 @@ June 28, 2016
 **Last Updated**: August 17, 2016
 
 
-**Objective**: The SparkR DataFrame (DF) API supports a number of operations to do structured data processing. These operations range from the simple tasks that we used in the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial (e.g. counting the number of rows in a DF using `nrow`) to more complex tasks like computing aggregate data. This tutorial discusses the key DF operations for processing tabular data in the SparkR environment, the different types of DF operations and how to perform these operations efficiently. In particular, this tutorial discusses:
+**Objective**: The SparkR DataFrame (DF) API supports a number of operations to do structured data processing. These operations range from the simple tasks that we used in the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/01_sparkr-basics-1.md) tutorial (e.g. counting the number of rows in a DF using `nrow`) to more complex tasks like computing aggregate data. This tutorial discusses the key DF operations for processing tabular data in the SparkR environment, the different types of DF operations and how to perform these operations efficiently. In particular, this tutorial discusses:
 
 * Computing aggregations for a specified list of columns across an entire DF
 * Computing aggregations for a specified list of columns across entries of a DF that share a common identifier
@@ -37,7 +37,7 @@ If you receive this message, return to the SparkR tutorials [README](https://git
 
 ***
 
-**Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial.
+**Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/01_sparkr-basics-1.md) tutorial.
 
 
 ```r
@@ -196,7 +196,7 @@ head(df3)
 
 Note that `df3` contains every column originally included in `df`, as well as the column `"loan_age_yrs"`.
 
-We can also rename a DF column using the `withColumnRenamed` operation as we discussed in the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial. The following expression returns a DF that is equivalent to `df`, except for the fact that we have renamed `"servicer_name"` to `"servicer"`.
+We can also rename a DF column using the `withColumnRenamed` operation as we discussed in the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/01_sparkr-basics-1.md) tutorial. The following expression returns a DF that is equivalent to `df`, except for the fact that we have renamed `"servicer_name"` to `"servicer"`.
 
 
 ```r
@@ -233,7 +233,7 @@ When using either `withColumn` or `withColumnRenamed`, we could simply replace o
 
 ### Types of SparkR operations
 
-Throughout this tutorial, as well as in the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial, you may have noticed that some operations result in a new DataFrame (e.g. `agg`) and some return an output (e.g. `head`). SparkR operations can be classified as either:
+Throughout this tutorial, as well as in the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/01_sparkr-basics-1.md) tutorial, you may have noticed that some operations result in a new DataFrame (e.g. `agg`) and some return an output (e.g. `head`). SparkR operations can be classified as either:
 
 * __transformations__: those operations that return a new SparkR DataFrame; or,
 * __actions__: those operations that return an output.

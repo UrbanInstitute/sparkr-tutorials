@@ -33,7 +33,7 @@ If you receive this message, return to the SparkR tutorials [README](https://git
 
 ***
 
-**Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial.
+**Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/01_sparkr-basics-1.md) tutorial.
 
 
 ```r
@@ -284,7 +284,7 @@ Note that the `NA` entries of `"zb_dt"` result in `NA` values for `"zb_yr"` and 
 
 ### Resample a time series DF to a particular unit of time frequency
 
-When working with time series data, we are frequently required to resample data to a different time frequency. Combing the `agg` and `groupBy` operations, as we saw in the [SparkR Basics II](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-2.md) tutorial, is a convenient strategy for accomplishing this in SparkR. We create a new DF, `dat`, that only includes columns of numerical, integer and date dtype to use in our resampling examples:
+When working with time series data, we are frequently required to resample data to a different time frequency. Combing the `agg` and `groupBy` operations, as we saw in the [SparkR Basics II](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/02_sparkr-basics-2.md) tutorial, is a convenient strategy for accomplishing this in SparkR. We create a new DF, `dat`, that only includes columns of numerical, integer and date dtype to use in our resampling examples:
 
 
 

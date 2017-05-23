@@ -42,7 +42,7 @@ If you receive this message, return to the SparkR tutorials [README](https://git
   
 ### Specify null values when loading data in as a SparkR DataFrame (DF)
   
-Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial. Note that we now include the `na.strings` option in the `read.df` transformation below. By setting `na.strings` equal to an empty string in `read.df`, we direct SparkR to interpret empty entries in the dataset as being equal to nulls in `df`. Therefore, any DF entries matching this string (here, set to equal an empty entry) will be set equal to a null value in `df`.
+Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/01_sparkr-basics-1.md) tutorial. Note that we now include the `na.strings` option in the `read.df` transformation below. By setting `na.strings` equal to an empty string in `read.df`, we direct SparkR to interpret empty entries in the dataset as being equal to nulls in `df`. Therefore, any DF entries matching this string (here, set to equal an empty entry) will be set equal to a null value in `df`.
 
 
 ```r

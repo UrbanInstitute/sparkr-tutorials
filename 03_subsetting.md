@@ -36,7 +36,7 @@ If you receive this message, return to the SparkR tutorials [README](https://git
 
 ***
 
-**Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial. Note that we are __persisting__ the DataFrame since we will use it throughout this tutorial.
+**Read in initial data as DF**: Throughout this tutorial, we will use the loan performance example dataset that we exported at the conclusion of the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/01_sparkr-basics-1.md) tutorial. Note that we are __persisting__ the DataFrame since we will use it throughout this tutorial.
 
 
 ```r
@@ -281,7 +281,7 @@ Note that this data.frame is _not_ local to _your_ personal computer, but rather
 
 #### Export DF sample as a single .csv file to S3:
 
-If we want to export the sampled DF from RStudio as a single .csv file that we can work with in any environment, we must first coalesce the rows of `df_samp4` to a single node in our cluster using the `repartition` operation. Then, we can use the `write.df` operation as we did in the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/sparkr-basics-1.md) tutorial:
+If we want to export the sampled DF from RStudio as a single .csv file that we can work with in any environment, we must first coalesce the rows of `df_samp4` to a single node in our cluster using the `repartition` operation. Then, we can use the `write.df` operation as we did in the [SparkR Basics I](https://github.com/UrbanInstitute/sparkr-tutorials/blob/master/01_sparkr-basics-1.md) tutorial:
 
 
 ```r
