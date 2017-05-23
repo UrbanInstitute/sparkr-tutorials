@@ -40,7 +40,7 @@ If you receive this message, return to the SparkR tutorials [README](https://git
 
 
 ```r
-df <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
+df <- read.df("s3://ui-spark-social-science-public/data/hfpc_ex", header = "false", inferSchema = "true")
 cache(df)
 ```
 
@@ -286,8 +286,7 @@ If we want to export the sampled DF from RStudio as a single .csv file that we c
 
 ```r
 df_samp4_1 <- repartition(df_samp4, numPartitions = 1)
-write.df(df_samp4_1, path = "s3://sparkr-tutorials/hfpc_samp.csv", source = "csv", 
-         mode = "overwrite")
+write.df(df_samp4_1, path = "s3://ui-spark-social-science-public/data/hfpc_samp.csv", source = "csv", mode = "overwrite")
 ```
 
 :heavy_exclamation_mark: __Warning__: We cannot collect a DF as a data.frame, nor can we repartition it to a single node, unless the DF is sufficiently small in size since it must fit onto a _single_ node!

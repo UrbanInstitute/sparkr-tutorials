@@ -40,7 +40,7 @@ However, connecting with other database will require further alterations to the 
 Currently, the bootstrap scripts for SparkR in the [Spark Social Science Repository](https://github.com/UrbanInstitute/spark-social-science/blob/master/sparkr/rstudio_sparkr_emr5lyr-proc.sh) install an add-on for working with mysql. This file is the MySQL Connector for JDBC, or [MySQL Coonector/J](https://dev.mysql.com/downloads/connector/j/5.1.html). In order for Spark to query MySQL databases (regardless of whether you are using SparkR, PySpark, or Scala), you need to install this connector, which is a .far file. To do this consistently, I first placed the zipped jar file in AWS S3. Then, [in the bootstrap scripts](https://github.com/UrbanInstitute/spark-social-science/blob/master/sparkr/rstudio_sparkr_emr5lyr-proc.sh#L256), I copy and unzip the zipped jar file to the /usr/lib/spark/jars folder, which Spark automatically loads.
 
 ```
-aws s3 cp s3://ui-spark-social-science/emr-util/mysql-connector-java-5.1.41.tar.gz .
+aws s3 cp s3://ui-spark-social-science-public/emr-util/mysql-connector-java-5.1.41.tar.gz .
 tar -xvzf mysql-connector-java-5.1.41.tar.gz
 sudo mv mysql-connector-java-5.1.41/mysql-connector-java-5.1.41-bin.jar /usr/lib/spark/jars
 rm -r mysql-connector-java-5.1.41

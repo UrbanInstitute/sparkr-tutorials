@@ -41,7 +41,7 @@ If you receive this message, return to the SparkR tutorials [README](https://git
 
 
 ```r
-df <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
+df <- read.df("s3://ui-spark-social-science-public/data/hfpc_ex", header = "false", inferSchema = "true")
 ```
 
 
@@ -277,7 +277,7 @@ Now that we have some understanding of how DataFrame persistence works in SparkR
 
 
 ```r
-df_ <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
+df_ <- read.df("s3://ui-spark-social-science-public/data/hfpc_ex", header = "false", inferSchema = "true")
 cache(df_)
 head(df_, num = 5)
 head(df_, num = 10)
@@ -307,7 +307,7 @@ Let's compare the time elapsed in evaluating the following expressions with and 
 
 ```r
 # Uncached
-.df <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
+.df <- read.df("s3://ui-spark-social-science-public/data/hfpc_ex", header = "false", inferSchema = "true")
 system.time(ncol(.df))
 ##    user  system elapsed 
 ##   0.020   0.000   0.021
@@ -320,7 +320,7 @@ system.time(head(agg(groupBy(.df, .df$servicer_name), loan_age_avg = avg(.df$loa
 rm(.df)
 
 # Cached
-.df <- read.df("s3://sparkr-tutorials/hfpc_ex", header = "false", inferSchema = "true")
+.df <- read.df("s3://ui-spark-social-science-public/data/hfpc_ex", header = "false", inferSchema = "true")
 cache(.df)
 ## SparkDataFrame[loan_id:bigint, period:string, servicer_name:string, new_int_rt:double, act_endg_upb:double, loan_age:int, mths_remng:int, aj_mths_remng:int, dt_matr:string, cd_msa:int, delq_sts:string, flag_mod:string, cd_zero_bal:int, dt_zero_bal:string]
 system.time(ncol(.df))

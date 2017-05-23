@@ -46,7 +46,7 @@ If you receive this message, return to the SparkR tutorials [README](https://git
 
 
 ```r
-df <- read.df("s3://ui-spark-data/diamonds.csv", header = "true", delimiter = ",",
+df <- read.df("s3://ui-spark-social-science-public/data/diamonds.csv", header = "true", delimiter = ",",
               source = "csv", inferSchema = "true", na.strings = "")
 
 cache(df)

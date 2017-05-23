@@ -29,7 +29,7 @@ You can confirm that you successfully initiated these contexts by looking at the
 
 
 ```r
-df <- read.df(sqlContext, path = "s3://ui-spark-data/diamonds.csv", header = "true", delimiter = ",",
+df <- read.df(sqlContext, path = "s3://ui-spark-social-science-public/data/diamonds.csv", header = "true", delimiter = ",",
               source = "com.databricks.spark.csv", inferSchema = "true", nullValue = "")
 cache(df)
 ```
